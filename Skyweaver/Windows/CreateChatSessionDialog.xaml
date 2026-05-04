@@ -2,64 +2,674 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="创建会话..."
-        Width="420"
-        Height="250"
+        Width="820"
+        Height="480"
         ResizeMode="NoResize"
-        WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource Layer_1}">
-    <Border Padding="16"
-            BorderBrush="{DynamicResource BorderBrush}"
-            BorderThickness="1"
-            Background="{DynamicResource Layer_1}">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        WindowStartupLocation="CenterOwner">
+    <Window.Background>
+        <SolidColorBrush Color="#FF111326"/>
+    </Window.Background>
+    <Window.Resources>
+        <DrawingBrush x:Key="SoftGlassSliceBrush" Stretch="Fill">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <DrawingGroup.Children>
+                        <GeometryDrawing Geometry="F1 M 0.160156,0.159668L 1386.16,0.159668L 1386.16,223.646L 0.160156,223.646L 0.160156,0.159668 Z ">
+                            <GeometryDrawing.Brush>
+                                <LinearGradientBrush StartPoint="0.10059,1.65236" EndPoint="2.53982,1.65236">
+                                    <LinearGradientBrush.RelativeTransform>
+                                        <TransformGroup>
+                                            <SkewTransform CenterX="0.10059" CenterY="1.65236" AngleX="-59.7491" AngleY="0"/>
+                                            <RotateTransform CenterX="0.10059" CenterY="1.65236" Angle="-70.8836"/>
+                                        </TransformGroup>
+                                    </LinearGradientBrush.RelativeTransform>
+                                    <LinearGradientBrush.GradientStops>
+                                        <GradientStop Color="#3BFFFFFF" Offset="0"/>
+                                        <GradientStop Color="#1DFFFFFF" Offset="0.0766283"/>
+                                        <GradientStop Color="#07FFFFFF" Offset="0.109195"/>
+                                        <GradientStop Color="#04FFFFFF" Offset="0.298851"/>
+                                        <GradientStop Color="#3AFFFFFF" Offset="0.327586"/>
+                                        <GradientStop Color="#1AFFFFFF" Offset="0.465517"/>
+                                        <GradientStop Color="#14FFFFFF" Offset="0.591954"/>
+                                        <GradientStop Color="#05FFFFFF" Offset="0.758621"/>
+                                        <GradientStop Color="#44FFFFFF" Offset="1"/>
+                                    </LinearGradientBrush.GradientStops>
+                                </LinearGradientBrush>
+                            </GeometryDrawing.Brush>
+                        </GeometryDrawing>
+                    </DrawingGroup.Children>
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
 
-            <TextBlock Text="是否创建新的 ChatSession？"
-                       FontSize="15"
-                       FontWeight="SemiBold"
-                       Margin="0,0,0,10"/>
+        <DrawingBrush x:Key="PurpleMetricGlassBrush" Stretch="Fill">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <DrawingGroup.Children>
+                        <GeometryDrawing Geometry="F1 M 33.5,0.500244L 280.736,0.500244C 298.962,0.500244 313.736,15.2747 313.736,33.5002L 313.736,183.679C 313.736,201.905 298.962,216.679 280.736,216.679L 33.5,216.679C 15.2747,216.679 0.5,201.905 0.5,183.679L 0.5,33.5002C 0.5,15.2747 15.2747,0.500244 33.5,0.500244 Z ">
+                            <GeometryDrawing.Pen>
+                                <Pen LineJoin="Round" Brush="#6793F2FF"/>
+                            </GeometryDrawing.Pen>
+                            <GeometryDrawing.Brush>
+                                <RadialGradientBrush RadiusX="1.01282" RadiusY="0.917797" Center="0.5,0.977751" GradientOrigin="0.5,0.977751">
+                                    <RadialGradientBrush.GradientStops>
+                                        <GradientStop Color="#FF8E89CA" Offset="0"/>
+                                        <GradientStop Color="#3444477C" Offset="0.988506"/>
+                                    </RadialGradientBrush.GradientStops>
+                                    <RadialGradientBrush.RelativeTransform>
+                                        <TransformGroup>
+                                            <SkewTransform CenterX="0.5" CenterY="0.977751" AngleX="5.23488" AngleY="0"/>
+                                            <RotateTransform CenterX="0.5" CenterY="0.977751" Angle="70.4939"/>
+                                        </TransformGroup>
+                                    </RadialGradientBrush.RelativeTransform>
+                                </RadialGradientBrush>
+                            </GeometryDrawing.Brush>
+                        </GeometryDrawing>
+                        <GeometryDrawing Geometry="F1 M 33.5,0.500244L 280.736,0.500244C 298.962,0.500244 313.736,15.2747 313.736,33.5002L 313.736,183.679C 313.736,201.905 298.962,216.679 280.736,216.679L 33.5,216.679C 15.2747,216.679 0.5,201.905 0.5,183.679L 0.5,33.5002C 0.5,15.2747 15.2747,0.500244 33.5,0.500244 Z ">
+                            <GeometryDrawing.Pen>
+                                <Pen LineJoin="Round" Brush="#6793F2FF"/>
+                            </GeometryDrawing.Pen>
+                            <GeometryDrawing.Brush>
+                                <RadialGradientBrush RadiusX="1.18083" RadiusY="0.766861" Center="0.5,0.0499012" GradientOrigin="0.5,0.0499012">
+                                    <RadialGradientBrush.GradientStops>
+                                        <GradientStop Color="#95FFFFFF" Offset="0"/>
+                                        <GradientStop Color="#2DFFFFFF" Offset="0.247126"/>
+                                        <GradientStop Color="#00FFFFFF" Offset="0.421456"/>
+                                    </RadialGradientBrush.GradientStops>
+                                </RadialGradientBrush>
+                            </GeometryDrawing.Brush>
+                        </GeometryDrawing>
+                    </DrawingGroup.Children>
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
 
-            <TextBlock Grid.Row="1"
-                       Text="会话名称"
-                       Margin="0,0,0,6"/>
+        <DrawingBrush x:Key="HistorySessionIdleBrush" Stretch="Fill">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <DrawingGroup.Children>
+                        <GeometryDrawing Geometry="F1 M 8.5,0.500244L 498.47,0.500244C 502.888,0.500244 506.47,4.08179 506.47,8.50024L 506.47,208.679C 506.47,213.098 502.888,216.679 498.47,216.679L 8.5,216.679C 4.08179,216.679 0.5,213.098 0.5,208.679L 0.5,8.50024C 0.5,4.08179 4.08179,0.500244 8.5,0.500244 Z ">
+                            <GeometryDrawing.Pen>
+                                <Pen LineJoin="Round" Brush="#FFFFFFFF"/>
+                            </GeometryDrawing.Pen>
+                            <GeometryDrawing.Brush>
+                                <LinearGradientBrush StartPoint="0.269646,-0.150282" EndPoint="1.6494,-0.150282">
+                                    <LinearGradientBrush.RelativeTransform>
+                                        <TransformGroup>
+                                            <SkewTransform CenterX="0.269646" CenterY="-0.150282" AngleX="5.23489" AngleY="0"/>
+                                            <RotateTransform CenterX="0.269646" CenterY="-0.150282" Angle="70.494"/>
+                                        </TransformGroup>
+                                    </LinearGradientBrush.RelativeTransform>
+                                    <LinearGradientBrush.GradientStops>
+                                        <GradientStop Color="#55FFFFFF" Offset="0"/>
+                                        <GradientStop Color="#053D3D3D" Offset="0.35249"/>
+                                        <GradientStop Color="#04666666" Offset="0.670498"/>
+                                        <GradientStop Color="#51FFFFFF" Offset="0.988506"/>
+                                    </LinearGradientBrush.GradientStops>
+                                </LinearGradientBrush>
+                            </GeometryDrawing.Brush>
+                        </GeometryDrawing>
+                    </DrawingGroup.Children>
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
 
-            <TextBox x:Name="SessionNameTextBox"
-                     Grid.Row="2"
-                     Height="30"
-                     VerticalContentAlignment="Center"
-                     Margin="0,0,0,12"/>
+        <DrawingBrush x:Key="HistorySessionPressedBrush" Stretch="Fill">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <DrawingGroup.Children>
+                        <GeometryDrawing Geometry="F1 M 8.5,0.5L 498.47,0.5C 502.888,0.5 506.47,4.08203 506.47,8.50024L 506.47,208.679C 506.47,213.098 502.888,216.679 498.47,216.679L 8.5,216.679C 4.08179,216.679 0.5,213.098 0.5,208.679L 0.5,8.50024C 0.5,4.08203 4.08179,0.5 8.5,0.5 Z ">
+                            <GeometryDrawing.Pen>
+                                <Pen LineJoin="Round" Brush="#6793F2FF"/>
+                            </GeometryDrawing.Pen>
+                            <GeometryDrawing.Brush>
+                                <LinearGradientBrush StartPoint="0.269646,-0.15028" EndPoint="1.64939,-0.15028">
+                                    <LinearGradientBrush.RelativeTransform>
+                                        <TransformGroup>
+                                            <SkewTransform CenterX="0.269646" CenterY="-0.15028" AngleX="5.23488" AngleY="0"/>
+                                            <RotateTransform CenterX="0.269646" CenterY="-0.15028" Angle="70.494"/>
+                                        </TransformGroup>
+                                    </LinearGradientBrush.RelativeTransform>
+                                    <LinearGradientBrush.GradientStops>
+                                        <GradientStop Color="#55D0F3FF" Offset="0"/>
+                                        <GradientStop Color="#053D3D3D" Offset="0.515326"/>
+                                        <GradientStop Color="#04666666" Offset="0.563218"/>
+                                        <GradientStop Color="#51B4FFFD" Offset="0.988506"/>
+                                    </LinearGradientBrush.GradientStops>
+                                </LinearGradientBrush>
+                            </GeometryDrawing.Brush>
+                        </GeometryDrawing>
+                    </DrawingGroup.Children>
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
 
-            <TextBlock Grid.Row="3"
-                       Text="绑定会话流"
-                       Margin="0,0,0,6"/>
+        <Style x:Key="PanelListBoxItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="10,9"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Background" Value="{StaticResource HistorySessionIdleBrush}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="RootBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                SnapsToDevicePixels="True"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource HistorySessionPressedBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource HistorySessionPressedBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
-            <ComboBox x:Name="SessionFlowComboBox"
-                      Grid.Row="4"
-                      Height="30"
-                      DisplayMemberPath="DisplayName"
-                      Margin="0,0,0,12"/>
+    <Grid>
+        <Rectangle>
+            <Rectangle.Fill>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#FF191D3A" Offset="0"/>
+                    <GradientStop Color="#FF231B40" Offset="0.5"/>
+                    <GradientStop Color="#FF0B0B19" Offset="1"/>
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
 
-            <StackPanel Grid.Row="5"
-                        Orientation="Horizontal"
-                        HorizontalAlignment="Right">
-                <Button Width="82"
-                        Height="30"
-                        Margin="0,0,8,0"
-                        IsCancel="True"
-                        Content="取消"/>
-                <Button Width="82"
-                        Height="30"
-                        IsDefault="True"
-                        Click="CreateButton_Click"
-                        Content="创建"/>
-            </StackPanel>
+        <Ellipse Width="600" Height="400" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-200,-150,0,0" Fill="#304153C2">
+            <Ellipse.Effect>
+                <BlurEffect Radius="120"/>
+            </Ellipse.Effect>
+        </Ellipse>
+        <Ellipse Width="700" Height="500" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-250,-200" Fill="#207638B5">
+            <Ellipse.Effect>
+                <BlurEffect Radius="150"/>
+            </Ellipse.Effect>
+        </Ellipse>
+
+        <Rectangle Opacity="0.6">
+            <Rectangle.Fill>
+                <VisualBrush TileMode="Tile" Viewport="0,0,6,6" ViewportUnits="Absolute">
+                    <VisualBrush.Visual>
+                        <Canvas Width="6" Height="6" Background="Transparent">
+                            <Ellipse Width="1.5" Height="1.5" Fill="#15FFFFFF" Canvas.Left="0" Canvas.Top="0"/>
+                            <Ellipse Width="1.5" Height="1.5" Fill="#15FFFFFF" Canvas.Left="3" Canvas.Top="3"/>
+                        </Canvas>
+                    </VisualBrush.Visual>
+                </VisualBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+
+        <Path Data="M 200,-100 Q 500,100 850,50 L 850,100 Q 400,200 100,550 L 0,550 Q 300,100 200,-100 Z" Fill="#15FFFFFF">
+            <Path.Effect>
+                <BlurEffect Radius="25"/>
+            </Path.Effect>
+        </Path>
+        <Path Data="M 300,-100 Q 550,50 850,0 L 850,20 Q 500,100 250,550 L 200,550 Q 450,50 300,-100 Z" Fill="#25FFFFFF">
+            <Path.Effect>
+                <BlurEffect Radius="10"/>
+            </Path.Effect>
+        </Path>
+        <Path Data="M -100,200 Q 150,150 850,-50 L 850,-10 Q 100,200 -100,250 Z" Fill="#10FFFFFF">
+            <Path.Effect>
+                <BlurEffect Radius="15"/>
+            </Path.Effect>
+        </Path>
+
+        <Grid Margin="24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="260"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="创建一个新的 ChatSession"
+                           FontSize="20"
+                           FontWeight="Bold"
+                           Foreground="White"
+                           Margin="0,0,0,24"
+                           TextWrapping="Wrap"/>
+
+                <TextBlock Grid.Row="1"
+                           Text="会话名称"
+                           Foreground="#E0FFFFFF"
+                           FontSize="13"
+                           Margin="0,0,0,6"/>
+
+                <TextBox x:Name="SessionNameTextBox"
+                         Grid.Row="2"
+                         Height="30"
+                         VerticalContentAlignment="Center"
+                         Margin="0,0,0,16"
+                         Text="{Binding SessionName, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <TextBlock Grid.Row="3"
+                           Text="绑定会话流"
+                           Foreground="#E0FFFFFF"
+                           FontSize="13"
+                           Margin="0,0,0,6"/>
+
+                <ComboBox x:Name="SessionFlowComboBox"
+                          Grid.Row="4"
+                          Height="30"
+                          Margin="0,0,0,16"
+                          DisplayMemberPath="DisplayName"
+                          ItemsSource="{Binding SessionFlowOptions}"
+                          SelectedItem="{Binding SelectedFlowOption, Mode=TwoWay}"/>
+
+                <Border Grid.Row="5" Margin="0,12,0,12" Padding="0,0,0,6">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Source="pack://application:,,,/Resources/NewNodeGraphAlt.png"
+                               Width="20"
+                               Height="20"
+                               Margin="0,0,8,0"
+                               RenderOptions.BitmapScalingMode="HighQuality"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="历史会话"
+                                   FontWeight="Bold"
+                                   Foreground="White"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   Text="&#xE70D;"
+                                   FontSize="12"
+                                   Foreground="White"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="6"
+                        CornerRadius="6"
+                        BorderThickness="0"
+                        Background="Transparent">
+                    <Grid Margin="8">
+                        <TextBlock Text="还没有可显示的历史会话。"
+                                   Foreground="#A0FFFFFF"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Visibility="{Binding IsHistoryEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                        <ListBox Background="Transparent"
+                                 BorderThickness="0"
+                                 ItemsSource="{Binding RecentSessions}"
+                                 SelectedItem="{Binding SelectedHistorySession, Mode=TwoWay}"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 Visibility="{Binding HasRecentSessions, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                 ItemContainerStyle="{StaticResource PanelListBoxItemStyle}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Width="28" Height="28" CornerRadius="6" Background="#18000000" Margin="0,0,10,0">
+                                            <Image Source="{Binding IconPath}"
+                                                   Margin="5"
+                                                   Stretch="Uniform"
+                                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Title}"
+                                                       Foreground="White"
+                                                       FontWeight="SemiBold"
+                                                       FontSize="12"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding FlowName}"
+                                                       Foreground="#B0FFFFFF"
+                                                       FontSize="11"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Margin="0,2,0,0"/>
+                                            <TextBlock Text="{Binding UpdatedAtText}"
+                                                       Foreground="#90FFFFFF"
+                                                       FontSize="10"
+                                                       Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" CornerRadius="6" ClipToBounds="True">
+                    <Grid>
+                        <Border Background="{StaticResource SoftGlassSliceBrush}" Opacity="0.4"/>
+                        <Border BorderThickness="0" CornerRadius="6" Background="#1A000000"/>
+
+                        <ScrollViewer Margin="16,16,8,16"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Margin="0,0,8,0">
+                                <Border CornerRadius="6"
+                                        Background="#12000000"
+                                        Padding="14"
+                                        Margin="0,0,0,12">
+                                    <StackPanel>
+                                        <TextBlock Text="即将创建的会话"
+                                                   Foreground="#B0FFFFFF"
+                                                   FontSize="12"/>
+                                        <TextBlock Text="{Binding SessionNamePreview}"
+                                                   Foreground="White"
+                                                   FontSize="22"
+                                                   FontWeight="Bold"
+                                                   Margin="0,4,0,0"
+                                                   TextWrapping="Wrap"/>
+                                        <TextBlock Text="{Binding FlowDisplayName, StringFormat=会话流：{0}}"
+                                                   Foreground="#E0FFFFFF"
+                                                   FontSize="13"
+                                                   Margin="0,10,0,0"
+                                                   TextWrapping="Wrap"/>
+                                        <TextBlock Text="{Binding FlowSubtitle}"
+                                                   Foreground="#A0FFFFFF"
+                                                   FontSize="11"
+                                                   Margin="0,4,0,0"
+                                                   TextWrapping="Wrap"/>
+                                        <TextBlock Text="{Binding FlowStatusText}"
+                                                   Foreground="#D8FFFFFF"
+                                                   FontSize="11"
+                                                   Margin="0,6,0,0"/>
+
+                                        <Grid Margin="0,14,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="8"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="8"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="8"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <Border Grid.Column="0" Background="{StaticResource PurpleMetricGlassBrush}" CornerRadius="6" Padding="8,7">
+                                                <StackPanel>
+                                                    <TextBlock Text="代理" Foreground="#A0FFFFFF" FontSize="10"/>
+                                                    <TextBlock Text="{Binding AgentCountText}" Foreground="White" FontSize="16" FontWeight="Bold"/>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <Border Grid.Column="2" Background="{StaticResource PurpleMetricGlassBrush}" CornerRadius="6" Padding="8,7">
+                                                <StackPanel>
+                                                    <TextBlock Text="模型" Foreground="#A0FFFFFF" FontSize="10"/>
+                                                    <TextBlock Text="{Binding ModelCountText}" Foreground="White" FontSize="16" FontWeight="Bold"/>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <Border Grid.Column="4" Background="{StaticResource PurpleMetricGlassBrush}" CornerRadius="6" Padding="8,7">
+                                                <StackPanel>
+                                                    <TextBlock Text="节点" Foreground="#A0FFFFFF" FontSize="10"/>
+                                                    <TextBlock Text="{Binding NodeCountText}" Foreground="White" FontSize="16" FontWeight="Bold"/>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <Border Grid.Column="6" Background="{StaticResource PurpleMetricGlassBrush}" CornerRadius="6" Padding="8,7">
+                                                <StackPanel>
+                                                    <TextBlock Text="连线" Foreground="#A0FFFFFF" FontSize="10"/>
+                                                    <TextBlock Text="{Binding ConnectionCountText}" Foreground="White" FontSize="16" FontWeight="Bold"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border CornerRadius="6"
+                                        Background="#12000000"
+                                        Padding="14"
+                                        Margin="0,0,0,12">
+                                    <StackPanel>
+                                        <TextBlock Text="涉及代理"
+                                                   Foreground="White"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"/>
+                                        <TextBlock Text="这些代理将参与当前会话流。"
+                                                   Foreground="#A0FFFFFF"
+                                                   FontSize="11"
+                                                   Margin="0,4,0,0"/>
+
+                                        <TextBlock Text="当前会话流中还没有代理节点。"
+                                                   Foreground="#A0FFFFFF"
+                                                   FontSize="12"
+                                                   Margin="0,12,0,0"
+                                                   Visibility="{Binding IsAgentPreviewEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                                        <ItemsControl ItemsSource="{Binding AgentPreviews}"
+                                                      Margin="0,12,0,0"
+                                                      Visibility="{Binding HasAgentPreviews, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border CornerRadius="6"
+                                                            Background="#10000000"
+                                                            Padding="10"
+                                                            Margin="0,0,0,8">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <Border Width="44" Height="44" CornerRadius="8" Background="#16000000" Margin="0,0,12,0">
+                                                                <Image Source="{Binding AvatarPath}"
+                                                                       Margin="4"
+                                                                       Stretch="UniformToFill"
+                                                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                            </Border>
+
+                                                            <StackPanel Grid.Column="1">
+                                                                <TextBlock Text="{Binding DisplayName}"
+                                                                           Foreground="White"
+                                                                           FontSize="13"
+                                                                           FontWeight="SemiBold"
+                                                                           TextWrapping="Wrap"/>
+                                                                <TextBlock Text="{Binding AgentIdText}"
+                                                                           Foreground="#A0FFFFFF"
+                                                                           FontSize="11"
+                                                                           Margin="0,2,0,0"/>
+                                                                <TextBlock Text="{Binding NodeSummary}"
+                                                                           Foreground="#B0FFFFFF"
+                                                                           FontSize="11"
+                                                                           TextWrapping="Wrap"
+                                                                           Margin="0,4,0,0"/>
+                                                                <WrapPanel Margin="0,6,0,0">
+                                                                    <Border Background="#18000000" CornerRadius="4" Padding="6,2" Margin="0,0,6,4">
+                                                                        <TextBlock Text="{Binding ModeText}" Foreground="#E0FFFFFF" FontSize="10"/>
+                                                                    </Border>
+                                                                    <Border Background="#18000000" CornerRadius="4" Padding="6,2" Margin="0,0,6,4">
+                                                                        <TextBlock Text="{Binding SelectionModeText}" Foreground="#E0FFFFFF" FontSize="10"/>
+                                                                    </Border>
+                                                                </WrapPanel>
+                                                                <TextBlock Text="{Binding ModelSummary}"
+                                                                           Foreground="#E0FFFFFF"
+                                                                           FontSize="11"
+                                                                           TextWrapping="Wrap"
+                                                                           Margin="0,4,0,0"/>
+                                                                <TextBlock Text="{Binding DescriptionText}"
+                                                                           Foreground="#90FFFFFF"
+                                                                           FontSize="11"
+                                                                           TextWrapping="Wrap"
+                                                                           Margin="0,4,0,0"/>
+                                                            </StackPanel>
+
+                                                            <Border Grid.Column="2"
+                                                                    Visibility="{Binding HasStatusBadge, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                    Background="{Binding StatusBadgeBackground}"
+                                                                    CornerRadius="4"
+                                                                    Padding="8,3"
+                                                                    VerticalAlignment="Top">
+                                                                <TextBlock Text="{Binding StatusBadgeText}"
+                                                                           Foreground="{Binding StatusBadgeForeground}"
+                                                                           FontSize="10"
+                                                                           FontWeight="SemiBold"/>
+                                                            </Border>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border CornerRadius="6"
+                                        Background="#12000000"
+                                        Padding="14"
+                                        Margin="0,0,0,12">
+                                    <StackPanel>
+                                        <TextBlock Text="涉及语言模型"
+                                                   Foreground="White"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"/>
+                                        <TextBlock Text="这里汇总当前会话流最终会解析出的所有模型。"
+                                                   Foreground="#A0FFFFFF"
+                                                   FontSize="11"
+                                                   Margin="0,4,0,0"/>
+
+                                        <TextBlock Text="当前还没有解析到可用的语言模型。"
+                                                   Foreground="#A0FFFFFF"
+                                                   FontSize="12"
+                                                   Margin="0,12,0,0"
+                                                   Visibility="{Binding IsModelPreviewEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                                        <ItemsControl ItemsSource="{Binding ModelPreviews}"
+                                                      Margin="0,12,0,0"
+                                                      Visibility="{Binding HasModelPreviews, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Width="210"
+                                                            Margin="0,0,8,8"
+                                                            Padding="10"
+                                                            CornerRadius="6"
+                                                            Background="#10000000">
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding DisplayName}"
+                                                                       Foreground="White"
+                                                                       FontSize="12"
+                                                                       FontWeight="SemiBold"
+                                                                       TextWrapping="Wrap"/>
+                                                            <TextBlock Text="{Binding ModelIdText}"
+                                                                       Foreground="#B0FFFFFF"
+                                                                       FontSize="11"
+                                                                       Margin="0,4,0,0"
+                                                                       TextWrapping="Wrap"/>
+                                                            <WrapPanel Margin="0,6,0,0">
+                                                                <Border Background="#18000000" CornerRadius="4" Padding="6,2" Margin="0,0,6,4">
+                                                                    <TextBlock Text="{Binding InterfaceTypeText}" Foreground="#E0FFFFFF" FontSize="10"/>
+                                                                </Border>
+                                                                <Border Background="#18000000" CornerRadius="4" Padding="6,2" Margin="0,0,6,4">
+                                                                    <TextBlock Text="{Binding SourceTypeText}" Foreground="#E0FFFFFF" FontSize="10"/>
+                                                                </Border>
+                                                            </WrapPanel>
+                                                            <TextBlock Text="{Binding UsedByText}"
+                                                                       Foreground="#90FFFFFF"
+                                                                       FontSize="11"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,4,0,0"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border CornerRadius="6"
+                                        Background="#12000000"
+                                        Padding="14">
+                                    <StackPanel>
+                                        <TextBlock Text="会话流状态"
+                                                   Foreground="White"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"/>
+                                        <TextBlock Text="创建前先检查当前会话流的完整性。"
+                                                   Foreground="#A0FFFFFF"
+                                                   FontSize="11"
+                                                   Margin="0,4,0,0"/>
+
+                                        <ItemsControl ItemsSource="{Binding FlowStatusItems}" Margin="0,12,0,0">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border CornerRadius="6"
+                                                            Background="{Binding AccentBackground}"
+                                                            Padding="10"
+                                                            Margin="0,0,0,8">
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding Title}"
+                                                                       Foreground="{Binding AccentForeground}"
+                                                                       FontSize="11"
+                                                                       FontWeight="Bold"/>
+                                                            <TextBlock Text="{Binding Message}"
+                                                                       Foreground="White"
+                                                                       FontSize="11"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,4,0,0"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                    <Button Width="80"
+                            Height="28"
+                            Margin="0,0,12,0"
+                            IsCancel="True"
+                            Content="取消"/>
+                    <Button Width="80"
+                            Height="28"
+                            IsDefault="True"
+                            IsEnabled="{Binding CanCreate}"
+                            Click="CreateButton_Click"
+                            Content="创建"/>
+                </StackPanel>
+            </Grid>
         </Grid>
-    </Border>
+    </Grid>
 </Window>

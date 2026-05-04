@@ -12,8 +12,9 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Models
 
         private string _key = Guid.NewGuid().ToString("N");
         private string _displayName = string.Empty;
-        private string _interfaceType = "MEAI";
-        private LanguageModelInterfaceSettings _interfaceSettings = new MeaiLanguageModelSettings();
+        private string _interfaceType = LanguageModelInterfaceCatalog.DefaultInterfaceType;
+        private LanguageModelInterfaceSettings _interfaceSettings =
+            LanguageModelInterfaceCatalog.CreateInterfaceSettings(LanguageModelInterfaceCatalog.DefaultInterfaceType);
         private int _contextWindowTokens = DefaultContextWindowTokens;
         private string _testResponse = string.Empty;
         private bool _isTesting;
@@ -51,7 +52,7 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Models
             get => _interfaceType;
             set
             {
-                var normalizedValue = string.IsNullOrWhiteSpace(value) ? "MEAI" : value.Trim();
+                var normalizedValue = LanguageModelInterfaceCatalog.NormalizeInterfaceType(value);
                 if (!SetProperty(ref _interfaceType, normalizedValue))
                 {
                     return;

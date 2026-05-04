@@ -10,6 +10,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Services
     public sealed class ChatComposerImageAttachmentService
     {
         private const string ComposerImagesFolderName = "ComposerImages";
+        private const string ComposerAttachmentsFolderName = "ComposerAttachments";
         private const int MaxStoredPixelSize = 768;
 
         public ChatComposerAttachmentModel SavePastedImage(
@@ -36,6 +37,46 @@ namespace Skyweaver.Controls.ChatSessionControl.Services
                 SizeBytes = new FileInfo(filePath).Length
             });
             return new ChatComposerAttachmentModel(filePath, "image/png", fileName);
+        }
+
+        public ChatComposerAttachmentModel SaveMediaFile(
+            ChatSessionModel session,
+            string sourceFilePath)
+        {
+            ArgumentNullException.ThrowIfNull(session);
+            ArgumentException.ThrowIfNullOrWhiteSpace(sourceFilePath);
+
+            if (!File.Exists(sourceFilePath))
+            {
+                throw new FileNotFoundException("Attachment file was not found.", sourceFilePath);
+            }
+
+            var mediaType = ResolveMediaType(sourceFilePath);
+            if (mediaType.Length == 0)
+            {
+                throw new InvalidOperationException($"Unsupported attachment type: {Path.GetExtension(sourceFilePath)}");
+            }
+
+            var resourcesFolder = ChatSessionResourceLayout.EnsureResources(session);
+            var attachmentFolder = Path.Combine(resourcesFolder, ComposerAttachmentsFolderName);
+            Directory.CreateDirectory(attachmentFolder);
+
+            var extension = Path.GetExtension(sourceFilePath);
+            var fileName = $"{DateTime.UtcNow:yyyyMMddHHmmssfff}_{Guid.NewGuid():N}{extension}";
+            var filePath = Path.Combine(attachmentFolder, fileName);
+            File.Copy(sourceFilePath, filePath, overwrite: false);
+
+            session.Resources.Resources.Add(new ChatSessionResourceManifestEntry
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Kind = mediaType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase) ? "Audio" : "Image",
+                Path = filePath,
+                MediaType = mediaType,
+                CreatedAtUtc = DateTime.UtcNow,
+                SizeBytes = new FileInfo(filePath).Length
+            });
+
+            return new ChatComposerAttachmentModel(filePath, mediaType, Path.GetFileName(sourceFilePath));
         }
 
         private static void SaveScaledPng(BitmapSource source, string filePath)
@@ -84,6 +125,25 @@ namespace Skyweaver.Controls.ChatSessionControl.Services
             var converted = new FormatConvertedBitmap(source, PixelFormats.Pbgra32, null, 0);
             converted.Freeze();
             return converted;
+        }
+
+        private static string ResolveMediaType(string filePath)
+        {
+            var extension = Path.GetExtension(filePath).ToLowerInvariant();
+            return extension switch
+            {
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".gif" => "image/gif",
+                ".webp" => "image/webp",
+                ".bmp" => "image/bmp",
+                ".wav" => "audio/wav",
+                ".mp3" => "audio/mpeg",
+                ".m4a" => "audio/mp4",
+                ".ogg" => "audio/ogg",
+                ".flac" => "audio/flac",
+                _ => string.Empty
+            };
         }
     }
 }

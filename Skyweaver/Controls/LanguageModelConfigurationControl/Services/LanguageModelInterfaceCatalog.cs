@@ -23,9 +23,12 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
 
     public static class LanguageModelInterfaceCatalog
     {
+        public const string DefaultInterfaceType = "MEAI";
+
         private static readonly IReadOnlyDictionary<string, Func<ILanguageModelInterfaceAdapter>> s_adapterFactories =
             new Dictionary<string, Func<ILanguageModelInterfaceAdapter>>(StringComparer.OrdinalIgnoreCase)
             {
+                ["GOOGLE"] = static () => new GoogleLanguageModelInterfaceAdapter(),
                 ["MEAI"] = static () => new MeaiLanguageModelInterfaceAdapter()
             };
 
@@ -40,13 +43,24 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
 
         internal static ILanguageModelInterfaceAdapter CreateAdapter(string? interfaceType)
         {
-            var normalizedType = (interfaceType ?? string.Empty).Trim();
+            var normalizedType = NormalizeInterfaceType(interfaceType);
             if (s_adapterFactories.TryGetValue(normalizedType, out var factory))
             {
                 return factory();
             }
 
-            return s_adapterFactories["MEAI"]();
+            throw new InvalidOperationException($"Unsupported language model interface type: {normalizedType}");
+        }
+
+        public static bool IsKnownInterfaceType(string? interfaceType)
+        {
+            return s_adapterFactories.ContainsKey(NormalizeInterfaceType(interfaceType));
+        }
+
+        public static string NormalizeInterfaceType(string? interfaceType)
+        {
+            var normalizedType = (interfaceType ?? string.Empty).Trim();
+            return normalizedType.Length == 0 ? DefaultInterfaceType : normalizedType;
         }
     }
 }

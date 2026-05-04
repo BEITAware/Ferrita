@@ -96,7 +96,7 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.ViewModels
             var pathProvider = new LanguageModelConfigurationPathProvider();
             _languageModelRepository = new LanguageModelConfigurationRepository(pathProvider);
             _capabilityLayerRepository = new CapabilityLayerConfigurationRepository(pathProvider);
-            _languageModelTestService = new MeaiLanguageModelTestService();
+            _languageModelTestService = new LanguageModelTestService();
 
             AddLanguageModelCommand = new RelayCommand(AddLanguageModel);
             DuplicateLanguageModelCommand = new RelayCommand(DuplicateSelectedLanguageModel, () => SelectedLanguageModel != null);
@@ -166,17 +166,10 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.ViewModels
             var model = new LanguageModelDefinition
             {
                 DisplayName = $"语言模型 {LanguageModels.Count + 1}",
-                InterfaceType = "MEAI"
+                InterfaceType = LanguageModelInterfaceCatalog.DefaultInterfaceType
             };
 
-            if (model.InterfaceSettings is MeaiLanguageModelSettings meaiSettings)
-            {
-                meaiSettings.BaseUrl = "https://api.openai.com/v1";
-                meaiSettings.Temperature = 1.0m;
-                meaiSettings.TopP = 1.0m;
-                meaiSettings.MaxOutputTokens = 2048;
-                meaiSettings.ReasoningEffort = "Medium";
-            }
+            ApplySuggestedDefaults(model.InterfaceSettings);
 
             AttachLanguageModel(model);
             LanguageModels.Add(model);
@@ -426,6 +419,23 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.ViewModels
         {
             return source switch
             {
+                GoogleLanguageModelSettings google => new GoogleLanguageModelSettings
+                {
+                    ModelId = google.ModelId,
+                    ApiKey = google.ApiKey,
+                    BaseUrl = google.BaseUrl,
+                    UseTemperature = google.UseTemperature,
+                    Temperature = google.Temperature,
+                    UseTopP = google.UseTopP,
+                    TopP = google.TopP,
+                    UseMaxOutputTokens = google.UseMaxOutputTokens,
+                    MaxOutputTokens = google.MaxOutputTokens,
+                    UseThinkingLevel = google.UseThinkingLevel,
+                    ThinkingLevel = google.ThinkingLevel,
+                    UseThinkingBudget = google.UseThinkingBudget,
+                    ThinkingBudget = google.ThinkingBudget,
+                    IncludeThoughts = google.IncludeThoughts
+                },
                 MeaiLanguageModelSettings meai => new MeaiLanguageModelSettings
                 {
                     ModelId = meai.ModelId,
@@ -456,6 +466,28 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.ViewModels
         {
             var normalizedName = string.IsNullOrWhiteSpace(displayName) ? "语言模型" : displayName.Trim();
             return $"{normalizedName} - 副本";
+        }
+
+        private static void ApplySuggestedDefaults(LanguageModelInterfaceSettings settings)
+        {
+            switch (settings)
+            {
+                case GoogleLanguageModelSettings google:
+                    google.BaseUrl = "https://generativelanguage.googleapis.com";
+                    google.TopP = 0.95m;
+                    google.MaxOutputTokens = 2048;
+                    google.ThinkingLevel = "High";
+                    google.IncludeThoughts = true;
+                    break;
+
+                case MeaiLanguageModelSettings meai:
+                    meai.BaseUrl = "https://api.openai.com/v1";
+                    meai.Temperature = 1.0m;
+                    meai.TopP = 1.0m;
+                    meai.MaxOutputTokens = 2048;
+                    meai.ReasoningEffort = "Medium";
+                    break;
+            }
         }
 
         private void DetachLanguageModel(LanguageModelDefinition model)

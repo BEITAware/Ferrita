@@ -19,5 +19,13 @@ namespace Skyweaver.Controls.ChatSessionControl.Models
         public string MediaType { get; }
 
         public string DisplayName { get; }
+
+        public bool IsImage => MediaType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+
+        public bool IsAudio => MediaType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase);
+
+        public string KindLabel => IsAudio ? "Audio" : IsImage ? "Image" : "File";
+
+        public string? PreviewSourcePath => IsImage ? ResourcePath : null;
     }
 }

@@ -1,31 +1,27 @@
 namespace Skyweaver.Controls.LanguageModelConfigurationControl.Models
 {
-    public sealed class MeaiLanguageModelSettings : LanguageModelInterfaceSettings
+    public sealed class GoogleLanguageModelSettings : LanguageModelInterfaceSettings
     {
-        private static readonly string[] s_supportedReasoningEfforts = ["Low", "Medium", "High"];
+        private static readonly string[] s_supportedThinkingLevels = ["Minimal", "Low", "Medium", "High"];
+
         private string _modelId = string.Empty;
         private string _apiKey = string.Empty;
-        private string _baseUrl = string.Empty;
+        private string _baseUrl = "https://generativelanguage.googleapis.com";
         private bool _useTemperature;
         private decimal _temperature = 1.0m;
         private bool _useTopP;
-        private decimal _topP = 1.0m;
+        private decimal _topP = 0.95m;
         private bool _useMaxOutputTokens;
         private int _maxOutputTokens = 2048;
-        private bool _usePresencePenalty;
-        private decimal _presencePenalty;
-        private bool _useFrequencyPenalty;
-        private decimal _frequencyPenalty;
-        private bool _useSeed;
-        private long _seed;
-        private bool _useReasoningEffort;
-        private string _reasoningEffort = "Medium";
-        private bool _useReasoningOutput = true;
-        private string _reasoningOutput = "Full";
+        private bool _useThinkingLevel;
+        private string _thinkingLevel = "High";
+        private bool _useThinkingBudget;
+        private int _thinkingBudget = -1;
+        private bool _includeThoughts = true;
 
-        public override string InterfaceType => "MEAI";
+        public override string InterfaceType => "GOOGLE";
 
-        public IReadOnlyList<string> SupportedReasoningEfforts => s_supportedReasoningEfforts;
+        public IReadOnlyList<string> SupportedThinkingLevels => s_supportedThinkingLevels;
 
         public string ModelId
         {
@@ -99,64 +95,34 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Models
             set => SetProperty(ref _maxOutputTokens, value);
         }
 
-        public bool UsePresencePenalty
+        public bool UseThinkingLevel
         {
-            get => _usePresencePenalty;
-            set => SetProperty(ref _usePresencePenalty, value);
+            get => _useThinkingLevel;
+            set => SetProperty(ref _useThinkingLevel, value);
         }
 
-        public decimal PresencePenalty
+        public string ThinkingLevel
         {
-            get => _presencePenalty;
-            set => SetProperty(ref _presencePenalty, value);
+            get => _thinkingLevel;
+            set => SetProperty(ref _thinkingLevel, NormalizeThinkingLevel(value));
         }
 
-        public bool UseFrequencyPenalty
+        public bool UseThinkingBudget
         {
-            get => _useFrequencyPenalty;
-            set => SetProperty(ref _useFrequencyPenalty, value);
+            get => _useThinkingBudget;
+            set => SetProperty(ref _useThinkingBudget, value);
         }
 
-        public decimal FrequencyPenalty
+        public int ThinkingBudget
         {
-            get => _frequencyPenalty;
-            set => SetProperty(ref _frequencyPenalty, value);
+            get => _thinkingBudget;
+            set => SetProperty(ref _thinkingBudget, value);
         }
 
-        public bool UseSeed
+        public bool IncludeThoughts
         {
-            get => _useSeed;
-            set => SetProperty(ref _useSeed, value);
-        }
-
-        public long Seed
-        {
-            get => _seed;
-            set => SetProperty(ref _seed, value);
-        }
-
-        public bool UseReasoningEffort
-        {
-            get => _useReasoningEffort;
-            set => SetProperty(ref _useReasoningEffort, value);
-        }
-
-        public string ReasoningEffort
-        {
-            get => _reasoningEffort;
-            set => SetProperty(ref _reasoningEffort, NormalizeReasoningEffort(value));
-        }
-
-        public bool UseReasoningOutput
-        {
-            get => _useReasoningOutput;
-            set => SetProperty(ref _useReasoningOutput, value);
-        }
-
-        public string ReasoningOutput
-        {
-            get => _reasoningOutput;
-            set => SetProperty(ref _reasoningOutput, string.IsNullOrWhiteSpace(value) ? "Full" : value.Trim());
+            get => _includeThoughts;
+            set => SetProperty(ref _includeThoughts, value);
         }
 
         public override bool IsFullyConfigured =>
@@ -172,18 +138,16 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Models
             OnPropertyChanged(nameof(SummaryModelId));
         }
 
-        private static string NormalizeReasoningEffort(string? value)
+        private static string NormalizeThinkingLevel(string? value)
         {
             return (value ?? string.Empty).Trim().ToUpperInvariant() switch
             {
+                "MINIMAL" => "Minimal",
                 "LOW" => "Low",
                 "MEDIUM" => "Medium",
                 "HIGH" => "High",
-                "EXTRAHIGH" => "High",
-                "EXTRA_HIGH" => "High",
-                _ => "Medium"
+                _ => "High"
             };
         }
-
     }
 }

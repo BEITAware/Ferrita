@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Text;
 using System.Windows;
@@ -33,7 +33,7 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
         private string _draftMessageText = string.Empty;
         private ChatMessageModel? _selectedMessage;
         private bool _isExecutionActive;
-        private string _executionStatusText = "就绪";
+        private string _executionStatusText = "灏辩华";
         private bool _suppressPersistence;
         private DateTime _lastStreamingProjectionRefreshUtc = DateTime.MinValue;
         private CancellationTokenSource? _executionCancellationSource;
@@ -50,10 +50,10 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
 
         public bool HasBoundSessionFlow => _sessionModel?.HasBoundFlow == true;
 
-        public string BoundSessionFlowName => _sessionModel?.BoundFlowDisplayName ?? "未绑定会话流";
+        public string BoundSessionFlowName => _sessionModel?.BoundFlowDisplayName ?? "鏈粦瀹氫細璇濇祦";
 
         public string BoundSessionFlowSummary => HasBoundSessionFlow
-            ? $"当前会话流：{BoundSessionFlowName}"
+            ? $"褰撳墠浼氳瘽娴侊細{BoundSessionFlowName}"
             : "未绑定会话流。";
 
         public string SessionFlowValidationSummary => _sessionFlowValidationSummary;
@@ -141,6 +141,8 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
 
         public ICommand AddImageCommand { get; }
 
+        public ICommand AddAudioCommand { get; }
+
         public ICommand AddClipboardCommand { get; }
 
         public ChatSessionControlViewModel(
@@ -150,7 +152,7 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
             ChatSessionRepository? chatSessionRepository = null,
             ChatSessionRuntimeService? runtimeService = null)
         {
-            SessionTitle = string.IsNullOrWhiteSpace(sessionTitle) ? "聊天会话" : sessionTitle;
+            SessionTitle = string.IsNullOrWhiteSpace(sessionTitle) ? "鑱婂ぉ浼氳瘽" : sessionTitle;
             SessionSubtitle = string.IsNullOrWhiteSpace(sessionSubtitle) ? null : sessionSubtitle;
             _sessionModel = sessionModel;
             _chatSessionRepository = chatSessionRepository;
@@ -170,6 +172,7 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
                 RemoveComposerImage,
                 attachment => attachment != null && !IsExecutionActive);
             AddImageCommand = new RelayCommand(AddImage, () => !IsExecutionActive);
+            AddAudioCommand = new RelayCommand(AddAudio, () => !IsExecutionActive);
             AddClipboardCommand = new RelayCommand(AddClipboard, () => !IsExecutionActive);
 
             Messages.CollectionChanged += OnMessagesCollectionChanged;
@@ -208,9 +211,13 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
             }
 
             var userContentBlocks = pendingImages
-                .Select(image => LanguageModelChatContentBlock.CreateImage(
-                    image.ResourcePath,
-                    image.MediaType))
+                .Select(image => image.IsAudio
+                    ? LanguageModelChatContentBlock.CreateAudio(
+                        image.ResourcePath,
+                        image.MediaType)
+                    : LanguageModelChatContentBlock.CreateImage(
+                        image.ResourcePath,
+                        image.MediaType))
                 .ToArray();
 
             DraftMessageText = string.Empty;
@@ -242,7 +249,7 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
                     FailureReason = ex.Message
                 };
 
-                AddSystemStatusMessage(ex.Message, "执行失败");
+                AddSystemStatusMessage(ex.Message, "鎵ц澶辫触");
             }
             finally
             {
@@ -252,9 +259,9 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
 
                 ExecutionStatusText = runtimeResult switch
                 {
-                    { IsCompleted: true } => "就绪",
+                    { IsCompleted: true } => "灏辩华",
                     { IsCancelled: true } => "已取消",
-                    _ => "失败"
+                    _ => "澶辫触"
                 };
 
                 RefreshMessagesFromTranscript();
@@ -270,7 +277,7 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
 
             _runtimeService.CancelActiveExecution(_sessionModel?.SessionId);
             _executionCancellationSource?.Cancel();
-            ExecutionStatusText = "正在取消当前执行...";
+            ExecutionStatusText = "姝ｅ湪鍙栨秷褰撳墠鎵ц...";
         }
 
         public bool AddPastedImage(BitmapSource? image)
@@ -293,7 +300,7 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
             }
             catch (Exception ex)
             {
-                AddSystemStatusMessage(ex.Message, "图片粘贴失败");
+                AddSystemStatusMessage(ex.Message, "鍥剧墖绮樿创澶辫触");
                 return false;
             }
         }
@@ -310,7 +317,7 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
         {
             var openFileDialog = new Microsoft.Win32.OpenFileDialog
             {
-                Filter = "图像文件|*.png;*.jpg;*.jpeg;*.bmp;*.gif|所有文件|*.*",
+                Filter = "鍥惧儚鏂囦欢|*.png;*.jpg;*.jpeg;*.bmp;*.gif|鎵€鏈夋枃浠秥*.*",
                 Multiselect = true
             };
 
@@ -327,7 +334,39 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    AddSystemStatusMessage($"无法加载图片 {fileName}: {ex.Message}", "添加图片失败");
+                    AddSystemStatusMessage($"鏃犳硶鍔犺浇鍥剧墖 {fileName}: {ex.Message}", "娣诲姞鍥剧墖澶辫触");
+                }
+            }
+        }
+
+        private void AddAudio()
+        {
+            if (_sessionModel == null)
+            {
+                AddSystemStatusMessage("此聊天视图未绑定到 ChatSessionModel。", "语音不可用");
+                return;
+            }
+
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Audio Files|*.wav;*.mp3;*.m4a;*.ogg;*.flac|All Files|*.*",
+                Multiselect = true
+            };
+
+            if (openFileDialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            foreach (var fileName in openFileDialog.FileNames)
+            {
+                try
+                {
+                    PendingComposerImages.Add(_composerImageAttachmentService.SaveMediaFile(_sessionModel, fileName));
+                }
+                catch (Exception ex)
+                {
+                    AddSystemStatusMessage($"无法添加音频文件 {fileName}: {ex.Message}", "添加音频失败");
                 }
             }
         }
@@ -408,12 +447,12 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
             builder.AppendLine("调用：");
             builder.AppendLine(request.Invocation.InvocationXml);
             builder.AppendLine();
-            builder.Append("是否允许此工具调用继续执行？");
+            builder.Append("鏄惁鍏佽姝ゅ伐鍏疯皟鐢ㄧ户缁墽琛岋紵");
 
             var result = MessageBox.Show(
                 Application.Current?.MainWindow,
                 builder.ToString(),
-                "工具调用确认",
+                "宸ュ叿璋冪敤纭",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
@@ -709,9 +748,9 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
         {
             return role switch
             {
-                ChatMessageRole.Assistant => "Skyweaver 助手",
-                ChatMessageRole.System => "系统",
-                _ => "用户"
+                ChatMessageRole.Assistant => "Skyweaver 鍔╂墜",
+                ChatMessageRole.System => "绯荤粺",
+                _ => "鐢ㄦ埛"
             };
         }
 

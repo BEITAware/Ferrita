@@ -266,6 +266,104 @@
 
             </Grid>
         </DataTemplate>
+
+        <DataTemplate DataType="{x:Type models:GoogleLanguageModelSettings}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0"
+                            Grid.Column="0"
+                            Margin="0,0,12,12">
+                    <TextBlock Text="模型 ID" FontWeight="SemiBold"/>
+                    <TextBox Margin="0,6,0,0"
+                             Text="{Binding ModelId, UpdateSourceTrigger=LostFocus}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="0"
+                            Grid.Column="1"
+                            Margin="0,0,12,12">
+                    <TextBlock Text="API Key" FontWeight="SemiBold"/>
+                    <TextBox Margin="0,6,0,0"
+                             Text="{Binding ApiKey, UpdateSourceTrigger=LostFocus}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1"
+                            Grid.Column="0"
+                            Margin="0,0,12,12">
+                    <TextBlock Text="Base URL" FontWeight="SemiBold"/>
+                    <TextBox Margin="0,6,0,0"
+                             Text="{Binding BaseUrl, UpdateSourceTrigger=LostFocus}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1"
+                            Grid.Column="1"
+                            Margin="0,0,12,12">
+                    <CheckBox IsChecked="{Binding UseTemperature, UpdateSourceTrigger=PropertyChanged}"
+                              Content="传入 Temperature"/>
+                    <TextBox Margin="0,6,0,0"
+                             IsEnabled="{Binding UseTemperature}"
+                             Text="{Binding Temperature, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2"
+                            Grid.Column="0"
+                            Margin="0,0,12,12">
+                    <CheckBox IsChecked="{Binding UseTopP, UpdateSourceTrigger=PropertyChanged}"
+                              Content="传入 Top P"/>
+                    <TextBox Margin="0,6,0,0"
+                             IsEnabled="{Binding UseTopP}"
+                             Text="{Binding TopP, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2"
+                            Grid.Column="1"
+                            Margin="0,0,12,12">
+                    <CheckBox IsChecked="{Binding UseMaxOutputTokens, UpdateSourceTrigger=PropertyChanged}"
+                              Content="限制输出 Token"/>
+                    <TextBox Margin="0,6,0,0"
+                             IsEnabled="{Binding UseMaxOutputTokens}"
+                             Text="{Binding MaxOutputTokens, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="3"
+                            Grid.Column="0"
+                            Margin="0,0,12,12">
+                    <CheckBox IsChecked="{Binding IncludeThoughts, UpdateSourceTrigger=PropertyChanged}"
+                              Content="包含思维链"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="3"
+                            Grid.Column="1"
+                            Margin="0,0,12,12">
+                    <CheckBox IsChecked="{Binding UseThinkingLevel, UpdateSourceTrigger=PropertyChanged}"
+                              Content="传入 Thinking Level"/>
+                    <ComboBox Margin="0,6,0,0"
+                              IsEnabled="{Binding UseThinkingLevel}"
+                              ItemsSource="{Binding SupportedThinkingLevels}"
+                              SelectedItem="{Binding ThinkingLevel, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="4"
+                            Grid.Column="0"
+                            Margin="0,0,12,12">
+                    <CheckBox IsChecked="{Binding UseThinkingBudget, UpdateSourceTrigger=PropertyChanged}"
+                              Content="传入 Thinking Budget"/>
+                    <TextBox Margin="0,6,0,0"
+                             IsEnabled="{Binding UseThinkingBudget}"
+                             Text="{Binding ThinkingBudget, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
     </UserControl.Resources>
 
     <Grid Background="{DynamicResource DocumentTabBackgroundBrush}">

@@ -997,16 +997,33 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type models:ChatComposerAttachmentModel}">
-                                    <Grid Width="76" Height="76" Margin="0,0,8,0">
+                                    <Grid Width="88" Height="88" Margin="0,0,8,0">
                                         <Border Background="{StaticResource ChatSoftGlassSliceBrush}"
                                                 BorderBrush="#5596FCFF"
                                                 BorderThickness="1"/>
-                                        <Image Source="{Binding ResourcePath}"
-                                               Width="64"
-                                               Height="64"
+                                        <Image x:Name="AttachmentPreview"
+                                               Source="{Binding PreviewSourcePath}"
+                                               Width="68"
+                                               Height="68"
                                                Stretch="Uniform"
                                                HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
+                                               VerticalAlignment="Center"
+                                               Visibility="Collapsed"/>
+                                        <StackPanel x:Name="AttachmentLabel"
+                                                    Width="72"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding KindLabel}"
+                                                       HorizontalAlignment="Center"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#FF96FCFF"/>
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       Margin="0,6,0,0"
+                                                       TextAlignment="Center"
+                                                       TextWrapping="Wrap"
+                                                       FontSize="10"
+                                                       Foreground="#E6FFFFFF"/>
+                                        </StackPanel>
                                         <Button HorizontalAlignment="Right"
                                                 VerticalAlignment="Top"
                                                 Style="{StaticResource ChatComposerImageRemoveButtonStyle}"
@@ -1014,6 +1031,12 @@
                                                 Command="{Binding DataContext.RemoveComposerImageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"/>
                                     </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsImage}" Value="True">
+                                            <Setter TargetName="AttachmentPreview" Property="Visibility" Value="Visible"/>
+                                            <Setter TargetName="AttachmentLabel" Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -1035,7 +1058,7 @@
 
                                 <Rectangle Width="1" Height="20" Fill="#33FFFFFF" Margin="5,0"/>
 
-                                <Button Style="{StaticResource MediaToolbarButtonStyle}">
+                                <Button Command="{Binding AddAudioCommand}" Style="{StaticResource MediaToolbarButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <Image Source="pack://application:,,,/Skyweaver;component/Resources/RawImage.png" Width="20" Height="20" Margin="0,0,5,0"/>
                                         <TextBlock Text="语音" VerticalAlignment="Center" FontSize="12"/>

@@ -2,18 +2,18 @@ using Skyweaver.Controls.LanguageModelConfigurationControl.Models;
 
 namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
 {
-    public sealed class MeaiLanguageModelTestService : ILanguageModelTestService
+    public sealed class LanguageModelTestService : ILanguageModelTestService
     {
         private const string TestPrompt = "写一句话欢迎用户使用 Skyweaver 人工智能代理应用程序。";
 
         private readonly LanguageModelChatService _chatService;
 
-        public MeaiLanguageModelTestService()
+        public LanguageModelTestService()
             : this(new LanguageModelChatService())
         {
         }
 
-        public MeaiLanguageModelTestService(LanguageModelChatService chatService)
+        public LanguageModelTestService(LanguageModelChatService chatService)
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
         }
