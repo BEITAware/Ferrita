@@ -396,11 +396,10 @@
                            Margin="0,0,0,4"
                            TextWrapping="Wrap"
                            Visibility="{Binding Title, Converter={StaticResource NullToVisibilityConverter}}"/>
-                <TextBlock Text="{Binding Content}"
-                           Foreground="White"
-                           TextWrapping="Wrap"
-                           FontSize="14"
-                           FontFamily="Segoe UI, Microsoft YaHei UI"/>
+                <local:MarkdownContentControl MarkdownText="{Binding Content}"
+                                              Foreground="White"
+                                              FontSize="14"
+                                              FontFamily="Segoe UI, Microsoft YaHei UI"/>
             </StackPanel>
         </DataTemplate>
 

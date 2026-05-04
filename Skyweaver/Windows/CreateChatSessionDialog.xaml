@@ -171,6 +171,370 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <LinearGradientBrush x:Key="CreateSessionComboBoxItemHoverBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#70976BDB" Offset="0"/>
+            <GradientStop Color="#506443AE" Offset="0.52"/>
+            <GradientStop Color="#608A64D5" Offset="1"/>
+        </LinearGradientBrush>
+
+        <LinearGradientBrush x:Key="CreateSessionComboBoxItemSelectedBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#C7C9AAFF" Offset="0"/>
+            <GradientStop Color="#A67C5DCA" Offset="0.48"/>
+            <GradientStop Color="#B79F85F2" Offset="1"/>
+        </LinearGradientBrush>
+
+        <Style x:Key="CreateSessionComboBoxItemStyle" TargetType="{x:Type ComboBoxItem}">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+                        <Grid>
+                            <Border x:Name="Bg"
+                                    Background="Transparent"
+                                    CornerRadius="5"
+                                    BorderThickness="1"
+                                    BorderBrush="Transparent"/>
+                            <Border x:Name="TextureOverlay"
+                                    Background="{StaticResource SoftGlassSliceBrush}"
+                                    CornerRadius="5"
+                                    Opacity="0"
+                                    IsHitTestVisible="False"/>
+                            <Border x:Name="TopHighlight"
+                                    CornerRadius="5,5,0,0"
+                                    Height="12"
+                                    VerticalAlignment="Top"
+                                    Opacity="0">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#4FFFFFFF" Offset="0"/>
+                                        <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Left"
+                                              VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource CreateSessionComboBoxItemHoverBrush}"/>
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="#88CCB7FF"/>
+                                <Setter TargetName="TextureOverlay" Property="Opacity" Value="0.18"/>
+                                <Setter TargetName="TopHighlight" Property="Opacity" Value="0.65"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource CreateSessionComboBoxItemSelectedBrush}"/>
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="#A7E0D3FF"/>
+                                <Setter TargetName="TextureOverlay" Property="Opacity" Value="0.24"/>
+                                <Setter TargetName="TopHighlight" Property="Opacity" Value="0.82"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CreateSessionFlowComboBoxStyle" TargetType="{x:Type ComboBox}">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,2"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource CreateSessionComboBoxItemStyle}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBox}">
+                        <Grid>
+                            <ToggleButton Name="ToggleButton"
+                                          Focusable="False"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Grid Background="Transparent">
+                                            <Border x:Name="IdleBackground"
+                                                    CornerRadius="7"
+                                                    BorderThickness="1"
+                                                    BorderBrush="#FF9B8CCF">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                        <GradientStop Color="#E026173E" Offset="0"/>
+                                                        <GradientStop Color="#D03D2464" Offset="0.18"/>
+                                                        <GradientStop Color="#C0553490" Offset="0.5"/>
+                                                        <GradientStop Color="#D03D2464" Offset="0.82"/>
+                                                        <GradientStop Color="#E026173E" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                            </Border>
+
+                                            <Border CornerRadius="7"
+                                                    Background="{StaticResource SoftGlassSliceBrush}"
+                                                    Opacity="0.18"
+                                                    IsHitTestVisible="False"/>
+
+                                            <Border CornerRadius="7,7,0,0"
+                                                    Height="13"
+                                                    VerticalAlignment="Top"
+                                                    IsHitTestVisible="False">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                        <GradientStop Color="#46FFFFFF" Offset="0"/>
+                                                        <GradientStop Color="#14FFFFFF" Offset="0.55"/>
+                                                        <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                            </Border>
+
+                                            <Border CornerRadius="0,0,7,7"
+                                                    Height="12"
+                                                    VerticalAlignment="Bottom"
+                                                    IsHitTestVisible="False">
+                                                <Border.Background>
+                                                    <RadialGradientBrush RadiusX="0.8" RadiusY="2" Center="0.5,1" GradientOrigin="0.5,1">
+                                                        <GradientStop Color="#50C87CFF" Offset="0"/>
+                                                        <GradientStop Color="#00C87CFF" Offset="1"/>
+                                                    </RadialGradientBrush>
+                                                </Border.Background>
+                                            </Border>
+
+                                            <Border CornerRadius="7"
+                                                    BorderThickness="1"
+                                                    IsHitTestVisible="False">
+                                                <Border.BorderBrush>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                        <GradientStop Color="#70FFFFFF" Offset="0"/>
+                                                        <GradientStop Color="#28FFFFFF" Offset="0.45"/>
+                                                        <GradientStop Color="#40A88BE8" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Border.BorderBrush>
+                                            </Border>
+
+                                            <Border x:Name="HoverBackground"
+                                                    Opacity="0"
+                                                    CornerRadius="7"
+                                                    BorderThickness="1"
+                                                    BorderBrush="#88D8BFFF">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                        <GradientStop Color="#D2714CB8" Offset="0"/>
+                                                        <GradientStop Color="#CD4E2D89" Offset="0.38"/>
+                                                        <GradientStop Color="#CD30195B" Offset="0.55"/>
+                                                        <GradientStop Color="#CB8558D0" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                            </Border>
+
+                                            <Border x:Name="HoverTopHighlight"
+                                                    Opacity="0"
+                                                    CornerRadius="7,7,0,0"
+                                                    Height="14"
+                                                    VerticalAlignment="Top"
+                                                    IsHitTestVisible="False">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                        <GradientStop Color="#56FFFFFF" Offset="0"/>
+                                                        <GradientStop Color="#20FFFFFF" Offset="0.5"/>
+                                                        <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                            </Border>
+
+                                            <Border x:Name="PressedBackground"
+                                                    Opacity="0"
+                                                    CornerRadius="7"
+                                                    BorderThickness="1"
+                                                    BorderBrush="#9AE5D3FF">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                        <GradientStop Color="#FFB18AF5" Offset="0"/>
+                                                        <GradientStop Color="#FF6A45B6" Offset="0.44"/>
+                                                        <GradientStop Color="#FF47267D" Offset="0.56"/>
+                                                        <GradientStop Color="#FF8C66E3" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                            </Border>
+
+                                            <Border x:Name="PressedTextureOverlay"
+                                                    Background="{StaticResource SoftGlassSliceBrush}"
+                                                    CornerRadius="7"
+                                                    Opacity="0"
+                                                    IsHitTestVisible="False"/>
+
+                                            <Border x:Name="PressedTopHighlight"
+                                                    Opacity="0"
+                                                    CornerRadius="7,7,0,0"
+                                                    Height="10"
+                                                    VerticalAlignment="Top"
+                                                    IsHitTestVisible="False">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                        <GradientStop Color="#66FFFFFF" Offset="0"/>
+                                                        <GradientStop Color="#24FFFFFF" Offset="0.6"/>
+                                                        <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                            </Border>
+
+                                            <Path Data="M 0 0 L 4 4 L 8 0 Z"
+                                                  Fill="White"
+                                                  HorizontalAlignment="Right"
+                                                  VerticalAlignment="Center"
+                                                  Margin="0,0,10,0"
+                                                  IsHitTestVisible="False">
+                                                <Path.Effect>
+                                                    <DropShadowEffect Color="#22000000" BlurRadius="2" ShadowDepth="1" Opacity="0.7"/>
+                                                </Path.Effect>
+                                            </Path>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="HoverBackground" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.15"/>
+                                                            <DoubleAnimation Storyboard.TargetName="HoverTopHighlight" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.15"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                                <Trigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="HoverBackground" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15"/>
+                                                            <DoubleAnimation Storyboard.TargetName="HoverTopHighlight" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.ExitActions>
+                                            </Trigger>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="PressedBackground" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.1"/>
+                                                            <DoubleAnimation Storyboard.TargetName="PressedTextureOverlay" Storyboard.TargetProperty="Opacity" To="0.22" Duration="0:0:0.1"/>
+                                                            <DoubleAnimation Storyboard.TargetName="PressedTopHighlight" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.1"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                                <Trigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="PressedBackground" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15"/>
+                                                            <DoubleAnimation Storyboard.TargetName="PressedTextureOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15"/>
+                                                            <DoubleAnimation Storyboard.TargetName="PressedTopHighlight" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.ExitActions>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Left"
+                                              VerticalAlignment="Center"
+                                              IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"/>
+
+                            <Popup x:Name="PART_Popup"
+                                   AllowsTransparency="True"
+                                   IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Placement="Bottom"
+                                   PopupAnimation="Slide">
+                                <Grid MaxHeight="{TemplateBinding MaxDropDownHeight}" MinWidth="{TemplateBinding ActualWidth}" Margin="2">
+                                    <Border CornerRadius="8" Margin="-2">
+                                        <Border.Effect>
+                                            <DropShadowEffect Color="#2A000000" BlurRadius="16" ShadowDepth="3" Opacity="0.75"/>
+                                        </Border.Effect>
+                                        <Border.Background>
+                                            <SolidColorBrush Color="#01000000"/>
+                                        </Border.Background>
+                                    </Border>
+
+                                    <Border x:Name="DropDownBorder"
+                                            CornerRadius="8"
+                                            Opacity="0">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                <GradientStop Color="#F226163E" Offset="0"/>
+                                                <GradientStop Color="#F2351F63" Offset="0.28"/>
+                                                <GradientStop Color="#F022143C" Offset="0.72"/>
+                                                <GradientStop Color="#F0140C26" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <Border.Triggers>
+                                            <EventTrigger RoutedEvent="Border.Loaded">
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.2"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </EventTrigger>
+                                        </Border.Triggers>
+                                    </Border>
+
+                                    <Border CornerRadius="8"
+                                            Background="{StaticResource SoftGlassSliceBrush}"
+                                            Opacity="0.16"
+                                            IsHitTestVisible="False"/>
+
+                                    <Border CornerRadius="8,8,0,0"
+                                            Height="20"
+                                            VerticalAlignment="Top"
+                                            IsHitTestVisible="False">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                <GradientStop Color="#2EFFFFFF" Offset="0"/>
+                                                <GradientStop Color="#12FFFFFF" Offset="0.48"/>
+                                                <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+
+                                    <Border CornerRadius="0,0,8,8"
+                                            Height="34"
+                                            VerticalAlignment="Bottom"
+                                            IsHitTestVisible="False">
+                                        <Border.Background>
+                                            <RadialGradientBrush RadiusX="0.8" RadiusY="1.5" Center="0.5,1" GradientOrigin="0.5,1">
+                                                <GradientStop Color="#3EB676FF" Offset="0"/>
+                                                <GradientStop Color="#00B676FF" Offset="1"/>
+                                            </RadialGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+
+                                    <Border CornerRadius="8"
+                                            BorderThickness="1"
+                                            IsHitTestVisible="False">
+                                        <Border.BorderBrush>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                <GradientStop Color="#7AFFFFFF" Offset="0"/>
+                                                <GradientStop Color="#38FFFFFF" Offset="0.34"/>
+                                                <GradientStop Color="#28FFFFFF" Offset="0.72"/>
+                                                <GradientStop Color="#50B597F2" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Border.BorderBrush>
+                                    </Border>
+
+                                    <ScrollViewer Margin="5,7">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -272,6 +636,7 @@
                           Grid.Row="4"
                           Height="30"
                           Margin="0,0,0,16"
+                          Style="{StaticResource CreateSessionFlowComboBoxStyle}"
                           DisplayMemberPath="DisplayName"
                           ItemsSource="{Binding SessionFlowOptions}"
                           SelectedItem="{Binding SelectedFlowOption, Mode=TwoWay}"/>

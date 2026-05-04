@@ -17,5 +17,6 @@
         <ResourceDictionary Source="NewNodeGraphDialogStyles.xaml"/>
         <ResourceDictionary Source="ChatStyles.xaml"/>
         <ResourceDictionary Source="SliderStyles.xaml"/>
+        <ResourceDictionary Source="PreferencesPanelStyles.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

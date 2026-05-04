@@ -10,6 +10,7 @@
         <ResourceDictionary Source="Controls/ControlsDictionary.xaml"/>
         <ResourceDictionary Source="ScriptsControls/ScriptsControlsDictionary.xaml"/>
         <ResourceDictionary Source="Controls/CheckBoxComboBoxStyles.xaml"/>
+        <ResourceDictionary Source="Controls/AeroComboBoxStyles.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
     <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>

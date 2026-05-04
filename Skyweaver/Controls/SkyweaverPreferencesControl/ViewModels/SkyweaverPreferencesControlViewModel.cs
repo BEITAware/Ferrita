@@ -1,21 +1,182 @@
-using Skyweaver.Controls.MultiFunctionPageBase.Models;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Windows.Controls;
+using System.Windows.Input;
+using Skyweaver.Commands;
+using Skyweaver.Controls.SkyweaverPreferencesControl.Models;
+using Skyweaver.Controls.SkyweaverPreferencesControl.Services;
 using Skyweaver.Infrastructure.Mvvm;
 
 namespace Skyweaver.Controls.SkyweaverPreferencesControl.ViewModels
 {
     public sealed class SkyweaverPreferencesControlViewModel : ObservableObject
     {
-        public string Title { get; } = "Skyweaver首选项";
+        private readonly Dictionary<string, UserControl> _viewCache = new(StringComparer.Ordinal);
+        private SelectablePreferencePageViewModel? _selectedPageViewModel;
+        private UserControl? _currentView;
+        private string? _currentPageName;
+        private string? _currentPageDescription;
 
-        public string Description { get; } = "统一承载 Skyweaver 的全局偏好设置、外观和默认行为。";
-
-        public string Hint { get; } = "后续可以直接补充真实设置分组、表单状态与保存逻辑。";
-
-        public PageScaffoldModel Scaffold { get; } = new()
+        public SkyweaverPreferencesControlViewModel()
         {
-            EmptyStateTitle = "首选项骨架已就位",
-            EmptyStateDescription = "当前页面已经独立迁入 Controls，可继续补充通用设置、模型配置与工作区默认值。",
-            EmptyStateHint = "建议未来按分类拆成外观、运行、模型、路径等配置分区。"
-        };
+            SkyweaverPreferencesRegistration.EnsureRegistered();
+
+            var modelGroups = PreferenceRegistry.Instance.Groups;
+            Groups = new ObservableCollection<PreferenceGroupViewModel>(
+                modelGroups.Select(group => new PreferenceGroupViewModel(group)));
+
+            modelGroups.CollectionChanged += (_, args) =>
+            {
+                if (args.NewItems != null)
+                {
+                    foreach (PreferenceGroup group in args.NewItems)
+                    {
+                        Groups.Add(new PreferenceGroupViewModel(group));
+                    }
+                }
+
+                if (args.OldItems == null)
+                {
+                    return;
+                }
+
+                foreach (PreferenceGroup group in args.OldItems)
+                {
+                    var existing = Groups.FirstOrDefault(candidate => ReferenceEquals(candidate.Group, group));
+                    if (existing != null)
+                    {
+                        Groups.Remove(existing);
+                    }
+                }
+            };
+
+            SelectPageCommand = new RelayCommand<SelectablePreferencePageViewModel>(
+                page => SelectedPageViewModel = page,
+                page => page is not null);
+            ReservedPrimaryActionCommand = new RelayCommand(() => { }, () => false);
+            ReservedSecondaryActionCommand = new RelayCommand(() => { }, () => false);
+        }
+
+        public string Title { get; } = "Skyweaver Preferences";
+
+        public string Description { get; } = "A Cascade-style registration shell for global preferences, workspace layout, and system defaults.";
+
+        public string Hint { get; } = "This panel currently copies architecture and styling only. Real settings repositories, validation, and save flows can be plugged in page by page later.";
+
+        public ObservableCollection<PreferenceGroupViewModel> Groups { get; }
+
+        public ICommand SelectPageCommand { get; }
+
+        public ICommand ReservedPrimaryActionCommand { get; }
+
+        public ICommand ReservedSecondaryActionCommand { get; }
+
+        public SelectablePreferencePageViewModel? SelectedPageViewModel
+        {
+            get => _selectedPageViewModel;
+            set
+            {
+                if (!SetProperty(ref _selectedPageViewModel, value))
+                {
+                    return;
+                }
+
+                foreach (var group in Groups)
+                {
+                    foreach (var page in group.Pages)
+                    {
+                        page.IsSelected = ReferenceEquals(page, value);
+                    }
+                }
+
+                if (value == null)
+                {
+                    CurrentView = null;
+                    CurrentPageName = null;
+                    CurrentPageDescription = null;
+                    return;
+                }
+
+                ActivatePage(value.Id);
+            }
+        }
+
+        public UserControl? CurrentView
+        {
+            get => _currentView;
+            private set => SetProperty(ref _currentView, value);
+        }
+
+        public string? CurrentPageName
+        {
+            get => _currentPageName;
+            private set => SetProperty(ref _currentPageName, value);
+        }
+
+        public string? CurrentPageDescription
+        {
+            get => _currentPageDescription;
+            private set => SetProperty(ref _currentPageDescription, value);
+        }
+
+        private void ActivatePage(string pageId)
+        {
+            var pageInfo = PreferenceRegistry.Instance.GetPageInfo(pageId);
+            if (pageInfo == null)
+            {
+                CurrentView = null;
+                CurrentPageName = null;
+                CurrentPageDescription = null;
+                return;
+            }
+
+            CurrentPageName = pageInfo.DisplayName;
+            CurrentPageDescription = pageInfo.Description;
+
+            if (_viewCache.TryGetValue(pageId, out var cachedView))
+            {
+                CurrentView = cachedView;
+                return;
+            }
+
+            var view = CreateView(pageInfo);
+            if (view == null)
+            {
+                CurrentView = null;
+                return;
+            }
+
+            _viewCache[pageId] = view;
+            CurrentView = view;
+        }
+
+        private static UserControl? CreateView(PreferencePageInfo pageInfo)
+        {
+            if (pageInfo.ViewType == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                if (Activator.CreateInstance(pageInfo.ViewType) is not UserControl view)
+                {
+                    return null;
+                }
+
+                if (pageInfo.ViewModelType != null)
+                {
+                    view.DataContext = Activator.CreateInstance(pageInfo.ViewModelType);
+                }
+
+                return view;
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 }
