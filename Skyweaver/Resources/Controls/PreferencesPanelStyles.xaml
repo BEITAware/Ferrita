@@ -1,0 +1,634 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <LinearGradientBrush x:Key="PreferencesSidebarShellBrush"
+                         StartPoint="0,0"
+                         EndPoint="1,0">
+        <GradientStop Color="#25102040" Offset="0"/>
+        <GradientStop Color="#354080C0" Offset="0.5"/>
+        <GradientStop Color="#25102040" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PreferencesSidebarBorderBrush"
+                         StartPoint="0.5,0"
+                         EndPoint="0.5,1">
+        <GradientStop Color="#50FFFFFF" Offset="0"/>
+        <GradientStop Color="#20FFFFFF" Offset="0.5"/>
+        <GradientStop Color="#40FFFFFF" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PreferencesSidebarTopBackgroundBrush"
+                         StartPoint="0.5,0"
+                         EndPoint="0.5,1">
+        <GradientStop Color="#FF5A5F6D" Offset="0.36"/>
+        <GradientStop Color="#FF353A51" Offset="0.498"/>
+        <GradientStop Color="#FF141B36" Offset="0.504"/>
+        <GradientStop Color="#FF070918" Offset="0.706"/>
+    </LinearGradientBrush>
+
+    <RadialGradientBrush x:Key="PreferencesSidebarTopHighlightBrush"
+                         RadiusX="0.4"
+                         RadiusY="1.3"
+                         Center="0.5,0"
+                         GradientOrigin="0.5,0">
+        <GradientStop Color="#FF79B6EE" Offset="0"/>
+        <GradientStop Color="#004D4D4D" Offset="1"/>
+    </RadialGradientBrush>
+
+    <RadialGradientBrush x:Key="PreferencesSidebarTopBottomGlowBrush"
+                         RadiusX="0.7"
+                         RadiusY="0.5"
+                         Center="0.5,1"
+                         GradientOrigin="0.5,1">
+        <GradientStop Color="#FF43ACFF" Offset="0"/>
+        <GradientStop Color="#004D4D4D" Offset="1"/>
+    </RadialGradientBrush>
+
+    <RadialGradientBrush x:Key="PreferencesSidebarTopBorderBrush"
+                         RadiusX="4.4"
+                         RadiusY="1"
+                         Center="0.5,-1.7"
+                         GradientOrigin="0.5,-1.7">
+        <RadialGradientBrush.RelativeTransform>
+            <RotateTransform CenterX="0.5"
+                             CenterY="-1.7"
+                             Angle="90"/>
+        </RadialGradientBrush.RelativeTransform>
+        <GradientStop Color="#00FFFFFF" Offset="0"/>
+        <GradientStop Color="#FFFFFFFF" Offset="1"/>
+    </RadialGradientBrush>
+
+    <LinearGradientBrush x:Key="PreferencesGroupHeaderBackgroundBrush"
+                         StartPoint="0.5,0"
+                         EndPoint="0.5,1">
+        <GradientStop Color="#FF4A5060" Offset="0"/>
+        <GradientStop Color="#FF2A3040" Offset="0.5"/>
+        <GradientStop Color="#FF1A2030" Offset="0.51"/>
+        <GradientStop Color="#FF0A1020" Offset="1"/>
+    </LinearGradientBrush>
+
+    <RadialGradientBrush x:Key="PreferencesGroupHeaderHighlightBrush"
+                         RadiusX="1.5"
+                         RadiusY="0.8"
+                         Center="0.5,1"
+                         GradientOrigin="0.5,1">
+        <GradientStop Color="#8040A0FF" Offset="0"/>
+        <GradientStop Color="#0040A0FF" Offset="1"/>
+    </RadialGradientBrush>
+
+    <RadialGradientBrush x:Key="PreferencesGroupHeaderHighlightInactiveBrush"
+                         RadiusX="1.5"
+                         RadiusY="0.8"
+                         Center="0.5,1"
+                         GradientOrigin="0.5,1">
+        <GradientStop Color="#3040A0FF" Offset="0"/>
+        <GradientStop Color="#0040A0FF" Offset="1"/>
+    </RadialGradientBrush>
+
+    <LinearGradientBrush x:Key="PreferencesGroupHeaderBorderBrush"
+                         StartPoint="0.5,0"
+                         EndPoint="0.5,1">
+        <GradientStop Color="#60FFFFFF" Offset="0"/>
+        <GradientStop Color="#20FFFFFF" Offset="0.5"/>
+        <GradientStop Color="#40FFFFFF" Offset="1"/>
+    </LinearGradientBrush>
+
+    <RadialGradientBrush x:Key="PreferencesSidebarItemNormalBrush"
+                         RadiusX="1.49"
+                         RadiusY="1.83"
+                         Center="0.188,-0.369"
+                         GradientOrigin="0.188,-0.369">
+        <RadialGradientBrush.RelativeTransform>
+            <RotateTransform CenterX="0.188"
+                             CenterY="-0.369"
+                             Angle="90"/>
+        </RadialGradientBrush.RelativeTransform>
+        <GradientStop Color="#CCFFFFFF" Offset="0"/>
+        <GradientStop Color="#2EFFFFFF" Offset="0.296"/>
+        <GradientStop Color="#18242729" Offset="0.626"/>
+        <GradientStop Color="#34FFFFFF" Offset="0.963"/>
+    </RadialGradientBrush>
+
+    <SolidColorBrush x:Key="PreferencesSidebarItemBorderBrush"
+                     Color="#7F7E8DB3"/>
+
+    <RadialGradientBrush x:Key="PreferencesSidebarItemSelectedBrush"
+                         RadiusX="1.49"
+                         RadiusY="1.83"
+                         Center="0.188,-0.369"
+                         GradientOrigin="0.188,-0.369">
+        <RadialGradientBrush.RelativeTransform>
+            <RotateTransform CenterX="0.188"
+                             CenterY="-0.369"
+                             Angle="90"/>
+        </RadialGradientBrush.RelativeTransform>
+        <GradientStop Color="#CCFFFFFF" Offset="0.201"/>
+        <GradientStop Color="#B5CFEFFF" Offset="0.323"/>
+        <GradientStop Color="#967A99A6" Offset="0.455"/>
+        <GradientStop Color="#A501263F" Offset="0.678"/>
+        <GradientStop Color="#BF5FCAFF" Offset="0.911"/>
+        <GradientStop Color="#FF25CFFF" Offset="1"/>
+    </RadialGradientBrush>
+
+    <LinearGradientBrush x:Key="PreferencesBottomNavItemBrush"
+                         StartPoint="0.5,0"
+                         EndPoint="0.5,1">
+        <GradientStop Color="#FF707580" Offset="0"/>
+        <GradientStop Color="#20FFFFFF" Offset="0.48"/>
+        <GradientStop Color="#10101520" Offset="0.52"/>
+        <GradientStop Color="#FF606570" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PreferencesBottomNavItemHoverBrush"
+                         StartPoint="0.5,0"
+                         EndPoint="0.5,1">
+        <GradientStop Color="#FFD0E8FF" Offset="0"/>
+        <GradientStop Color="#FF90B0D0" Offset="0.12"/>
+        <GradientStop Color="#CF305080" Offset="0.45"/>
+        <GradientStop Color="#FF103050" Offset="0.52"/>
+        <GradientStop Color="#FF4090C0" Offset="1"/>
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="PreferencesBottomNavBorderBrush"
+                     Color="#607080A0"/>
+
+    <DrawingBrush x:Key="PreferencesContentBackgroundBrush"
+                  Stretch="Fill">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <DrawingGroup.Children>
+                    <GeometryDrawing Geometry="F1 M 22,3.99988L 1122,3.99988C 1131.94,3.99988 1140,12.0588 1140,21.9999L 1140,454C 1140,463.941 1131.94,472 1122,472L 22,472C 12.0588,472 4,463.941 4,454L 4,21.9999C 4,12.0588 12.0588,3.99988 22,3.99988 Z ">
+                        <GeometryDrawing.Pen>
+                            <Pen Thickness="8"
+                                 StartLineCap="Round"
+                                 EndLineCap="Round"
+                                 LineJoin="Round">
+                                <Pen.Brush>
+                                    <RadialGradientBrush RadiusX="1.72783"
+                                                         RadiusY="1.72269"
+                                                         Center="0.5,0.0168067"
+                                                         GradientOrigin="0.5,0.0168067">
+                                        <GradientStop Color="#00FFFFFF" Offset="0"/>
+                                        <GradientStop Color="#FFFFFFFF" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Pen.Brush>
+                            </Pen>
+                        </GeometryDrawing.Pen>
+                        <GeometryDrawing.Brush>
+                            <RadialGradientBrush RadiusX="1.74"
+                                                 RadiusY="1.75214"
+                                                 Center="0.5,0.00854701"
+                                                 GradientOrigin="0.5,0.00854701">
+                                <GradientStop Color="#25FFFFFF" Offset="0"/>
+                                <GradientStop Color="#00FFFFFF" Offset="0.185299"/>
+                                <GradientStop Color="#1AFFFFFF" Offset="0.540582"/>
+                                <GradientStop Color="#FFFFFFFF" Offset="1"/>
+                            </RadialGradientBrush>
+                        </GeometryDrawing.Brush>
+                    </GeometryDrawing>
+                </DrawingGroup.Children>
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+
+    <LinearGradientBrush x:Key="PreferencesContentBorderBrush"
+                         StartPoint="0.5,0"
+                         EndPoint="0.5,1">
+        <GradientStop Color="#70FFFFFF" Offset="0"/>
+        <GradientStop Color="#4098C4E6" Offset="0.42"/>
+        <GradientStop Color="#70FFFFFF" Offset="1"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="PreferencesSidebarShellBorderStyle"
+           TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource PreferencesSidebarShellBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource PreferencesSidebarBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="ClipToBounds" Value="True"/>
+    </Style>
+
+    <Style x:Key="PreferencesContentShellBorderStyle"
+           TargetType="Border">
+        <Setter Property="Background" Value="#C0141B2B"/>
+        <Setter Property="BorderBrush" Value="{StaticResource PreferencesContentBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+    </Style>
+
+    <Style x:Key="PreferencesSidebarTitleTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="PreferencesSidebarExpanderStyle"
+           TargetType="Expander">
+        <Setter Property="Foreground" Value="#FFFFFFFF"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Margin" Value="0,2"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Expander">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <ToggleButton x:Name="HeaderToggle"
+                                      Grid.Row="0"
+                                      Height="28"
+                                      IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Grid>
+                                        <Border x:Name="BgBorder"
+                                                Background="{StaticResource PreferencesGroupHeaderBackgroundBrush}"
+                                                BorderBrush="{StaticResource PreferencesGroupHeaderBorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="3"/>
+                                        <Border x:Name="HighlightBorder"
+                                                Background="{StaticResource PreferencesGroupHeaderHighlightInactiveBrush}"
+                                                CornerRadius="3"
+                                                Opacity="0.5"/>
+                                        <Border Height="14"
+                                                VerticalAlignment="Top"
+                                                CornerRadius="3,3,0,0">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0.5,0"
+                                                                     EndPoint="0.5,1">
+                                                    <GradientStop Color="#30FFFFFF" Offset="0"/>
+                                                    <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                        </Border>
+
+                                        <Grid Margin="10,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Column="0"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="White"
+                                                       FontSize="13"
+                                                       Text="{Binding Header, RelativeSource={RelativeSource AncestorType=Expander}}"/>
+                                            <Path x:Name="ArrowExpanded"
+                                                  Grid.Column="1"
+                                                  Data="M 0 5 L 5 0 L 10 5"
+                                                  Stroke="White"
+                                                  StrokeThickness="1.5"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Right"
+                                                  Opacity="0.8"
+                                                  Visibility="Collapsed"/>
+                                            <Path x:Name="ArrowCollapsed"
+                                                  Grid.Column="1"
+                                                  Data="M 0 0 L 5 5 L 10 0"
+                                                  Stroke="White"
+                                                  StrokeThickness="1.5"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Right"
+                                                  Opacity="0.8"/>
+                                        </Grid>
+                                    </Grid>
+
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="ArrowExpanded" Property="Visibility" Value="Visible"/>
+                                            <Setter TargetName="ArrowCollapsed" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="HighlightBorder" Property="Background" Value="{StaticResource PreferencesGroupHeaderHighlightBrush}"/>
+                                            <Setter TargetName="HighlightBorder" Property="Opacity" Value="0.75"/>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="HighlightBorder" Property="Opacity" Value="0.95"/>
+                                            <Setter TargetName="ArrowExpanded" Property="Opacity" Value="1"/>
+                                            <Setter TargetName="ArrowCollapsed" Property="Opacity" Value="1"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+
+                        <Border x:Name="ContentBorder"
+                                Grid.Row="1"
+                                Padding="3,5"
+                                Visibility="Collapsed">
+                            <ContentPresenter/>
+                        </Border>
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="ContentBorder" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PreferencesSidebarItemButtonStyle"
+           TargetType="Button">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="Margin" Value="0,1"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid x:Name="RootGrid"
+                          MinHeight="42"
+                          RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <ScaleTransform ScaleX="1" ScaleY="1"/>
+                        </Grid.RenderTransform>
+
+                        <Border x:Name="BgBorder"
+                                Background="{StaticResource PreferencesSidebarItemNormalBrush}"
+                                BorderBrush="{StaticResource PreferencesSidebarItemBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="3"
+                                Opacity="0.92"/>
+                        <Border x:Name="GlassHighlight"
+                                Height="18"
+                                VerticalAlignment="Top"
+                                CornerRadius="3,3,0,0"
+                                Opacity="0.6">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0.5,0"
+                                                     EndPoint="0.5,1">
+                                    <GradientStop Color="#40FFFFFF" Offset="0"/>
+                                    <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="BgBorder" Property="Opacity" Value="1"/>
+                            <Setter TargetName="GlassHighlight" Property="Opacity" Value="0.82"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="BgBorder" Property="Opacity" Value="0.84"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                        <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                            <Setter TargetName="BgBorder" Property="Background" Value="{StaticResource PreferencesSidebarItemSelectedBrush}"/>
+                            <Setter TargetName="BgBorder" Property="BorderBrush" Value="#8060A0FF"/>
+                            <Setter TargetName="BgBorder" Property="Opacity" Value="1"/>
+                            <Setter TargetName="GlassHighlight" Property="Opacity" Value="0.86"/>
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PreferencesBottomNavButtonStyle"
+           TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource PreferencesBottomNavItemBrush}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Height" Value="26"/>
+        <Setter Property="Margin" Value="0,1"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid>
+                        <Border x:Name="BgBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{StaticResource PreferencesBottomNavBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="2"/>
+                        <Border Height="13"
+                                VerticalAlignment="Top"
+                                CornerRadius="2,2,0,0">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0.5,0"
+                                                     EndPoint="0.5,1">
+                                    <GradientStop Color="#35FFFFFF" Offset="0"/>
+                                    <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="10,0"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center">
+                            <ContentPresenter Content="{TemplateBinding Tag}"
+                                              Margin="0,0,8,0"
+                                              VerticalAlignment="Center"/>
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="BgBorder" Property="Background" Value="{StaticResource PreferencesBottomNavItemHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="BgBorder" Property="Opacity" Value="0.85"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PreferencesContentTitleTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#FFF2F6FB"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="19"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="PreferencesContentSubtitleTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#BCDCEBFF"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="12.5"/>
+    </Style>
+
+    <Style x:Key="PreferencesWelcomeTitleTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#FFEBF6FF"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="26"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="PreferencesWelcomeBodyTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#BEE0EEFF"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="13"/>
+    </Style>
+
+    <Style x:Key="PreferencesWelcomeHintTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#8FB7CCE4"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="12"/>
+    </Style>
+
+    <Style x:Key="PreferencesWelcomeCaptionTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#7FC8DCF5"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="PreferencesWelcomeGroupTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#90FFFFFF"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="12"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageHeroBorderStyle"
+           TargetType="Border">
+        <Setter Property="Padding" Value="18,16"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="#60C1E3FF"/>
+        <Setter Property="Background" Value="#260E243C"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageHeroTitleTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#FF9FE9FF"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageHeroBodyTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#E6F5FBFF"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="12.5"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageHeroHintTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#9EC5D6EA"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="11.5"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageSectionBorderStyle"
+           TargetType="Border">
+        <Setter Property="Padding" Value="16,14"/>
+        <Setter Property="Margin" Value="0,0,0,16"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="#405F84A7"/>
+        <Setter Property="Background" Value="#18000000"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageSectionTitleTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#FF61D1F0"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageSectionBodyTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#B5E5F7FF"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="11.5"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageFieldBorderStyle"
+           TargetType="Border">
+        <Setter Property="Padding" Value="12,10"/>
+        <Setter Property="Margin" Value="0,0,0,10"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="#307AA4C7"/>
+        <Setter Property="Background" Value="#120A1522"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageFieldLabelTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageFieldHintTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#97C6DAEE"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="10.5"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageFieldValueTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#E7F6FFFF"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageBadgeBorderStyle"
+           TargetType="Border">
+        <Setter Property="Padding" Value="10,3"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="#6079C7F0"/>
+        <Setter Property="Background" Value="#283A5678"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageBadgeTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#FFE6F7FF"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="10.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageFootnoteBorderStyle"
+           TargetType="Border">
+        <Setter Property="Padding" Value="12,10"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="#205B7A99"/>
+        <Setter Property="Background" Value="#120F1928"/>
+    </Style>
+
+    <Style x:Key="PreferencesPageFootnoteTextStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#A5D1E2F2"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AeroFontFamily}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+</ResourceDictionary>

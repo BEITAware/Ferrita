@@ -1,0 +1,93 @@
+<UserControl x:Class="Skyweaver.Controls.SkyweaverPreferencesControl.Views.Pages.PreferenceScaffoldPageView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:pageViewModels="clr-namespace:Skyweaver.Controls.SkyweaverPreferencesControl.ViewModels.Pages"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=pageViewModels:GeneralPreferencesPageViewModel, IsDesignTimeCreatable=True}"
+             d:DesignHeight="760"
+             d:DesignWidth="820">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="16">
+            <Border Style="{StaticResource PreferencesPageHeroBorderStyle}">
+                <StackPanel>
+                    <TextBlock Text="{Binding Title}"
+                               Style="{StaticResource PreferencesPageHeroTitleTextStyle}"/>
+                    <TextBlock Margin="0,8,0,0"
+                               Text="{Binding Description}"
+                               TextWrapping="Wrap"
+                               Style="{StaticResource PreferencesPageHeroBodyTextStyle}"/>
+                    <TextBlock Margin="0,8,0,0"
+                               Text="{Binding Hint}"
+                               TextWrapping="Wrap"
+                               Style="{StaticResource PreferencesPageHeroHintTextStyle}"/>
+                </StackPanel>
+            </Border>
+
+            <ItemsControl Margin="0,16,0,0"
+                          ItemsSource="{Binding Sections}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource PreferencesPageSectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Title}"
+                                           Style="{StaticResource PreferencesPageSectionTitleTextStyle}"/>
+                                <TextBlock Margin="0,6,0,0"
+                                           Text="{Binding Description}"
+                                           TextWrapping="Wrap"
+                                           Style="{StaticResource PreferencesPageSectionBodyTextStyle}"/>
+
+                                <ItemsControl Margin="0,14,0,0"
+                                              ItemsSource="{Binding Items}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Style="{StaticResource PreferencesPageFieldBorderStyle}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="180"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel Grid.Column="0"
+                                                                Margin="0,0,14,0">
+                                                        <TextBlock Text="{Binding Label}"
+                                                                   Style="{StaticResource PreferencesPageFieldLabelTextStyle}"/>
+                                                        <TextBlock Margin="0,6,0,0"
+                                                                   Text="{Binding Description}"
+                                                                   TextWrapping="Wrap"
+                                                                   Style="{StaticResource PreferencesPageFieldHintTextStyle}"/>
+                                                    </StackPanel>
+
+                                                    <TextBlock Grid.Column="1"
+                                                               Margin="0,0,14,0"
+                                                               Text="{Binding Value}"
+                                                               Style="{StaticResource PreferencesPageFieldValueTextStyle}"/>
+
+                                                    <Border Grid.Column="2"
+                                                            VerticalAlignment="Center"
+                                                            Style="{StaticResource PreferencesPageBadgeBorderStyle}">
+                                                        <TextBlock Text="{Binding Status}"
+                                                                   Style="{StaticResource PreferencesPageBadgeTextStyle}"/>
+                                                    </Border>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <Border Margin="0,4,0,0"
+                                        Style="{StaticResource PreferencesPageFootnoteBorderStyle}">
+                                    <TextBlock Text="{Binding FooterHint}"
+                                               Style="{StaticResource PreferencesPageFootnoteTextStyle}"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
