@@ -378,7 +378,7 @@ namespace Skyweaver.Services.ChatSession
                 Content = output,
                 Title = entry.ToolName
             };
-            ApplyToolOutputPresentationMetadata(entry, block, presentationHints);
+            ApplyToolOutputPresentationMetadata(block, presentationHints);
             entry.Blocks.Add(block);
 
             transcript.Entries.Add(entry);
@@ -898,7 +898,6 @@ namespace Skyweaver.Services.ChatSession
         }
 
         private static void ApplyToolOutputPresentationMetadata(
-            ChatSessionTranscriptEntry entry,
             ChatSessionTranscriptBlock block,
             SkyweaverToolResultPresentationHints presentationHints)
         {
@@ -906,16 +905,6 @@ namespace Skyweaver.Services.ChatSession
             {
                 block.Metadata[SkyweaverToolResultPresentationMetadataKeys.PresentationKind] =
                     presentationHints.PresentationKind;
-            }
-
-            if (presentationHints.GroupWithAssistantBubble)
-            {
-                entry.Metadata[SkyweaverToolResultPresentationMetadataKeys.GroupWithAssistantBubble] = bool.TrueString;
-            }
-
-            if (presentationHints.ReplaceParentToolCall)
-            {
-                entry.Metadata[SkyweaverToolResultPresentationMetadataKeys.ReplaceParentToolCall] = bool.TrueString;
             }
         }
 

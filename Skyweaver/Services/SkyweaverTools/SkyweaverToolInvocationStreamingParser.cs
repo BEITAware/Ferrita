@@ -204,7 +204,7 @@ namespace Skyweaver.Services.SkyweaverTools
                 {
                     if (activeParameter != null)
                     {
-                        activeParameter.Parameter.ValueBuilder.Append(tag.RawText);
+                        AppendSpecialTagText(activeParameter.Parameter.ValueBuilder, tag.RawText);
                     }
 
                     continue;
@@ -531,6 +531,23 @@ namespace Skyweaver.Services.SkyweaverTools
         private static bool IsSelfClosingTag(string rawTag)
         {
             return rawTag.TrimEnd().EndsWith("/>", StringComparison.Ordinal);
+        }
+
+        private static void AppendSpecialTagText(StringBuilder builder, string rawText)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+
+            const string cdataPrefix = "<![CDATA[";
+            const string cdataSuffix = "]]>";
+            if (rawText.StartsWith(cdataPrefix, StringComparison.Ordinal) &&
+                rawText.EndsWith(cdataSuffix, StringComparison.Ordinal) &&
+                rawText.Length >= cdataPrefix.Length + cdataSuffix.Length)
+            {
+                builder.Append(rawText, cdataPrefix.Length, rawText.Length - cdataPrefix.Length - cdataSuffix.Length);
+                return;
+            }
+
+            builder.Append(rawText);
         }
 
         private static int IndexOfOpeningTag(string text, string elementName, int startIndex = 0)

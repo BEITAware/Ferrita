@@ -9,7 +9,7 @@
         <Grid Background="{DynamicResource WindowBackgroundBrush}" MinHeight="500">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="520" Margin="10">
             <!-- 应用程序图标 -->
-            <Image Source="../Resources/SkyweaverAppLogo.png" 
+            <Image Source="../Resources/SkyweaverLogo.png" 
                    Width="128" Height="128" 
                    Margin="0,0,0,30"/>
             

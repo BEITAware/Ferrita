@@ -2,6 +2,7 @@ using System.IO;
 using System.Text;
 using Skyweaver.Controls.ChatSessionControl.Models;
 using Skyweaver.Controls.ChatSessionControl.Views;
+using Skyweaver.Services.SkyweaverTools;
 
 namespace Skyweaver.Controls.ChatSessionControl.Services
 {
@@ -81,8 +82,12 @@ namespace Skyweaver.Controls.ChatSessionControl.Services
                     break;
 
                 case ChatMessagePartType.StructuredXml:
+                    AppendFencedBlock(builder, part.Content, "xml");
+                    break;
+
                 case ChatMessagePartType.ToolCall:
                     AppendFencedBlock(builder, part.Content, "xml");
+                    AppendMarkdownToolResult(builder, part);
                     break;
 
                 case ChatMessagePartType.ToolOutput:
@@ -227,6 +232,30 @@ namespace Skyweaver.Controls.ChatSessionControl.Services
         private static bool IsToolPart(ChatMessagePartModel part)
         {
             return part.PartType is ChatMessagePartType.ToolCall or ChatMessagePartType.ToolOutput;
+        }
+
+        private static void AppendMarkdownToolResult(StringBuilder builder, ChatMessagePartModel part)
+        {
+            if (!part.HasToolResult)
+            {
+                return;
+            }
+
+            builder.AppendLine()
+                .AppendLine()
+                .AppendLine("Result")
+                .AppendLine();
+            AppendFencedBlock(builder, part.ToolResultContent, ResolveToolResultFenceLanguage(part));
+        }
+
+        private static string ResolveToolResultFenceLanguage(ChatMessagePartModel part)
+        {
+            return string.Equals(
+                part.ToolResultPresentationKind,
+                SkyweaverToolResultPresentationKinds.LineDiffV1,
+                StringComparison.OrdinalIgnoreCase)
+                ? "diff"
+                : "text";
         }
 
         private static string ConvertMarkdownToPlainText(string markdown)

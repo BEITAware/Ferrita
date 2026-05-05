@@ -1,5 +1,6 @@
 using Skyweaver.Controls.ChatSessionControl.Models;
 using Skyweaver.Models.ChatSession;
+using Skyweaver.Services.PresentationUI;
 using Skyweaver.Services.SkyweaverTools;
 
 namespace Skyweaver.Services.ChatSession
@@ -74,13 +75,6 @@ namespace Skyweaver.Services.ChatSession
                 message.SourceEntryIds.Add(entry.EntryId);
             }
 
-            if (TryCreateReplacementToolCallPart(transcript, entry, out var replacementPart))
-            {
-                PrepareForAdjacentToolCall(message, replacementPart);
-                message.Parts.Add(replacementPart);
-                return;
-            }
-
             foreach (var block in entry.Blocks)
             {
                 if (!ShouldProjectBlock(block))
@@ -89,6 +83,7 @@ namespace Skyweaver.Services.ChatSession
                 }
 
                 var part = ToPresentationPart(entry, block);
+                MergeToolOutputPresentation(message, transcript, entry, part);
                 PrepareForAdjacentToolCall(message, part);
                 message.Parts.Add(part);
             }
@@ -151,16 +146,6 @@ namespace Skyweaver.Services.ChatSession
 
         private static bool ShouldGroupAsAssistantBubble(ChatSessionTranscriptEntry entry)
         {
-            if (entry.Kind == ChatSessionTranscriptEntryKind.ToolOutput &&
-                TryReadBooleanMetadata(
-                    entry.Metadata,
-                    SkyweaverToolResultPresentationMetadataKeys.GroupWithAssistantBubble,
-                    out var groupWithAssistantBubble) &&
-                groupWithAssistantBubble)
-            {
-                return true;
-            }
-
             return entry.Role == ChatSessionParticipantRole.Assistant &&
                    entry.Kind is ChatSessionTranscriptEntryKind.Reasoning
                        or ChatSessionTranscriptEntryKind.AgentMessage
@@ -184,7 +169,7 @@ namespace Skyweaver.Services.ChatSession
             ChatSessionTranscriptEntry entry,
             bool includeDebugEntries)
         {
-            if (IsReplacementToolOutputEntry(entry))
+            if (IsMergedToolOutputEntry(transcript, entry))
             {
                 return false;
             }
@@ -207,6 +192,7 @@ namespace Skyweaver.Services.ChatSession
             ChatSessionTranscriptBlock block)
         {
             var partType = ToPartType(block.Kind, entry.Kind);
+            var isCollapsible = IsCollapsible(entry, block);
             var part = new ChatMessagePartModel(
                 partType,
                 block.Content,
@@ -220,40 +206,35 @@ namespace Skyweaver.Services.ChatSession
                     ? block.ResourcePath ?? block.Content
                     : block.ResourcePath,
                 IsUserVisible(entry),
-                IsCollapsible(entry, block));
+                isCollapsible,
+                ResolveInitialExpandedState(partType, isCollapsible));
             part.PresentationKind = ResolvePresentationKind(entry, block);
             return part;
         }
 
-        private static bool TryCreateReplacementToolCallPart(
+        private static void MergeToolOutputPresentation(
+            ChatMessageModel message,
             ChatSessionTranscript transcript,
             ChatSessionTranscriptEntry entry,
-            out ChatMessagePartModel replacementPart)
+            ChatMessagePartModel part)
         {
-            replacementPart = null!;
             if (entry.Kind != ChatSessionTranscriptEntryKind.ToolCall ||
-                !TryFindReplacementToolOutputEntry(transcript, entry, out var toolOutputEntry) ||
+                part.PartType != ChatMessagePartType.ToolCall ||
+                !TryFindMergedToolOutputEntry(transcript, entry, out var toolOutputEntry) ||
                 toolOutputEntry.Blocks.FirstOrDefault(ShouldProjectBlock) is not { } toolOutputBlock)
             {
-                return false;
+                part.ToolResultContent = string.Empty;
+                part.ToolResultPresentationKind = null;
+                return;
             }
 
-            replacementPart = new ChatMessagePartModel(
-                ChatMessagePartType.ToolOutput,
-                toolOutputBlock.Content,
-                ResolvePartTitle(toolOutputEntry, toolOutputBlock) ?? entry.ToolName,
-                toolOutputBlock.Language,
-                GetBadgeText(toolOutputBlock.Kind, toolOutputEntry.Kind),
-                isStreaming: false,
-                toolCallId: entry.ToolCallId,
-                callerAgentId: entry.AgentId,
-                resourcePath: toolOutputBlock.Kind is ChatSessionTranscriptBlockKind.Image or ChatSessionTranscriptBlockKind.Audio
-                    ? toolOutputBlock.ResourcePath ?? toolOutputBlock.Content
-                    : toolOutputBlock.ResourcePath,
-                isUserVisible: IsUserVisible(entry),
-                isCollapsible: IsCollapsible(toolOutputEntry, toolOutputBlock));
-            replacementPart.PresentationKind = ResolvePresentationKind(toolOutputEntry, toolOutputBlock);
-            return true;
+            if (!message.SourceEntryIds.Contains(toolOutputEntry.EntryId, StringComparer.OrdinalIgnoreCase))
+            {
+                message.SourceEntryIds.Add(toolOutputEntry.EntryId);
+            }
+
+            part.ToolResultContent = SkyweaverLineDiffPresentation.ExtractPrimaryMessageOrRawContent(toolOutputBlock.Content);
+            part.ToolResultPresentationKind = ResolvePresentationKind(toolOutputEntry, toolOutputBlock);
         }
 
         private static string? ResolvePartTitle(
@@ -347,6 +328,15 @@ namespace Skyweaver.Services.ChatSession
             return entry.Visibility == TranscriptVisibility.Collapsed;
         }
 
+        private static bool ResolveInitialExpandedState(
+            ChatMessagePartType partType,
+            bool isCollapsible)
+        {
+            return partType == ChatMessagePartType.Reasoning &&
+                   isCollapsible &&
+                   !PresentationUIRuntime.Instance.CollapseReasoningByDefault;
+        }
+
         private static bool TryReadBooleanMetadata(
             IReadOnlyDictionary<string, string> metadata,
             string key,
@@ -359,16 +349,6 @@ namespace Skyweaver.Services.ChatSession
 
         private static ChatMessageRole ToPresentationRole(ChatSessionTranscriptEntry entry)
         {
-            if (entry.Kind == ChatSessionTranscriptEntryKind.ToolOutput &&
-                TryReadBooleanMetadata(
-                    entry.Metadata,
-                    SkyweaverToolResultPresentationMetadataKeys.GroupWithAssistantBubble,
-                    out var groupWithAssistantBubble) &&
-                groupWithAssistantBubble)
-            {
-                return ChatMessageRole.Assistant;
-            }
-
             return entry.Role switch
             {
                 ChatSessionParticipantRole.Assistant => ChatMessageRole.Assistant,
@@ -377,17 +357,15 @@ namespace Skyweaver.Services.ChatSession
             };
         }
 
-        private static bool IsReplacementToolOutputEntry(ChatSessionTranscriptEntry entry)
+        private static bool IsMergedToolOutputEntry(
+            ChatSessionTranscript transcript,
+            ChatSessionTranscriptEntry entry)
         {
             return entry.Kind == ChatSessionTranscriptEntryKind.ToolOutput &&
-                   TryReadBooleanMetadata(
-                       entry.Metadata,
-                       SkyweaverToolResultPresentationMetadataKeys.ReplaceParentToolCall,
-                       out var replaceParentToolCall) &&
-                   replaceParentToolCall;
+                   TryFindOwningToolCallEntry(transcript, entry, out _);
         }
 
-        private static bool TryFindReplacementToolOutputEntry(
+        private static bool TryFindMergedToolOutputEntry(
             ChatSessionTranscript transcript,
             ChatSessionTranscriptEntry toolCallEntry,
             out ChatSessionTranscriptEntry toolOutputEntry)
@@ -401,13 +379,26 @@ namespace Skyweaver.Services.ChatSession
             toolOutputEntry = transcript.Entries.LastOrDefault(candidate =>
                 candidate.Kind == ChatSessionTranscriptEntryKind.ToolOutput &&
                 string.Equals(candidate.TurnId, toolCallEntry.TurnId, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(candidate.ToolCallId, toolCallEntry.ToolCallId, StringComparison.OrdinalIgnoreCase) &&
-                TryReadBooleanMetadata(
-                    candidate.Metadata,
-                    SkyweaverToolResultPresentationMetadataKeys.ReplaceParentToolCall,
-                    out var replaceParentToolCall) &&
-                replaceParentToolCall)!;
+                string.Equals(candidate.ToolCallId, toolCallEntry.ToolCallId, StringComparison.OrdinalIgnoreCase))!;
             return toolOutputEntry != null;
+        }
+
+        private static bool TryFindOwningToolCallEntry(
+            ChatSessionTranscript transcript,
+            ChatSessionTranscriptEntry toolOutputEntry,
+            out ChatSessionTranscriptEntry toolCallEntry)
+        {
+            toolCallEntry = null!;
+            if (string.IsNullOrWhiteSpace(toolOutputEntry.ToolCallId))
+            {
+                return false;
+            }
+
+            toolCallEntry = transcript.Entries.LastOrDefault(candidate =>
+                candidate.Kind == ChatSessionTranscriptEntryKind.ToolCall &&
+                string.Equals(candidate.TurnId, toolOutputEntry.TurnId, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(candidate.ToolCallId, toolOutputEntry.ToolCallId, StringComparison.OrdinalIgnoreCase))!;
+            return toolCallEntry != null;
         }
 
         private static string ResolveDisplayName(ChatSessionTranscriptEntry entry, ChatMessageRole role)

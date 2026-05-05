@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:toolModels="clr-namespace:Skyweaver.Services.SkyweaverTools"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              d:DesignHeight="180"
@@ -74,233 +75,294 @@
                     IsHitTestVisible="False"
                     Opacity="0.88"/>
             <StackPanel Margin="12">
-            <Grid Margin="0,0,0,8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="40"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="40"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                <Border Width="32"
-                        Height="32"
-                        Margin="0,0,8,0"
-                        Background="{DynamicResource ButtonIdleBrush}"
-                        BorderBrush="#0036D9D1"
+                    <Border Width="32"
+                            Height="32"
+                            Margin="0,0,8,0"
+                            Background="{DynamicResource ButtonIdleBrush}"
+                            BorderBrush="#0036D9D1"
+                            BorderThickness="1"
+                            CornerRadius="5"
+                            VerticalAlignment="Top">
+                        <Image Source="{Binding IconPath}"
+                               Stretch="Uniform"
+                               Margin="4"/>
+                    </Border>
+
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="{Binding State.ToolName}"
+                                   FontFamily="{DynamicResource AeroFontFamily}"
+                                   FontSize="{DynamicResource AeroLargeFontSize}"
+                                   FontWeight="SemiBold"
+                                   Foreground="#FFF5FAFF"
+                                   TextWrapping="Wrap"/>
+                        <TextBlock Margin="0,2,0,0"
+                                   Text="{Binding Description}"
+                                   FontFamily="{DynamicResource AeroFontFamily}"
+                                   FontSize="{DynamicResource AeroFontSize}"
+                                   Foreground="#FFD6E8FF"
+                                   TextWrapping="Wrap"/>
+                        <TextBlock Margin="0,4,0,0"
+                                   FontFamily="{DynamicResource AeroFontFamily}"
+                                   FontSize="{DynamicResource AeroSmallFontSize}"
+                                   Foreground="#FFE2FFF8">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Receiving parameters"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding State.IsInvocationClosed}" Value="True">
+                                            <Setter Property="Text" Value="Parameters received, waiting for tool result"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding State.HasToolResult}" Value="True">
+                                            <Setter Property="Text" Value="Tool result received"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+
+                <ItemsControl ItemsSource="{Binding Fields}">
+                    <ItemsControl.Style>
+                        <Style TargetType="ItemsControl">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasFields}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ItemsControl.Style>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource ToolInvocationFieldBorderStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Margin="0,0,8,0"
+                                               VerticalAlignment="Top"
+                                               FontFamily="{DynamicResource AeroFontFamily}"
+                                               FontSize="{DynamicResource AeroFontSize}"
+                                               Foreground="#FFE7F3FF"
+                                               TextWrapping="Wrap"
+                                               Text="{Binding Label}"/>
+
+                                    <Grid Grid.Column="1">
+                                        <TextBlock Text="{Binding Parameter.Value}"
+                                                   FontFamily="Consolas, Microsoft YaHei UI"
+                                                   FontSize="12"
+                                                   Foreground="#FFF7FBFF"
+                                                   TextWrapping="Wrap">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Parameter.HasValue}" Value="False">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
+                                        <TextBlock Text="{Binding EmptyValueText}"
+                                                   FontFamily="{DynamicResource AeroFontFamily}"
+                                                   FontSize="{DynamicResource AeroFontSize}"
+                                                   Foreground="#CCEAF7FF"
+                                                   FontStyle="Italic"
+                                                   TextWrapping="Wrap">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Parameter.HasValue}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+
+                                    <Border Grid.Column="2">
+                                        <Border.Style>
+                                            <Style TargetType="Border" BasedOn="{StaticResource ToolInvocationStreamingBadgeBorderStyle}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Parameter.IsStreaming}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="Streaming"
+                                                   FontFamily="{DynamicResource AeroFontFamily}"
+                                                   FontSize="{DynamicResource AeroSmallFontSize}"
+                                                   Foreground="#FFF5FAFF"/>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <ItemsControl ItemsSource="{Binding State.Parameters}">
+                    <ItemsControl.Style>
+                        <Style TargetType="ItemsControl">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasFields}" Value="False">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ItemsControl.Style>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource ToolInvocationFieldBorderStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Margin="0,0,8,0"
+                                               VerticalAlignment="Top"
+                                               FontFamily="{DynamicResource AeroFontFamily}"
+                                               FontSize="{DynamicResource AeroFontSize}"
+                                               Foreground="#FFE7F3FF"
+                                               TextWrapping="Wrap"
+                                               Text="{Binding Name}"/>
+
+                                    <Grid Grid.Column="1">
+                                        <TextBlock Text="{Binding Value}"
+                                                   FontFamily="Consolas, Microsoft YaHei UI"
+                                                   FontSize="12"
+                                                   Foreground="#FFF7FBFF"
+                                                   TextWrapping="Wrap">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasValue}" Value="False">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
+                                        <TextBlock Text="Waiting for parameter..."
+                                                   FontFamily="{DynamicResource AeroFontFamily}"
+                                                   FontSize="{DynamicResource AeroFontSize}"
+                                                   Foreground="#CCEAF7FF"
+                                                   FontStyle="Italic"
+                                                   TextWrapping="Wrap">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasValue}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+
+                                    <Border Grid.Column="2">
+                                        <Border.Style>
+                                            <Style TargetType="Border" BasedOn="{StaticResource ToolInvocationStreamingBadgeBorderStyle}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsStreaming}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="Streaming"
+                                                   FontFamily="{DynamicResource AeroFontFamily}"
+                                                   FontSize="{DynamicResource AeroSmallFontSize}"
+                                                   Foreground="#FFF5FAFF"/>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Border Margin="0,8,0,0"
+                        Padding="10,8"
+                        Background="#1A08131A"
+                        BorderBrush="#4438C4D8"
                         BorderThickness="1"
-                        CornerRadius="5"
-                        VerticalAlignment="Top">
-                    <Image Source="{Binding IconPath}"
-                           Stretch="Uniform"
-                           Margin="4"/>
+                        CornerRadius="4">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding State.HasToolResult}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel>
+                        <TextBlock Text="Result"
+                                   FontFamily="{DynamicResource AeroFontFamily}"
+                                   FontSize="{DynamicResource AeroSmallFontSize}"
+                                   FontWeight="SemiBold"
+                                   Foreground="#FFD6E8FF"/>
+
+                        <ItemsControl Margin="0,8,0,0"
+                                      ItemsSource="{Binding State.ToolResultDiffLines}"
+                                      ItemTemplate="{StaticResource SkyweaverDiffLineTemplate}">
+                            <ItemsControl.Style>
+                                <Style TargetType="ItemsControl">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding State.HasToolResultDiffLines}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ItemsControl.Style>
+                        </ItemsControl>
+
+                        <TextBlock Margin="0,8,0,0"
+                                   Text="{Binding State.ToolResultContent}"
+                                   Foreground="#FFEAFDFF"
+                                   FontFamily="Consolas, Microsoft YaHei UI"
+                                   FontSize="13"
+                                   TextWrapping="Wrap">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding State.HasToolResultText}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
                 </Border>
-
-                <StackPanel Grid.Column="1">
-                    <TextBlock Text="{Binding State.ToolName}"
-                               FontFamily="{DynamicResource AeroFontFamily}"
-                               FontSize="{DynamicResource AeroLargeFontSize}"
-                               FontWeight="SemiBold"
-                               Foreground="#FFF5FAFF"
-                               TextWrapping="Wrap"/>
-                    <TextBlock Margin="0,2,0,0"
-                               Text="{Binding Description}"
-                               FontFamily="{DynamicResource AeroFontFamily}"
-                               FontSize="{DynamicResource AeroFontSize}"
-                               Foreground="#FFD6E8FF"
-                               TextWrapping="Wrap"/>
-                    <TextBlock Margin="0,4,0,0"
-                               FontFamily="{DynamicResource AeroFontFamily}"
-                               FontSize="{DynamicResource AeroSmallFontSize}"
-                               Foreground="#FFE2FFF8">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Text" Value="正在接收参数"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding State.IsInvocationClosed}" Value="True">
-                                        <Setter Property="Text" Value="参数已接收，等待执行"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </StackPanel>
-            </Grid>
-
-            <ItemsControl ItemsSource="{Binding Fields}">
-                <ItemsControl.Style>
-                    <Style TargetType="ItemsControl">
-                        <Setter Property="Visibility" Value="Visible"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding HasFields}" Value="False">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </ItemsControl.Style>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Style="{StaticResource ToolInvocationFieldBorderStyle}">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="110"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-
-                                <TextBlock Grid.Column="0"
-                                           Margin="0,0,8,0"
-                                           VerticalAlignment="Top"
-                                           FontFamily="{DynamicResource AeroFontFamily}"
-                                           FontSize="{DynamicResource AeroFontSize}"
-                                           Foreground="#FFE7F3FF"
-                                           TextWrapping="Wrap"
-                                           Text="{Binding Label}"/>
-
-                                <Grid Grid.Column="1">
-                                    <TextBlock Text="{Binding Parameter.Value}"
-                                               FontFamily="Consolas, Microsoft YaHei UI"
-                                               FontSize="12"
-                                               Foreground="#FFF7FBFF"
-                                               TextWrapping="Wrap">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Parameter.HasValue}" Value="False">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-
-                                    <TextBlock Text="{Binding EmptyValueText}"
-                                               FontFamily="{DynamicResource AeroFontFamily}"
-                                               FontSize="{DynamicResource AeroFontSize}"
-                                               Foreground="#CCEAF7FF"
-                                               FontStyle="Italic"
-                                               TextWrapping="Wrap">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Parameter.HasValue}" Value="False">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </Grid>
-
-                                <Border Grid.Column="2">
-                                    <Border.Style>
-                                        <Style TargetType="Border" BasedOn="{StaticResource ToolInvocationStreamingBadgeBorderStyle}">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Parameter.IsStreaming}" Value="True">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <TextBlock Text="流式更新"
-                                               FontFamily="{DynamicResource AeroFontFamily}"
-                                               FontSize="{DynamicResource AeroSmallFontSize}"
-                                               Foreground="#FFF5FAFF"/>
-                                </Border>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            <ItemsControl ItemsSource="{Binding State.Parameters}">
-                <ItemsControl.Style>
-                    <Style TargetType="ItemsControl">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding HasFields}" Value="False">
-                                <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </ItemsControl.Style>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Style="{StaticResource ToolInvocationFieldBorderStyle}">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="110"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-
-                                <TextBlock Grid.Column="0"
-                                           Margin="0,0,8,0"
-                                           VerticalAlignment="Top"
-                                           FontFamily="{DynamicResource AeroFontFamily}"
-                                           FontSize="{DynamicResource AeroFontSize}"
-                                           Foreground="#FFE7F3FF"
-                                           TextWrapping="Wrap"
-                                           Text="{Binding Name}"/>
-
-                                <Grid Grid.Column="1">
-                                    <TextBlock Text="{Binding Value}"
-                                               FontFamily="Consolas, Microsoft YaHei UI"
-                                               FontSize="12"
-                                               Foreground="#FFF7FBFF"
-                                               TextWrapping="Wrap">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding HasValue}" Value="False">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-
-                                    <TextBlock Text="Waiting for parameter..."
-                                               FontFamily="{DynamicResource AeroFontFamily}"
-                                               FontSize="{DynamicResource AeroFontSize}"
-                                               Foreground="#CCEAF7FF"
-                                               FontStyle="Italic"
-                                               TextWrapping="Wrap">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding HasValue}" Value="False">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </Grid>
-
-                                <Border Grid.Column="2">
-                                    <Border.Style>
-                                        <Style TargetType="Border" BasedOn="{StaticResource ToolInvocationStreamingBadgeBorderStyle}">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsStreaming}" Value="True">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <TextBlock Text="Streaming"
-                                               FontFamily="{DynamicResource AeroFontFamily}"
-                                               FontSize="{DynamicResource AeroSmallFontSize}"
-                                               Foreground="#FFF5FAFF"/>
-                                </Border>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
             </StackPanel>
         </Grid>
     </Border>

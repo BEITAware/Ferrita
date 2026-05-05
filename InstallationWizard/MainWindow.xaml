@@ -8,7 +8,7 @@
         Title="Skyweaver 安装向导" Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
-        Icon="Resources/SkyweaverAppLogo.ico"
+        Icon="Resources/Skyweaver.ico"
         Background="#FF1A1F28"
         Style="{DynamicResource AeroWindowStyle}">
 

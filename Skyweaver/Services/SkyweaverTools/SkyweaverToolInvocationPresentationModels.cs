@@ -127,6 +127,8 @@ namespace Skyweaver.Services.SkyweaverTools
         private string _toolDescription;
         private string _iconPath;
         private string _rawToolXml;
+        private string _toolResultContent;
+        private string? _toolResultPresentationKind;
         private bool _isInvocationClosed;
 
         public SkyweaverToolInvocationPresentationState(
@@ -140,6 +142,12 @@ namespace Skyweaver.Services.SkyweaverTools
             _toolDescription = toolDescription ?? string.Empty;
             _iconPath = iconPath ?? string.Empty;
             _rawToolXml = string.Empty;
+            _toolResultContent = string.Empty;
+            ToolResultDiffLines.CollectionChanged += (_, _) =>
+            {
+                OnPropertyChanged(nameof(HasToolResultDiffLines));
+                OnPropertyChanged(nameof(HasToolResultText));
+            };
         }
 
         public int ToolCallIndex { get; }
@@ -175,6 +183,33 @@ namespace Skyweaver.Services.SkyweaverTools
         }
 
         public ObservableCollection<SkyweaverToolInvocationParameterPresentationState> Parameters { get; } = new();
+
+        public string ToolResultContent
+        {
+            get => _toolResultContent;
+            private set
+            {
+                if (SetProperty(ref _toolResultContent, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(HasToolResult));
+                    OnPropertyChanged(nameof(HasToolResultText));
+                }
+            }
+        }
+
+        public string? ToolResultPresentationKind
+        {
+            get => _toolResultPresentationKind;
+            private set => SetProperty(ref _toolResultPresentationKind, string.IsNullOrWhiteSpace(value) ? null : value.Trim());
+        }
+
+        public ObservableCollection<SkyweaverLineDiffEntry> ToolResultDiffLines { get; } = new();
+
+        public bool HasToolResult => !string.IsNullOrWhiteSpace(ToolResultContent);
+
+        public bool HasToolResultDiffLines => ToolResultDiffLines.Count > 0;
+
+        public bool HasToolResultText => HasToolResult && !HasToolResultDiffLines;
 
         public SkyweaverToolInvocationParameterPresentationState GetOrCreateParameterState(
             string parameterName,
@@ -250,6 +285,37 @@ namespace Skyweaver.Services.SkyweaverTools
                 state.IsClosed = parameter.IsClosed;
             }
         }
+
+        public void ClearToolResult()
+        {
+            ApplyToolResult(null, null);
+        }
+
+        public void ApplyToolResult(string? content, string? presentationKind)
+        {
+            ToolResultContent = content ?? string.Empty;
+            ToolResultPresentationKind = presentationKind;
+            RebuildToolResultDiffLines();
+        }
+
+        private void RebuildToolResultDiffLines()
+        {
+            ToolResultDiffLines.Clear();
+
+            if (!string.Equals(
+                    ToolResultPresentationKind,
+                    SkyweaverToolResultPresentationKinds.LineDiffV1,
+                    StringComparison.OrdinalIgnoreCase) ||
+                !SkyweaverLineDiffPresentation.TryParseContent(ToolResultContent, out var diffEntries))
+            {
+                return;
+            }
+
+            foreach (var entry in diffEntries)
+            {
+                ToolResultDiffLines.Add(entry);
+            }
+        }
     }
 
     public sealed class SkyweaverToolInvocationPresentationContext
@@ -280,5 +346,10 @@ namespace Skyweaver.Services.SkyweaverTools
     public interface ISkyweaverToolInvocationPresentationProvider
     {
         FrameworkElement? CreateInvocationPresentation(SkyweaverToolInvocationPresentationContext context);
+    }
+
+    public interface ISkyweaverToolConfirmationPresentationProvider
+    {
+        FrameworkElement? CreateConfirmationPresentation(SkyweaverToolInvocationPresentationContext context);
     }
 }

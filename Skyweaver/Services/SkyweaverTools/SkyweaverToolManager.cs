@@ -782,5 +782,22 @@ namespace Skyweaver.Services.SkyweaverTools
                     IconPath,
                     state));
         }
+
+        public FrameworkElement? CreateConfirmationPresentation(SkyweaverToolInvocationPresentationState state)
+        {
+            ArgumentNullException.ThrowIfNull(state);
+
+            if (Tool is ISkyweaverToolConfirmationPresentationProvider confirmationProvider)
+            {
+                return confirmationProvider.CreateConfirmationPresentation(
+                    new SkyweaverToolInvocationPresentationContext(
+                        BaseDefinition,
+                        Definition,
+                        IconPath,
+                        state));
+            }
+
+            return CreateInvocationPresentation(state);
+        }
     }
 }

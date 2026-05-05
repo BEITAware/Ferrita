@@ -1,6 +1,5 @@
 ﻿using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
@@ -13,6 +12,7 @@ using Skyweaver.Models.ChatSession;
 using Skyweaver.Services.AgentLoop;
 using Skyweaver.Services.ChatSession;
 using Skyweaver.Services;
+using Skyweaver.Windows;
 
 namespace Skyweaver.Controls.ChatSessionControl.ViewModels
 {
@@ -34,7 +34,7 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
         private string _draftMessageText = string.Empty;
         private ChatMessageModel? _selectedMessage;
         private bool _isExecutionActive;
-        private string _executionStatusText = "灏辩华";
+        private string _executionStatusText = "就绪";
         private bool _suppressPersistence;
         private DateTime _lastStreamingProjectionRefreshUtc = DateTime.MinValue;
         private CancellationTokenSource? _executionCancellationSource;
@@ -51,10 +51,10 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
 
         public bool HasBoundSessionFlow => _sessionModel?.HasBoundFlow == true;
 
-        public string BoundSessionFlowName => _sessionModel?.BoundFlowDisplayName ?? "鏈粦瀹氫細璇濇祦";
+        public string BoundSessionFlowName => _sessionModel?.BoundFlowDisplayName ?? "未绑定会话流";
 
         public string BoundSessionFlowSummary => HasBoundSessionFlow
-            ? $"褰撳墠浼氳瘽娴侊細{BoundSessionFlowName}"
+            ? $"当前会话流：{BoundSessionFlowName}"
             : "未绑定会话流。";
 
         public string SessionFlowValidationSummary => _sessionFlowValidationSummary;
@@ -268,7 +268,7 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
                     FailureReason = ex.Message
                 };
 
-                AddSystemStatusMessage(ex.Message, "鎵ц澶辫触");
+                AddSystemStatusMessage(ex.Message, "执行失败");
             }
             finally
             {
@@ -278,9 +278,9 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
 
                 ExecutionStatusText = runtimeResult switch
                 {
-                    { IsCompleted: true } => "灏辩华",
+                    { IsCompleted: true } => "就绪",
                     { IsCancelled: true } => "已取消",
-                    _ => "澶辫触"
+                    _ => "失败"
                 };
 
                 RefreshMessagesFromTranscript();
@@ -296,7 +296,7 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
 
             _runtimeService.CancelActiveExecution(_sessionModel?.SessionId);
             _executionCancellationSource?.Cancel();
-            ExecutionStatusText = "姝ｅ湪鍙栨秷褰撳墠鎵ц...";
+            ExecutionStatusText = "正在取消当前执行...";
         }
 
         public bool AddPastedImage(BitmapSource? image)
@@ -319,7 +319,7 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
             }
             catch (Exception ex)
             {
-                AddSystemStatusMessage(ex.Message, "鍥剧墖绮樿创澶辫触");
+                AddSystemStatusMessage(ex.Message, "图片粘贴失败");
                 return false;
             }
         }
@@ -336,7 +336,7 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
         {
             var openFileDialog = new Microsoft.Win32.OpenFileDialog
             {
-                Filter = "鍥惧儚鏂囦欢|*.png;*.jpg;*.jpeg;*.bmp;*.gif|鎵€鏈夋枃浠秥*.*",
+                Filter = "图像文件|*.png;*.jpg;*.jpeg;*.bmp;*.gif|所有文件|*.*",
                 Multiselect = true
             };
 
@@ -353,7 +353,7 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    AddSystemStatusMessage($"鏃犳硶鍔犺浇鍥剧墖 {fileName}: {ex.Message}", "娣诲姞鍥剧墖澶辫触");
+                    AddSystemStatusMessage($"无法加载图片 {fileName}: {ex.Message}", "添加图片失败");
                 }
             }
         }
@@ -465,26 +465,26 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
             return dispatcher.InvokeAsync(() => ShowToolConfirmationDialog(request)).Task;
         }
 
-        private static AgentToolConfirmationResult ShowToolConfirmationDialog(AgentToolConfirmationRequest request)
+        private AgentToolConfirmationResult ShowToolConfirmationDialog(AgentToolConfirmationRequest request)
         {
-            var builder = new StringBuilder();
-            builder.AppendLine($"代理：{request.Agent.DisplayNameOrFallback}");
-            builder.AppendLine($"工具：{request.Invocation.ToolName}");
-            builder.AppendLine($"迭代：{request.IterationNumber}");
-            builder.AppendLine();
-            builder.AppendLine("调用：");
-            builder.AppendLine(request.Invocation.InvocationXml);
-            builder.AppendLine();
-            builder.Append("鏄惁鍏佽姝ゅ伐鍏疯皟鐢ㄧ户缁墽琛岋紵");
+            var toolCallIndex = request.ToolCallIndex > 0 ? request.ToolCallIndex : 1;
+            var previewHandle = _toolInvocationPresentationService.CreateConfirmationPresentation(
+                request.Invocation,
+                toolCallIndex);
 
-            var result = MessageBox.Show(
-                Application.Current?.MainWindow,
-                builder.ToString(),
-                "宸ュ叿璋冪敤纭",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            var dialog = new ToolConfirmationDialog(new ToolConfirmationDialogModel
+            {
+                ToolName = request.Invocation.ToolName,
+                PromptText = $"代理 {request.Agent.DisplayNameOrFallback} 请求执行下面的工具调用。确认后才会继续执行。",
+                MetadataText = $"工具：{request.Invocation.ToolName}    迭代：{request.IterationNumber}    调用序号：{toolCallIndex}",
+                InvocationXml = request.Invocation.InvocationXml,
+                InvocationPreview = previewHandle.View
+            })
+            {
+                Owner = Application.Current?.MainWindow
+            };
 
-            return result == MessageBoxResult.Yes
+            return dialog.ShowDialog() == true
                 ? AgentToolConfirmationResult.Approve()
                 : AgentToolConfirmationResult.Reject("用户拒绝了此工具调用。");
         }
@@ -719,6 +719,11 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
 
         private static void UpdatePart(ChatMessagePartModel target, ChatMessagePartModel source)
         {
+            var preserveExpansionState = target.PartType == ChatMessagePartType.Reasoning &&
+                                         source.PartType == ChatMessagePartType.Reasoning &&
+                                         target.IsCollapsible &&
+                                         source.IsCollapsible;
+
             if (ShouldDetachToolPresentation(target, source))
             {
                 target.DetachToolPresentation();
@@ -732,10 +737,17 @@ namespace Skyweaver.Controls.ChatSessionControl.ViewModels
             target.CallerAgentId = source.CallerAgentId;
             target.ResourcePath = source.ResourcePath;
             target.PresentationKind = source.PresentationKind;
+            target.ToolResultPresentationKind = source.ToolResultPresentationKind;
             target.IsUserVisible = source.IsUserVisible;
             target.IsCollapsible = source.IsCollapsible;
             target.IsStreaming = source.IsStreaming;
             target.Content = source.Content;
+            target.ToolResultContent = source.ToolResultContent;
+
+            if (!preserveExpansionState)
+            {
+                target.IsExpanded = source.IsExpanded;
+            }
         }
 
         private static bool ShouldDetachToolPresentation(

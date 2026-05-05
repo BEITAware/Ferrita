@@ -663,7 +663,9 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
         {
             var isThought = partElement.TryGetProperty("thought", out var thoughtElement) &&
                             thoughtElement.ValueKind == JsonValueKind.True;
-            var text = GetOptionalString(partElement, "text") ?? string.Empty;
+            // Google may stream leading or trailing spaces as their own part.text fragments.
+            // Preserve those verbatim so token boundaries do not collapse during reassembly.
+            var text = GetOptionalString(partElement, "text", trim: false) ?? string.Empty;
             var sanitizedText = SanitizeModelText(text);
 
             if (text.Length > 0)
@@ -917,16 +919,23 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
             };
         }
 
-        private static string? GetOptionalString(JsonElement element, string propertyName)
+        private static string? GetOptionalString(
+            JsonElement element,
+            string propertyName,
+            bool trim = true)
         {
             if (!element.TryGetProperty(propertyName, out var propertyElement))
             {
                 return null;
             }
 
-            return propertyElement.ValueKind == JsonValueKind.String
-                ? propertyElement.GetString()?.Trim()
-                : null;
+            if (propertyElement.ValueKind != JsonValueKind.String)
+            {
+                return null;
+            }
+
+            var value = propertyElement.GetString();
+            return trim ? value?.Trim() : value;
         }
 
         private static string? GetFirstCandidateProperty(JsonElement rootElement, string propertyName)

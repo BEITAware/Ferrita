@@ -80,7 +80,7 @@ namespace Skyweaver.Controls.SkyweaverPreferencesControl.ViewModels
 
         public string Description { get; } = "从左侧栏目中选择要查看的配置项。";
 
-        public string Hint { get; } = "目前仅“文件与系统”栏目下提供“侧向文件系统配置”，其余栏目暂为空。";
+        public string Hint { get; } = "目前已提供“文件与系统 / 侧向文件系统配置”和“呈现与界面 / 聊天会话”两页配置。";
 
         public ObservableCollection<PreferenceGroupViewModel> Groups { get; }
 

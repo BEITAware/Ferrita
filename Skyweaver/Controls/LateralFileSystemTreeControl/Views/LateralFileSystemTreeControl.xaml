@@ -467,6 +467,13 @@
                                     Margin="0,8,0,0"
                                     HorizontalAlignment="Center"
                                     Style="{StaticResource AeroButtonStyle}"
+                                    Command="{Binding MergeFolderCommand}"
+                                    Content="合并回源文件夹"/>
+                            <Button Width="220"
+                                    Height="34"
+                                    Margin="0,8,0,0"
+                                    HorizontalAlignment="Center"
+                                    Style="{StaticResource AeroButtonStyle}"
                                     Command="{Binding DeleteFolderCommand}"
                                     Content="删除侧向文件夹"/>
                         </StackPanel>

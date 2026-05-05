@@ -8,8 +8,6 @@ namespace Skyweaver.Services.SkyweaverTools
     public static class SkyweaverToolResultPresentationMetadataKeys
     {
         public const string PresentationKind = "ToolResultPresentationKind";
-        public const string GroupWithAssistantBubble = "ToolResultGroupWithAssistantBubble";
-        public const string ReplaceParentToolCall = "ToolResultReplaceParentToolCall";
     }
 
     public sealed class SkyweaverToolResultPresentationHints
@@ -20,22 +18,15 @@ namespace Skyweaver.Services.SkyweaverTools
 
         public bool IsUserVisible { get; init; }
 
-        public bool GroupWithAssistantBubble { get; init; }
-
-        public bool ReplaceParentToolCall { get; init; }
-
         public bool HasAnyValue =>
             !string.IsNullOrWhiteSpace(PresentationKind) ||
-            IsUserVisible ||
-            GroupWithAssistantBubble ||
-            ReplaceParentToolCall;
+            IsUserVisible;
 
         public static SkyweaverToolResultPresentationHints CreateLineDiff()
         {
             return new SkyweaverToolResultPresentationHints
             {
-                PresentationKind = SkyweaverToolResultPresentationKinds.LineDiffV1,
-                ReplaceParentToolCall = true
+                PresentationKind = SkyweaverToolResultPresentationKinds.LineDiffV1
             };
         }
     }

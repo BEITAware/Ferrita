@@ -464,6 +464,7 @@ namespace Skyweaver.Services.AgentLoop
                 var modelId = candidate.SummaryModelId;
                 var hasStartedStreaming = false;
                 var rawContentBuilder = new StringBuilder();
+                var rawReasoningContentBuilder = new StringBuilder();
                 var toolInvocationStreamingParser = new SkyweaverToolInvocationStreamingParser(
                     _toolManager.GetRegisteredTools(resolveIcons: false)
                         .Select(registration => registration.Definition));
@@ -500,6 +501,7 @@ namespace Skyweaver.Services.AgentLoop
 
                         if (!string.IsNullOrEmpty(update.ReasoningTextDelta))
                         {
+                            rawReasoningContentBuilder.Append(update.ReasoningTextDelta);
                             await PublishAsync(
                                 onEventAsync,
                                 new AgentLoopRuntimeEvent
@@ -560,16 +562,44 @@ namespace Skyweaver.Services.AgentLoop
                     }
 
                     var rawContent = rawContentBuilder.ToString();
+                    AgentAssistantResponse assistantResponse;
+                    if (TryPromoteAssistantResponseFromReasoning(
+                            rawContent,
+                            rawReasoningContentBuilder.ToString(),
+                            request.EnableGemmaThoughtCompatibility,
+                            out var promotedRawContent,
+                            out var promotedAssistantResponse))
+                    {
+                        rawContent = promotedRawContent;
+                        assistantResponse = promotedAssistantResponse;
+                        hasStartedStreaming = true;
+                    }
+                    else
+                    {
+                        assistantResponse = ParseAssistantResponse(
+                            rawContent,
+                            request.EnableGemmaThoughtCompatibility);
+                    }
+
+                    var finalProtocolContent = PrepareAssistantProtocolContent(
+                        rawContent,
+                        request.EnableGemmaThoughtCompatibility,
+                        isFinal: true);
+                    var finalToolCallSnapshots = toolInvocationStreamingParser.Parse(finalProtocolContent);
+                    await PublishStreamingToolCallUpdatesAsync(
+                        onEventAsync,
+                        finalToolCallSnapshots,
+                        previousToolCallSnapshots,
+                        iterationNumber,
+                        modelId,
+                        cancellationToken).ConfigureAwait(false);
+
                     await PublishPresentationDeltasAsync(
                         onEventAsync,
                         presentationTracker.ExtractDeltas(rawContent, isFinal: true),
                         iterationNumber,
                         modelId,
                         cancellationToken).ConfigureAwait(false);
-
-                    var assistantResponse = ParseAssistantResponse(
-                        rawContent,
-                        request.EnableGemmaThoughtCompatibility);
                     var hasToolActivity = assistantResponse.GetToolCallParts().Count > 0;
 
                     if (hasToolActivity)
@@ -720,6 +750,46 @@ namespace Skyweaver.Services.AgentLoop
             return builder.ToString(builder.Length - length, length);
         }
 
+        private bool TryPromoteAssistantResponseFromReasoning(
+            string rawContent,
+            string rawReasoningContent,
+            bool enableGemmaThoughtCompatibility,
+            out string promotedRawContent,
+            out AgentAssistantResponse promotedAssistantResponse)
+        {
+            promotedRawContent = rawContent ?? string.Empty;
+            promotedAssistantResponse = null!;
+
+            if (!string.IsNullOrWhiteSpace(rawContent) ||
+                string.IsNullOrWhiteSpace(rawReasoningContent))
+            {
+                return false;
+            }
+
+            var reasoningResponse = ParseAssistantResponse(
+                rawReasoningContent,
+                enableGemmaThoughtCompatibility);
+            var hasValidToolCalls = reasoningResponse.GetToolCalls().Count > 0;
+            var hasAnyToolParts = reasoningResponse.GetToolCallParts().Count > 0;
+            var visibleText = ExtractVisibleAssistantText(
+                rawReasoningContent,
+                isFinal: true,
+                enableGemmaThoughtCompatibility).Trim();
+            var hasRecoverableVisibleText = visibleText.Length > 0 && !hasAnyToolParts;
+            if (!hasValidToolCalls && !hasRecoverableVisibleText)
+            {
+                return false;
+            }
+
+            // Some OpenAI-compatible backends occasionally place the assistant's
+            // executable response in reasoning deltas instead of text deltas.
+            // Only promote reasoning when it already parses as a valid tool call,
+            // or as plain visible assistant text without tool markup.
+            promotedRawContent = rawReasoningContent;
+            promotedAssistantResponse = reasoningResponse;
+            return true;
+        }
+
         private async Task<(IReadOnlyList<AgentToolBackfill> ToolBackfills, AgentLoopFinalOutput? LatestPassdownOutput, IReadOnlyList<string> NewlyLoadedToolKitKeys)>
             ExecuteAssistantToolCallsAsync(
                 AgentLoopRequest request,
@@ -804,6 +874,7 @@ namespace Skyweaver.Services.AgentLoop
                             activeToolKitKeys,
                             iterationNumber,
                             partIndex,
+                            part.ToolCallIndex,
                             cancellationToken).ConfigureAwait(false);
 
                         if (IsLoadToolKits(invocation.ToolName))
@@ -1703,6 +1774,7 @@ namespace Skyweaver.Services.AgentLoop
             IReadOnlyCollection<string> activeToolKitKeys,
             int iterationNumber,
             int partIndex,
+            int toolCallIndex,
             CancellationToken cancellationToken)
         {
             var toolReturns = new List<SkyweaverToolReturnPayload>(invocations.Count);
@@ -1719,6 +1791,7 @@ namespace Skyweaver.Services.AgentLoop
                     activeToolKitKeys,
                     iterationNumber,
                     partIndex,
+                    toolCallIndex,
                     cancellationToken).ConfigureAwait(false);
 
                 if (!authorization.CanExecute)
@@ -1763,6 +1836,7 @@ namespace Skyweaver.Services.AgentLoop
             IReadOnlyCollection<string> activeToolKitKeys,
             int iterationNumber,
             int partIndex,
+            int toolCallIndex,
             CancellationToken cancellationToken)
         {
             var registration = _toolManager.GetRegisteredTools(resolveIcons: false).FirstOrDefault(item =>
@@ -1825,6 +1899,7 @@ namespace Skyweaver.Services.AgentLoop
                 permissionDecision,
                 iterationNumber,
                 partIndex,
+                toolCallIndex,
                 cancellationToken).ConfigureAwait(false);
         }
 
@@ -1834,6 +1909,7 @@ namespace Skyweaver.Services.AgentLoop
             AgentToolEffectiveDecision permissionDecision,
             int iterationNumber,
             int partIndex,
+            int toolCallIndex,
             CancellationToken cancellationToken)
         {
             if (request.ToolConfirmationCallback == null)
@@ -1853,7 +1929,8 @@ namespace Skyweaver.Services.AgentLoop
                         Invocation = invocation,
                         PermissionDecision = permissionDecision,
                         IterationNumber = iterationNumber,
-                        PartIndex = partIndex
+                        PartIndex = partIndex,
+                        ToolCallIndex = toolCallIndex
                     },
                     cancellationToken).ConfigureAwait(false);
 

@@ -274,6 +274,7 @@ namespace InstallationWizard.Pages
                 shortcut.TargetPath = targetPath;
                 shortcut.WorkingDirectory = workingDirectory;
                 shortcut.Description = description;
+                shortcut.IconLocation = $"{targetPath},0";
                 shortcut.Save();
 
                 LogMessage($"已创建快捷方式: {Path.GetFileName(shortcutPath)}");

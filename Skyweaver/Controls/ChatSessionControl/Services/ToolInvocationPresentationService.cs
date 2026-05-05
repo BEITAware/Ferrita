@@ -31,40 +31,18 @@ namespace Skyweaver.Controls.ChatSessionControl.Services
 
         public ToolInvocationPresentationHandle CreatePresentation(int toolCallIndex, string? toolName)
         {
-            var normalizedToolName = string.IsNullOrWhiteSpace(toolName)
-                ? $"工具 #{toolCallIndex}"
-                : toolName.Trim();
+            return CreatePresentation(toolCallIndex, toolName, preferConfirmationPresentation: false);
+        }
 
-            if (_registrations.TryGetValue(normalizedToolName, out var registration))
-            {
-                var state = new SkyweaverToolInvocationPresentationState(
-                    toolCallIndex,
-                    registration.Definition.Name,
-                    registration.Definition.Description,
-                    registration.IconPath);
-                state.EnsureParameterDefinitions(registration.Definition.Parameters);
+        public ToolInvocationPresentationHandle CreateConfirmationPresentation(
+            SkyweaverToolInvocation invocation,
+            int toolCallIndex)
+        {
+            ArgumentNullException.ThrowIfNull(invocation);
 
-                var view = registration.CreateInvocationPresentation(state)
-                           ?? ToolInvocationCardFactory.CreateDefault(
-                               state,
-                               registration.Definition.Description,
-                               registration.IconPath);
-
-                return new ToolInvocationPresentationHandle(state, view);
-            }
-
-            var fallbackState = new SkyweaverToolInvocationPresentationState(
-                toolCallIndex,
-                normalizedToolName,
-                toolDescription: string.Empty,
-                iconPath: DefaultToolIconPath);
-
-            return new ToolInvocationPresentationHandle(
-                fallbackState,
-                ToolInvocationCardFactory.CreateDefault(
-                    fallbackState,
-                    "此工具不提供自定义调用卡。",
-                    DefaultToolIconPath));
+            var handle = CreatePresentation(toolCallIndex, invocation.ToolName, preferConfirmationPresentation: true);
+            ApplyInvocationToPresentationState(handle.State, invocation);
+            return handle;
         }
 
         public bool TryAttachPresentation(
@@ -96,6 +74,49 @@ namespace Skyweaver.Controls.ChatSessionControl.Services
             return true;
         }
 
+        private ToolInvocationPresentationHandle CreatePresentation(
+            int toolCallIndex,
+            string? toolName,
+            bool preferConfirmationPresentation)
+        {
+            var normalizedToolName = string.IsNullOrWhiteSpace(toolName)
+                ? $"Tool #{toolCallIndex}"
+                : toolName.Trim();
+
+            if (_registrations.TryGetValue(normalizedToolName, out var registration))
+            {
+                var state = new SkyweaverToolInvocationPresentationState(
+                    toolCallIndex,
+                    registration.Definition.Name,
+                    registration.Definition.Description,
+                    registration.IconPath);
+                state.EnsureParameterDefinitions(registration.Definition.Parameters);
+
+                var view = (preferConfirmationPresentation
+                               ? registration.CreateConfirmationPresentation(state)
+                               : registration.CreateInvocationPresentation(state))
+                           ?? ToolInvocationCardFactory.CreateDefault(
+                               state,
+                               registration.Definition.Description,
+                               registration.IconPath);
+
+                return new ToolInvocationPresentationHandle(state, view);
+            }
+
+            var fallbackState = new SkyweaverToolInvocationPresentationState(
+                toolCallIndex,
+                normalizedToolName,
+                toolDescription: string.Empty,
+                iconPath: DefaultToolIconPath);
+
+            return new ToolInvocationPresentationHandle(
+                fallbackState,
+                ToolInvocationCardFactory.CreateDefault(
+                    fallbackState,
+                    "This tool does not provide a custom invocation card.",
+                    DefaultToolIconPath));
+        }
+
         private void ApplyContentToPresentationState(
             ChatMessagePartModel part,
             SkyweaverStreamingToolCallSnapshot? snapshot,
@@ -110,6 +131,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Services
             if (snapshot != null)
             {
                 state.ApplySnapshot(snapshot, ResolveParameterDefinitions(snapshot.ToolName));
+                ApplyResultToPresentationState(part, state);
                 return;
             }
 
@@ -120,6 +142,54 @@ namespace Skyweaver.Controls.ChatSessionControl.Services
 
             state.RawToolXml = NormalizeXml(part.Content);
             state.IsInvocationClosed = !part.IsStreaming;
+            ApplyResultToPresentationState(part, state);
+        }
+
+        private void ApplyInvocationToPresentationState(
+            SkyweaverToolInvocationPresentationState state,
+            SkyweaverToolInvocation invocation)
+        {
+            ArgumentNullException.ThrowIfNull(state);
+            ArgumentNullException.ThrowIfNull(invocation);
+
+            state.ToolName = invocation.ToolName;
+            state.RawToolXml = NormalizeXml(invocation.InvocationXml);
+            state.IsInvocationClosed = true;
+            state.ClearToolResult();
+
+            var parameterDefinitions = ResolveParameterDefinitions(invocation.ToolName);
+            state.EnsureParameterDefinitions(parameterDefinitions);
+
+            Dictionary<string, SkyweaverToolParameterDefinition>? definitionsByName = null;
+            if (parameterDefinitions != null)
+            {
+                definitionsByName = parameterDefinitions
+                    .GroupBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(group => group.Key, group => group.Last(), StringComparer.OrdinalIgnoreCase);
+            }
+
+            foreach (var argument in invocation.RawArguments)
+            {
+                SkyweaverToolParameterDefinition? definition = null;
+                definitionsByName?.TryGetValue(argument.Key, out definition);
+
+                var parameterState = state.GetOrCreateParameterState(argument.Key, definition);
+                parameterState.Value = argument.Value ?? string.Empty;
+                parameterState.IsClosed = true;
+            }
+        }
+
+        private static void ApplyResultToPresentationState(
+            ChatMessagePartModel part,
+            SkyweaverToolInvocationPresentationState state)
+        {
+            if (part.HasToolResult)
+            {
+                state.ApplyToolResult(part.ToolResultContent, part.ToolResultPresentationKind);
+                return;
+            }
+
+            state.ClearToolResult();
         }
 
         private SkyweaverStreamingToolCallSnapshot? TryParseSnapshot(string? content)

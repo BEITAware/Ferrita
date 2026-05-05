@@ -707,7 +707,8 @@
                             <TextBlock Text="{Binding BadgeText}" Foreground="#FF9CDCFE" FontSize="11"/>
                         </Border>
                     </DockPanel>
-                    <ItemsControl ItemsSource="{Binding ToolOutputDiffLines}">
+                    <ItemsControl ItemsSource="{Binding ToolOutputDiffLines}"
+                                  ItemTemplate="{StaticResource SkyweaverDiffLineTemplate}">
                         <ItemsControl.Style>
                             <Style TargetType="ItemsControl">
                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -718,70 +719,6 @@
                                 </Style.Triggers>
                             </Style>
                         </ItemsControl.Style>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type models:ChatToolOutputDiffLineModel}">
-                                <Grid>
-                                    <Border x:Name="SeparatorBorder"
-                                            Height="8"
-                                            Visibility="Collapsed"/>
-                                    <Grid x:Name="DiffRowGrid"
-                                          Margin="0,0,0,4">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="58"/>
-                                            <ColumnDefinition Width="28"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <Border x:Name="DiffGutterBackground"
-                                                Grid.Column="0"
-                                                Grid.ColumnSpan="2"
-                                                Margin="0,0,8,0"
-                                                CornerRadius="4"
-                                                Background="#5FEEF58A"/>
-
-                                        <TextBlock Grid.Column="0"
-                                                   Margin="0,0,8,0"
-                                                   Text="{Binding LineNumberText}"
-                                                   Foreground="#FF10261C"
-                                                   FontFamily="Consolas"
-                                                   FontSize="12"
-                                                   FontWeight="SemiBold"
-                                                   HorizontalAlignment="Right"
-                                                   VerticalAlignment="Center"/>
-
-                                        <TextBlock Grid.Column="1"
-                                                   Text="{Binding Marker}"
-                                                   Foreground="#FF10261C"
-                                                   FontFamily="Consolas"
-                                                   FontSize="12"
-                                                   FontWeight="Bold"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"/>
-
-                                        <TextBlock Grid.Column="2"
-                                                   Text="{Binding Text}"
-                                                   Foreground="#FFEAFDFF"
-                                                   FontFamily="Consolas"
-                                                   FontSize="13"
-                                                   TextWrapping="Wrap"/>
-                                    </Grid>
-                                </Grid>
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:ChatToolOutputDiffLineKind.Added}">
-                                        <Setter TargetName="DiffGutterBackground" Property="Background" Value="#6646D9F6"/>
-                                        <Setter TargetName="DiffRowGrid" Property="Margin" Value="0,0,0,4"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:ChatToolOutputDiffLineKind.Removed}">
-                                        <Setter TargetName="DiffGutterBackground" Property="Background" Value="#66F2B7B7"/>
-                                        <Setter TargetName="DiffRowGrid" Property="Margin" Value="0,0,0,4"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:ChatToolOutputDiffLineKind.Separator}">
-                                        <Setter TargetName="SeparatorBorder" Property="Visibility" Value="Visible"/>
-                                        <Setter TargetName="DiffRowGrid" Property="Visibility" Value="Collapsed"/>
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
                     </ItemsControl>
                     <TextBlock Text="{Binding Content}"
                                Foreground="#FFEAFDFF"
@@ -875,7 +812,7 @@
 
         <DataTemplate x:Key="ReasoningMessagePartTemplate" DataType="{x:Type models:ChatMessagePartModel}">
             <Grid>
-                <Expander IsExpanded="False"
+                <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}"
                           Background="#1414232C"
                           BorderBrush="#4476D7EE"
                           BorderThickness="1"

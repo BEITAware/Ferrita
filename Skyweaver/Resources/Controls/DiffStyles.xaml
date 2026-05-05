@@ -1,0 +1,274 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DrawingBrush x:Key="SkyweaverDiffAnchorRowBrush" Stretch="Fill">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <DrawingGroup.Children>
+                    <GeometryDrawing Geometry="F1 M 4,0.999756L 1569.92,0.999756C 1571.58,0.999756 1572.92,2.34302 1572.92,3.99976L 1572.92,140.606C 1572.92,142.263 1571.58,143.606 1569.92,143.606L 4,143.606C 2.34302,143.606 1,142.263 1,140.606L 1,3.99976C 1,2.34302 2.34302,0.999756 4,0.999756 Z ">
+                        <GeometryDrawing.Brush>
+                            <RadialGradientBrush RadiusX="1.01282" RadiusY="0.917796" Center="0.499999,0.977751" GradientOrigin="0.499999,0.977751">
+                                <RadialGradientBrush.GradientStops>
+                                    <GradientStop Color="#4DC9CACA" Offset="0"/>
+                                    <GradientStop Color="#0E7C7A44" Offset="0.988506"/>
+                                </RadialGradientBrush.GradientStops>
+                                <RadialGradientBrush.RelativeTransform>
+                                    <TransformGroup>
+                                        <SkewTransform CenterX="0.499999" CenterY="0.977751" AngleX="5.23491" AngleY="0"/>
+                                        <RotateTransform CenterX="0.499999" CenterY="0.977751" Angle="70.494"/>
+                                    </TransformGroup>
+                                </RadialGradientBrush.RelativeTransform>
+                            </RadialGradientBrush>
+                        </GeometryDrawing.Brush>
+                    </GeometryDrawing>
+                    <GeometryDrawing Geometry="F1 M 4,0.999756L 1569.92,0.999756C 1571.58,0.999756 1572.92,2.34302 1572.92,3.99976L 1572.92,140.606C 1572.92,142.263 1571.58,143.606 1569.92,143.606L 4,143.606C 2.34302,143.606 1,142.263 1,140.606L 1,3.99976C 1,2.34302 2.34302,0.999756 4,0.999756 Z ">
+                        <GeometryDrawing.Brush>
+                            <RadialGradientBrush RadiusX="1.18083" RadiusY="0.76686" Center="0.499999,0.049901" GradientOrigin="0.499999,0.049901">
+                                <RadialGradientBrush.GradientStops>
+                                    <GradientStop Color="#2AFFFACC" Offset="0"/>
+                                    <GradientStop Color="#14FFFFFF" Offset="0.247126"/>
+                                    <GradientStop Color="#00FFFFFF" Offset="0.461686"/>
+                                </RadialGradientBrush.GradientStops>
+                            </RadialGradientBrush>
+                        </GeometryDrawing.Brush>
+                    </GeometryDrawing>
+                    <GeometryDrawing Geometry="F1 M 4,0.999756L 1569.92,0.999756C 1571.58,0.999756 1572.92,2.34302 1572.92,3.99976L 1572.92,140.606C 1572.92,142.263 1571.58,143.606 1569.92,143.606L 4,143.606C 2.34302,143.606 1,142.263 1,140.606L 1,3.99976C 1,2.34302 2.34302,0.999756 4,0.999756 Z ">
+                        <GeometryDrawing.Pen>
+                            <Pen Thickness="2" LineJoin="Round">
+                                <Pen.Brush>
+                                    <RadialGradientBrush RadiusX="2.13404" RadiusY="0.673012" Center="0.499999,0.499998" GradientOrigin="0.499999,0.499998">
+                                        <RadialGradientBrush.GradientStops>
+                                            <GradientStop Color="#67FFFFFF" Offset="0"/>
+                                            <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                        </RadialGradientBrush.GradientStops>
+                                        <RadialGradientBrush.RelativeTransform>
+                                            <TransformGroup>
+                                                <SkewTransform CenterX="0.499999" CenterY="0.499998" AngleX="6.79408" AngleY="0"/>
+                                                <RotateTransform CenterX="0.499999" CenterY="0.499998" Angle="48.3971"/>
+                                            </TransformGroup>
+                                        </RadialGradientBrush.RelativeTransform>
+                                    </RadialGradientBrush>
+                                </Pen.Brush>
+                            </Pen>
+                        </GeometryDrawing.Pen>
+                    </GeometryDrawing>
+                </DrawingGroup.Children>
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+
+    <DrawingBrush x:Key="SkyweaverDiffRemovedRowBrush" Stretch="Fill">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <DrawingGroup.Children>
+                    <GeometryDrawing Geometry="F1 M 4,1L 1569.92,1C 1571.58,1 1572.92,2.34302 1572.92,4L 1572.92,140.606C 1572.92,142.263 1571.58,143.606 1569.92,143.606L 4,143.606C 2.34326,143.606 1,142.263 1,140.606L 1,4C 1,2.34302 2.34326,1 4,1 Z ">
+                        <GeometryDrawing.Brush>
+                            <RadialGradientBrush RadiusX="1.01282" RadiusY="0.917797" Center="0.5,0.977751" GradientOrigin="0.5,0.977751">
+                                <RadialGradientBrush.GradientStops>
+                                    <GradientStop Color="#4DC9CACA" Offset="0"/>
+                                    <GradientStop Color="#0E7C4444" Offset="0.988506"/>
+                                </RadialGradientBrush.GradientStops>
+                                <RadialGradientBrush.RelativeTransform>
+                                    <TransformGroup>
+                                        <SkewTransform CenterX="0.5" CenterY="0.977751" AngleX="5.23491" AngleY="0"/>
+                                        <RotateTransform CenterX="0.5" CenterY="0.977751" Angle="70.494"/>
+                                    </TransformGroup>
+                                </RadialGradientBrush.RelativeTransform>
+                            </RadialGradientBrush>
+                        </GeometryDrawing.Brush>
+                    </GeometryDrawing>
+                    <GeometryDrawing Geometry="F1 M 4,1.00024L 1569.92,1.00024C 1571.58,1.00024 1572.92,2.34326 1572.92,4.00024L 1572.92,140.607C 1572.92,142.263 1571.58,143.607 1569.92,143.607L 4,143.607C 2.34326,143.607 1,142.263 1,140.607L 1,4.00024C 1,2.34326 2.34326,1.00024 4,1.00024 Z ">
+                        <GeometryDrawing.Brush>
+                            <RadialGradientBrush RadiusX="1.18083" RadiusY="0.76686" Center="0.499999,0.0498993" GradientOrigin="0.499999,0.0498993">
+                                <RadialGradientBrush.GradientStops>
+                                    <GradientStop Color="#2AFF9F9F" Offset="0"/>
+                                    <GradientStop Color="#14FFC9C9" Offset="0.247126"/>
+                                    <GradientStop Color="#00FCD9D9" Offset="0.461686"/>
+                                </RadialGradientBrush.GradientStops>
+                            </RadialGradientBrush>
+                        </GeometryDrawing.Brush>
+                    </GeometryDrawing>
+                    <GeometryDrawing Geometry="F1 M 4,1.00024L 1569.92,1.00024C 1571.58,1.00024 1572.92,2.34326 1572.92,4.00024L 1572.92,140.607C 1572.92,142.263 1571.58,143.607 1569.92,143.607L 4,143.607C 2.34326,143.607 1,142.263 1,140.607L 1,4.00024C 1,2.34326 2.34326,1.00024 4,1.00024 Z ">
+                        <GeometryDrawing.Pen>
+                            <Pen Thickness="2" LineJoin="Round">
+                                <Pen.Brush>
+                                    <RadialGradientBrush RadiusX="2.13404" RadiusY="0.673012" Center="0.499999,0.499997" GradientOrigin="0.499999,0.499997">
+                                        <RadialGradientBrush.GradientStops>
+                                            <GradientStop Color="#67FFFFFF" Offset="0"/>
+                                            <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                        </RadialGradientBrush.GradientStops>
+                                        <RadialGradientBrush.RelativeTransform>
+                                            <TransformGroup>
+                                                <SkewTransform CenterX="0.499999" CenterY="0.499997" AngleX="6.79405" AngleY="0"/>
+                                                <RotateTransform CenterX="0.499999" CenterY="0.499997" Angle="48.3971"/>
+                                            </TransformGroup>
+                                        </RadialGradientBrush.RelativeTransform>
+                                    </RadialGradientBrush>
+                                </Pen.Brush>
+                            </Pen>
+                        </GeometryDrawing.Pen>
+                    </GeometryDrawing>
+                </DrawingGroup.Children>
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+
+    <DrawingBrush x:Key="SkyweaverDiffAddedRowBrush" Stretch="Fill">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <DrawingGroup.Children>
+                    <GeometryDrawing Geometry="F1 M 4,1L 1569.92,1C 1571.58,1 1572.92,2.34302 1572.92,4L 1572.92,140.606C 1572.92,142.263 1571.58,143.606 1569.92,143.606L 4,143.606C 2.34326,143.606 1,142.263 1,140.606L 1,4C 1,2.34302 2.34326,1 4,1 Z ">
+                        <GeometryDrawing.Brush>
+                            <RadialGradientBrush RadiusX="1.01283" RadiusY="0.917797" Center="0.5,0.977751" GradientOrigin="0.5,0.977751">
+                                <RadialGradientBrush.GradientStops>
+                                    <GradientStop Color="#4DC9CACA" Offset="0"/>
+                                    <GradientStop Color="#0E0B7622" Offset="0.988506"/>
+                                </RadialGradientBrush.GradientStops>
+                                <RadialGradientBrush.RelativeTransform>
+                                    <TransformGroup>
+                                        <SkewTransform CenterX="0.5" CenterY="0.977751" AngleX="5.23496" AngleY="0"/>
+                                        <RotateTransform CenterX="0.5" CenterY="0.977751" Angle="70.494"/>
+                                    </TransformGroup>
+                                </RadialGradientBrush.RelativeTransform>
+                            </RadialGradientBrush>
+                        </GeometryDrawing.Brush>
+                    </GeometryDrawing>
+                    <GeometryDrawing Geometry="F1 M 4,1L 1569.92,1C 1571.58,1 1572.92,2.34302 1572.92,4L 1572.92,140.606C 1572.92,142.263 1571.58,143.606 1569.92,143.606L 4,143.606C 2.34326,143.606 1,142.263 1,140.606L 1,4C 1,2.34302 2.34326,1 4,1 Z ">
+                        <GeometryDrawing.Brush>
+                            <RadialGradientBrush RadiusX="1.18083" RadiusY="0.76686" Center="0.499999,0.0498993" GradientOrigin="0.499999,0.0498993">
+                                <RadialGradientBrush.GradientStops>
+                                    <GradientStop Color="#2A5BFC4C" Offset="0"/>
+                                    <GradientStop Color="#1498FF8E" Offset="0.247126"/>
+                                    <GradientStop Color="#00C8FFC3" Offset="0.464467"/>
+                                </RadialGradientBrush.GradientStops>
+                            </RadialGradientBrush>
+                        </GeometryDrawing.Brush>
+                    </GeometryDrawing>
+                    <GeometryDrawing Geometry="F1 M 4,1L 1569.92,1C 1571.58,1 1572.92,2.34302 1572.92,4L 1572.92,140.606C 1572.92,142.263 1571.58,143.606 1569.92,143.606L 4,143.606C 2.34326,143.606 1,142.263 1,140.606L 1,4C 1,2.34302 2.34326,1 4,1 Z ">
+                        <GeometryDrawing.Pen>
+                            <Pen Thickness="2" LineJoin="Round">
+                                <Pen.Brush>
+                                    <RadialGradientBrush RadiusX="2.13404" RadiusY="0.673012" Center="0.499999,0.499997" GradientOrigin="0.499999,0.499997">
+                                        <RadialGradientBrush.GradientStops>
+                                            <GradientStop Color="#67FFFFFF" Offset="0"/>
+                                            <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                        </RadialGradientBrush.GradientStops>
+                                        <RadialGradientBrush.RelativeTransform>
+                                            <TransformGroup>
+                                                <SkewTransform CenterX="0.499999" CenterY="0.499997" AngleX="6.79406" AngleY="0"/>
+                                                <RotateTransform CenterX="0.499999" CenterY="0.499997" Angle="48.3971"/>
+                                            </TransformGroup>
+                                        </RadialGradientBrush.RelativeTransform>
+                                    </RadialGradientBrush>
+                                </Pen.Brush>
+                            </Pen>
+                        </GeometryDrawing.Pen>
+                    </GeometryDrawing>
+                </DrawingGroup.Children>
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+
+    <SolidColorBrush x:Key="SkyweaverDiffAnchorAccentBrush" Color="#FFD8F8F2"/>
+    <SolidColorBrush x:Key="SkyweaverDiffAddedAccentBrush" Color="#FFC8FFD8"/>
+    <SolidColorBrush x:Key="SkyweaverDiffRemovedAccentBrush" Color="#FFFFD1D1"/>
+    <SolidColorBrush x:Key="SkyweaverDiffContentBrush" Color="#FFF4FCFF"/>
+
+    <Style x:Key="SkyweaverDiffRowBorderStyle" TargetType="Border">
+        <Setter Property="Margin" Value="0,0,0,4"/>
+        <Setter Property="Padding" Value="12,7"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Background" Value="{StaticResource SkyweaverDiffAnchorRowBrush}"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding KindName}" Value="Added">
+                <Setter Property="Background" Value="{StaticResource SkyweaverDiffAddedRowBrush}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding KindName}" Value="Removed">
+                <Setter Property="Background" Value="{StaticResource SkyweaverDiffRemovedRowBrush}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="SkyweaverDiffLineNumberTextStyle" TargetType="TextBlock">
+        <Setter Property="Margin" Value="0,1,10,0"/>
+        <Setter Property="Foreground" Value="{StaticResource SkyweaverDiffAnchorAccentBrush}"/>
+        <Setter Property="FontFamily" Value="Consolas"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding KindName}" Value="Added">
+                <Setter Property="Foreground" Value="{StaticResource SkyweaverDiffAddedAccentBrush}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding KindName}" Value="Removed">
+                <Setter Property="Foreground" Value="{StaticResource SkyweaverDiffRemovedAccentBrush}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="SkyweaverDiffMarkerTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource SkyweaverDiffAnchorAccentBrush}"/>
+        <Setter Property="FontFamily" Value="Consolas"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="Margin" Value="0,1,10,0"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding KindName}" Value="Added">
+                <Setter Property="Foreground" Value="{StaticResource SkyweaverDiffAddedAccentBrush}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding KindName}" Value="Removed">
+                <Setter Property="Foreground" Value="{StaticResource SkyweaverDiffRemovedAccentBrush}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="SkyweaverDiffContentTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource SkyweaverDiffContentBrush}"/>
+        <Setter Property="FontFamily" Value="Consolas, Microsoft YaHei UI"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style x:Key="SkyweaverDiffSeparatorBorderStyle" TargetType="Border">
+        <Setter Property="Height" Value="10"/>
+        <Setter Property="Visibility" Value="Collapsed"/>
+    </Style>
+
+    <DataTemplate x:Key="SkyweaverDiffLineTemplate">
+        <Grid>
+            <Border x:Name="SeparatorBorder"
+                    Style="{StaticResource SkyweaverDiffSeparatorBorderStyle}"/>
+            <Border x:Name="DiffRowBorder"
+                    Style="{StaticResource SkyweaverDiffRowBorderStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="72"/>
+                        <ColumnDefinition Width="26"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding LineNumberText}"
+                               Style="{StaticResource SkyweaverDiffLineNumberTextStyle}"/>
+
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Marker}"
+                               Style="{StaticResource SkyweaverDiffMarkerTextStyle}"/>
+
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding Text}"
+                               Style="{StaticResource SkyweaverDiffContentTextStyle}"/>
+                </Grid>
+            </Border>
+        </Grid>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding IsSeparator}" Value="True">
+                <Setter TargetName="SeparatorBorder" Property="Visibility" Value="Visible"/>
+                <Setter TargetName="DiffRowBorder" Property="Visibility" Value="Collapsed"/>
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+</ResourceDictionary>

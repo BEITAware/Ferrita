@@ -30,6 +30,8 @@ namespace Skyweaver.Controls.ChatSessionControl.Models
 
         public ChatToolOutputDiffLineKind Kind { get; }
 
+        public string KindName => Kind.ToString();
+
         public bool IsSeparator => Kind == ChatToolOutputDiffLineKind.Separator;
     }
 }

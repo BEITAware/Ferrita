@@ -9,8 +9,8 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ApplicationIcon>Resources\SkyweaverAppLogo.ico</ApplicationIcon>
-    <PackageIcon>SkyweaverAppLogo.png</PackageIcon>
+    <ApplicationIcon>Resources\Skyweaver.ico</ApplicationIcon>
+    <PackageIcon>SkyweaverLogo.png</PackageIcon>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <Copyright>BEITAware © 2025，在MPL 2.0协议下授权。</Copyright>
     <Company>BEITAware</Company>
@@ -59,10 +59,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Resources\SkyweaverAppLogo.ico" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="Icons\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -76,7 +72,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Resources\SkyweaverAppLogo.png">
+    <None Update="Resources\SkyweaverLogo.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>

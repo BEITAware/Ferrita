@@ -16,6 +16,7 @@
         <ResourceDictionary Source="FilmPreviewTabStyles.xaml"/>
         <ResourceDictionary Source="NewNodeGraphDialogStyles.xaml"/>
         <ResourceDictionary Source="ChatStyles.xaml"/>
+        <ResourceDictionary Source="DiffStyles.xaml"/>
         <ResourceDictionary Source="MarkdownTableStyles.xaml"/>
         <ResourceDictionary Source="SliderStyles.xaml"/>
         <ResourceDictionary Source="PreferencesPanelStyles.xaml"/>

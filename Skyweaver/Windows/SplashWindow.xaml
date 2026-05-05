@@ -12,10 +12,11 @@
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
+        Icon="/Skyweaver;component/Resources/Skyweaver.ico"
         ResizeMode="NoResize">
     <Grid>
         <Image x:Name="SplashImage" Source="/Resources/BootUpNew.jpg" Stretch="UniformToFill"/>
-        <Image HorizontalAlignment="Left" Height="110" Margin="130,52,0,0" VerticalAlignment="Top" Width="110" Source="/Resources/SkyweaverAppLogo.png"/>
+        <Image HorizontalAlignment="Left" Height="110" Margin="130,52,0,0" VerticalAlignment="Top" Width="110" Source="/Resources/SkyweaverLogo.png"/>
 
         <!-- 软件名称 -->
         <TextBlock x:Name="SoftwareNameText"
@@ -40,7 +41,7 @@
                    Margin="237,0,0,310"
                    FontSize="12"
                    Foreground="White"
-                   Text="© 2025 BEITAware.  按原样提供，不附带任何保证。"
+                   Text="© 2026 BEITAware.  按原样提供，不附带任何保证。"
                    TextWrapping="Wrap"
                    TextAlignment="Center">
             <TextBlock.Effect>

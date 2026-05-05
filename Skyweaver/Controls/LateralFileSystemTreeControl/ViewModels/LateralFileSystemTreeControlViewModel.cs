@@ -37,6 +37,7 @@ namespace Skyweaver.Controls.LateralFileSystemTreeControl.ViewModels
 
             CreateProjectionFolderCommand = new RelayCommand(ExecuteCreateProjectionFolder, () => CanManageFolders);
             CreateInheritanceFolderCommand = new RelayCommand(ExecuteCreateInheritanceFolder, () => CanManageFolders && SelectedNode != null);
+            MergeFolderCommand = new AsyncRelayCommand(ExecuteMergeFolderAsync, () => CanManageFolders && SelectedNode != null);
             DeleteFolderCommand = new RelayCommand(ExecuteDeleteFolder, () => CanManageFolders && SelectedNode != null);
             RefreshTreeCommand = new RelayCommand(() => RefreshFromBackend(preserveSelection: true));
             RefreshSelectedNodeFilesCommand = new AsyncRelayCommand(
@@ -172,7 +173,7 @@ namespace Skyweaver.Controls.LateralFileSystemTreeControl.ViewModels
 
                 if (!IsBackendConfiguredEnabled)
                 {
-                    return "LateralFS 已配置工作根目录，但当前未启用，因此创建、继承和删除操作已禁用。";
+                    return "LateralFS 已配置工作根目录，但当前未启用，因此创建、继承、合并和删除操作已禁用。";
                 }
 
                 return "已连接到 LateralFS 后端。";
@@ -185,7 +186,7 @@ namespace Skyweaver.Controls.LateralFileSystemTreeControl.ViewModels
             {
                 if (!IsVirtualizationBackendAvailable)
                 {
-                    return "当前系统无法启动侧向文件系统虚拟化后端。已保存节点仍可查看，但创建、继承和删除操作已禁用。";
+                    return "当前系统无法启动侧向文件系统虚拟化后端。已保存节点仍可查看，但创建、继承、合并和删除操作已禁用。";
                 }
 
                 if (!HasWorkingRootDirectory)
@@ -195,7 +196,7 @@ namespace Skyweaver.Controls.LateralFileSystemTreeControl.ViewModels
 
                 if (!IsBackendConfiguredEnabled)
                 {
-                    return "当前后端未启用。可以先查看已有节点，创建和删除操作会保持禁用。";
+                    return "当前后端未启用。可以先查看已有节点，创建、合并和删除操作会保持禁用。";
                 }
 
                 return Nodes.Count == 0
@@ -259,6 +260,8 @@ namespace Skyweaver.Controls.LateralFileSystemTreeControl.ViewModels
         public ICommand CreateInheritanceFolderCommand { get; }
 
         public ICommand DeleteFolderCommand { get; }
+
+        public ICommand MergeFolderCommand { get; }
 
         public ICommand RefreshTreeCommand { get; }
 
@@ -402,6 +405,49 @@ namespace Skyweaver.Controls.LateralFileSystemTreeControl.ViewModels
             catch (Exception ex)
             {
                 MessageBox.Show(Application.Current?.MainWindow, ex.Message, "删除侧向文件夹", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private async Task ExecuteMergeFolderAsync()
+        {
+            if (SelectedNode is null)
+            {
+                return;
+            }
+
+            if (!EnsureBackendReadyForMutation())
+            {
+                return;
+            }
+
+            var selectedNodeId = SelectedNode.Id;
+            var selectedNodeName = SelectedNode.Name;
+            var sourcePath = ResolveNodeSourcePathForDisplay(SelectedNode);
+
+            var result = MessageBox.Show(
+                Application.Current?.MainWindow,
+                $"确定将侧向文件夹“{selectedNodeName}”合并回源文件夹吗？\n\n源文件夹：{sourcePath}\n\n这会用当前侧向文件夹视图完整替换源文件夹内容；源文件夹中不存在于侧向文件夹的内容也会被删除。成功后会移除此 LateralFS 节点和投影文件夹。",
+                "合并侧向文件夹",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                StatusMessage = $"正在将侧向文件夹“{selectedNodeName}”合并回源文件夹…";
+                var mergeResult = await Task.Run(() => _runtime.MergeVirtualRoot(selectedNodeId)).ConfigureAwait(true);
+                RefreshFromBackend(preserveSelection: false);
+                StatusMessage = $"已将“{mergeResult.NodeName}”合并回源文件夹，并移除对应 LateralFS 节点。快照包含 {mergeResult.SnapshotFileCount} 个文件、{mergeResult.SnapshotDirectoryCount} 个文件夹。";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(Application.Current?.MainWindow, ex.Message, "合并侧向文件夹", MessageBoxButton.OK, MessageBoxImage.Warning);
+                StatusMessage = $"合并侧向文件夹“{selectedNodeName}”失败。";
             }
         }
 
@@ -767,11 +813,30 @@ namespace Skyweaver.Controls.LateralFileSystemTreeControl.ViewModels
 
             if (!IsBackendConfiguredEnabled)
             {
-                MessageBox.Show(Application.Current?.MainWindow, "侧向文件系统当前未启用，请先在配置页面中启用后再执行创建、继承或删除。", "侧向文件系统树", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Application.Current?.MainWindow, "侧向文件系统当前未启用，请先在配置页面中启用后再执行创建、继承、合并或删除。", "侧向文件系统树", MessageBoxButton.OK, MessageBoxImage.Information);
                 return false;
             }
 
             return true;
+        }
+
+        private string ResolveNodeSourcePathForDisplay(LateralFileSystemNodeViewModel node)
+        {
+            if (!string.IsNullOrWhiteSpace(node.ProjectionSourcePath))
+            {
+                return node.ProjectionSourcePath;
+            }
+
+            if (!string.IsNullOrWhiteSpace(node.ParentNodeId))
+            {
+                var parent = Nodes.FirstOrDefault(candidate => string.Equals(candidate.Id, node.ParentNodeId, StringComparison.OrdinalIgnoreCase));
+                if (parent != null)
+                {
+                    return parent.VirtualRootPath;
+                }
+            }
+
+            return "未设置";
         }
 
         private LateralFileSystemFileTreeNodeViewModel CreateFileTreeNode(string nodeId, LateralFileSystemFileEntryModel entry)

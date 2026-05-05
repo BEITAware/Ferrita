@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <ApplicationIcon>Resources\SkyweaverAppLogo.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\Skyweaver.ico</ApplicationIcon>
     <AssemblyTitle>Skyweaver Installation Wizard</AssemblyTitle>
     <AssemblyDescription>Installation wizard for Skyweaver application</AssemblyDescription>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>

@@ -149,6 +149,21 @@ namespace Skyweaver.Services.LateralFileSystem
             TreeChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        public LateralFileSystemMergeResult MergeVirtualRoot(string nodeId)
+        {
+            LateralFileSystemMergeResult result;
+            lock (_syncRoot)
+            {
+                ThrowIfDisposed();
+                var workingRootDirectory = EnsureWorkingRootIsReadyForActivation();
+                _service.ActivateAll(workingRootDirectory);
+                result = _service.MergeVirtualRoot(workingRootDirectory, nodeId);
+            }
+
+            TreeChanged?.Invoke(this, EventArgs.Empty);
+            return result;
+        }
+
         public void SaveConfiguration(LateralFileSystemConfiguration configuration)
         {
             ArgumentNullException.ThrowIfNull(configuration);

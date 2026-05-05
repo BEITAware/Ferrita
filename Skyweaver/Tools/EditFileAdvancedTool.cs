@@ -202,14 +202,14 @@ namespace Skyweaver.Tools
                 ? "Permission: FullAccess, so the tool may write any file path that the process account can access."
                 : "Permission: LateralFileSystemOnly, so the tool may write only inside LateralFS virtual folders. In this mode, use LateralFS\\NodeName\\relative\\file.ext or an actual path under a LateralFS virtual root; do not use the original projected source path.";
 
-            return "Advanced existing-file editing tool. EditText is plain text, not a diff, and uses full-line [Existing Code] sentinel lines to delimit one or more edit blocks. " +
-                "Inside each block, the default rule is: first line = unchanged top anchor, middle lines = final edited content, last line = unchanged bottom anchor. [Existing Code] only marks block boundaries; it is not itself an anchor. " +
-                "You may also use the literal marker [BOF] as the first line inside a block to anchor the block to the beginning of the file, and/or [EOF] as the last line inside a block to anchor the block to the end of the file. Those marker lines are virtual anchors and are not written into the file. " +
-                "Use [BOF] when you need to edit the first line, [EOF] when you need to edit the last line, and [BOF] plus [EOF] together when you need to replace the whole file. " +
-                "Example for fixing a typo on the last line of a file: [Existing Code]\\n  print(arg)\\nfunc(arg)\\n[EOF]\\n[Existing Code]. Example for editing the first line: [Existing Code]\\n[BOF]\\ndef func(arg):\\n  print(arg)\\n[Existing Code]. " +
+            return "Advanced existing-file editing tool. EditText is plain text, not a diff. " +
+                "Primary protocol: use one or more full-line [Existing Code] ... [Existing Code] blocks. As a relaxed edge form, the first block may start with [BOF] instead of [Existing Code], and the last block may end with [EOF] instead of [Existing Code]. Inside each block, the first real line(s) are unchanged top anchors, the middle is the final edited text, and the last real line(s) are unchanged bottom anchors. [Existing Code] only marks block boundaries; it is never an anchor. " +
+                "Single-block shorthand: if you omit [Existing Code] entirely, the whole EditText body is treated as one edit block. This is the fallback form for simple edits. " +
+                "You may use the literal marker [BOF] as the first line of a block to anchor at the beginning of the file, and/or [EOF] as the last line of a block to anchor at the end of the file. Those marker lines are virtual anchors and are not written into the file. Use [BOF] when editing the first line, [EOF] when editing the last line, and [BOF] plus [EOF] together when rewriting the whole file. " +
                 "Prefer 2-5 exact unchanged context lines around the real edit when possible. The tool considers at most 16 anchor lines on each side. " +
-                "If EditText may contain '<', '>', or '&' such as XML, HTML, or generic code, wrap the entire EditText value in CDATA in the outer XML tool call. " +
-                "Only whitespace is allowed outside complete [Existing Code] ... [Existing Code] blocks. If anchors are missing, duplicated, or not unique, the tool fails without writing the file. " +
+                "If EditText may contain '<', '>', or '&' such as XML, HTML, or generic code, wrap the entire EditText value in CDATA in the outer XML tool call; the host/parser unwraps that CDATA automatically, so do not leave literal <![CDATA[ or ]]> markers inside the edit body. " +
+                "Few-shot samples: first-line edit => [BOF]\\nnew first line\\nunchanged second line. Last-line edit => unchanged previous line\\nnew last line\\n[EOF]. Relaxed first block => [BOF]\\nnew first line\\nunchanged second line\\n[Existing Code]. Relaxed last block => [Existing Code]\\nunchanged previous line\\nnew last line\\n[EOF]. Multi-edit => [Existing Code]\\nunchanged top\\nnew middle\\nunchanged bottom\\n[Existing Code]\\n\\n[Existing Code]\\nsecond top\\nsecond new middle\\nsecond bottom\\n[Existing Code]. Whole-file rewrite => [BOF]\\nfull final file content\\n[EOF]. " +
+                "Only whitespace is allowed outside complete edit blocks. The standard multi-block form is [Existing Code] ... [Existing Code], with [BOF] ... [Existing Code] and [Existing Code] ... [EOF] also accepted for the outermost first/last block. If anchors are missing, duplicated, or not unique, the tool fails without writing the file. " +
                 "FilePath can be a LateralFS shortcut in the form LateralFS\\NodeName\\relative\\file.ext; the shortcut is resolved to that node's virtual folder before writing, and '..' traversal outside the node is rejected. " +
                 permissionText;
 
@@ -230,12 +230,12 @@ namespace Skyweaver.Tools
 
         private static string BuildEditTextParameterDescription()
         {
-            return "Anchored final-text editing parameter. EditText is plain text, not a diff, and must contain one or more complete [Existing Code] ... [Existing Code] blocks with only whitespace outside those blocks. " +
-                "Within a block, the default form is unchanged top anchor line(s), final edited content, unchanged bottom anchor line(s). " +
-                "To edit the first line, you may use the literal marker [BOF] as the first line inside the block. To edit the last line, you may use the literal marker [EOF] as the last line inside the block. [BOF] and [EOF] are virtual file-boundary anchors and are not written into the file. " +
-                "Example last-line fix: [Existing Code]\\n  print(arg)\\nfunc(arg)\\n[EOF]\\n[Existing Code]. Example first-line edit: [Existing Code]\\n[BOF]\\ndef func(arg):\\n  print(arg)\\n[Existing Code]. " +
+            return "Anchored final-text editing parameter. EditText is plain text, not a diff. " +
+                "Preferred form: one or more [Existing Code] ... [Existing Code] blocks with only whitespace outside those blocks. Relaxed edge forms [BOF] ... [Existing Code] and [Existing Code] ... [EOF] are also accepted for the outermost first/last block. Shorthand fallback: if no [Existing Code] sentinel appears, the entire EditText body becomes one edit block. " +
+                "Within a block, the default form is unchanged top anchor line(s), final edited content, unchanged bottom anchor line(s). To edit the first line, you may use [BOF] as the first line inside the block. To edit the last line, you may use [EOF] as the last line inside the block. [BOF] and [EOF] are virtual file-boundary anchors and are not written into the file. " +
                 "Without [BOF] or [EOF], the first and last lines inside the block must be unchanged original lines. Prefer 2-5 exact unchanged context lines when possible; repeated code may require larger anchors. " +
-                "If the content contains '<', '>', or '&', especially XML, HTML, or generic code, wrap the entire EditText value in CDATA in the outer XML tool call.";
+                "Few-shot samples: [BOF]\\nnew first line\\nunchanged second line ; unchanged previous line\\nnew last line\\n[EOF] ; [BOF]\\nnew first line\\nunchanged second line\\n[Existing Code] ; [Existing Code]\\nunchanged previous line\\nnew last line\\n[EOF] ; [BOF]\\nfull final file content\\n[EOF]. " +
+                "If the content contains '<', '>', or '&', especially XML, HTML, or generic code, wrap the entire EditText value in CDATA in the outer XML tool call. The host/parser unwraps the outer CDATA automatically.";
 
             return "锚点式最终文本编辑参数。EditText 是纯文本，不是 diff，不要写 XML 编辑标签。固定哨兵行是一整行 [Existing Code]。 " +
                 "一个 EditText 可以一次包含多个编辑块，每个块都是一对 [Existing Code] 哨兵包住若干行最终文本；块外只能有空白。 " +
@@ -293,6 +293,8 @@ namespace Skyweaver.Tools
                 throw new InvalidOperationException("EditText cannot be empty.");
             }
 
+            normalized = UnwrapOuterCData(normalized);
+
             if (!StartsWithElement(normalized, "EditText"))
             {
                 return normalized;
@@ -306,7 +308,7 @@ namespace Skyweaver.Tools
                     return normalized;
                 }
 
-                return string.Concat(element.Nodes().Select(node => node.ToString(SaveOptions.DisableFormatting))).Trim();
+                return UnwrapOuterCData(ExtractElementText(element).Trim());
             }
             catch (Exception ex) when (ex is InvalidOperationException or System.Xml.XmlException)
             {
@@ -316,17 +318,16 @@ namespace Skyweaver.Tools
 
         private static IReadOnlyList<EditBlock> ParseEditBlocks(string editText)
         {
+            editText = NormalizeRelaxedBoundarySentinels(editText);
             var matches = s_editMarkerPattern.Matches(editText);
             if (matches.Count == 0)
             {
-                throw new InvalidOperationException(
-                    "EditText must contain at least one pair of [Existing Code] sentinel lines. Use: [Existing Code], unchanged top anchor line(s), final edited text, unchanged bottom anchor line(s), [Existing Code].");
+                return ParseSingleBlockFallback(editText);
             }
 
             if (matches.Count % 2 != 0)
             {
-                throw new InvalidOperationException(
-                    "EditText contains an unmatched [Existing Code] sentinel line. Each edit block needs exactly two sentinel lines: one opening [Existing Code] and one closing [Existing Code].");
+                throw new InvalidOperationException(BuildUnmatchedSentinelMessage(editText));
             }
 
             var blocks = new List<EditBlock>(matches.Count / 2);
@@ -338,8 +339,7 @@ namespace Skyweaver.Tools
 
                 if (!IsWhitespaceOnly(editText, previousEnd, openMarker.Index))
                 {
-                    throw new InvalidOperationException(
-                        "Only whitespace is allowed outside [Existing Code] edit blocks. Put all source/final text inside complete [Existing Code] ... [Existing Code] blocks; use multiple complete blocks for multiple edits.");
+                    throw new InvalidOperationException(BuildOutsideBlockTextMessage(editText));
                 }
 
                 var blockStart = openMarker.Index + openMarker.Length;
@@ -356,11 +356,125 @@ namespace Skyweaver.Tools
 
             if (!IsWhitespaceOnly(editText, previousEnd, editText.Length))
             {
-                throw new InvalidOperationException(
-                    "Only whitespace is allowed outside [Existing Code] edit blocks. Put all source/final text inside complete [Existing Code] ... [Existing Code] blocks; use multiple complete blocks for multiple edits.");
+                throw new InvalidOperationException(BuildOutsideBlockTextMessage(editText));
             }
 
             return blocks;
+        }
+
+        private static string NormalizeRelaxedBoundarySentinels(string editText)
+        {
+            if (string.IsNullOrEmpty(editText))
+            {
+                return editText;
+            }
+
+            var split = SplitLines(editText);
+            if (split.Lines.Count == 0 || !split.LineTexts.Any(IsExistingCodeSentinelLine))
+            {
+                return editText;
+            }
+
+            var firstContentLineIndex = FindFirstNonWhitespaceLineIndex(split.Lines);
+            var lastContentLineIndex = FindLastNonWhitespaceLineIndex(split.Lines);
+            if (firstContentLineIndex < 0 || lastContentLineIndex < 0)
+            {
+                return editText;
+            }
+
+            var rewriteStart = string.Equals(
+                split.Lines[firstContentLineIndex].Text,
+                BeginningOfFileMarker,
+                StringComparison.Ordinal);
+            var rewriteEnd = string.Equals(
+                split.Lines[lastContentLineIndex].Text,
+                EndOfFileMarker,
+                StringComparison.Ordinal);
+            if (!rewriteStart && !rewriteEnd)
+            {
+                return editText;
+            }
+
+            var newline = DetectDominantNewline(editText);
+            var builder = new StringBuilder(editText.Length + 32);
+            for (var index = 0; index < split.Lines.Count; index++)
+            {
+                var line = split.Lines[index];
+                if (rewriteStart && index == firstContentLineIndex)
+                {
+                    AppendInsertedExistingCodeSentinel(builder, line.Newline, newline);
+                }
+
+                builder.Append(line.Text);
+                builder.Append(line.Newline);
+
+                if (rewriteEnd && index == lastContentLineIndex)
+                {
+                    if (line.Newline.Length == 0)
+                    {
+                        builder.Append(newline);
+                    }
+
+                    builder.Append("[Existing Code]");
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static void AppendInsertedExistingCodeSentinel(
+            StringBuilder builder,
+            string preferredNewline,
+            string fallbackNewline)
+        {
+            builder.Append("[Existing Code]");
+            builder.Append(preferredNewline.Length > 0 ? preferredNewline : fallbackNewline);
+        }
+
+        private static int FindFirstNonWhitespaceLineIndex(IReadOnlyList<TextLine> lines)
+        {
+            for (var index = 0; index < lines.Count; index++)
+            {
+                if (!string.IsNullOrWhiteSpace(lines[index].Text))
+                {
+                    return index;
+                }
+            }
+
+            return -1;
+        }
+
+        private static int FindLastNonWhitespaceLineIndex(IReadOnlyList<TextLine> lines)
+        {
+            for (var index = lines.Count - 1; index >= 0; index--)
+            {
+                if (!string.IsNullOrWhiteSpace(lines[index].Text))
+                {
+                    return index;
+                }
+            }
+
+            return -1;
+        }
+
+        private static IReadOnlyList<EditBlock> ParseSingleBlockFallback(string editText)
+        {
+            var blockText = TrimSingleBoundaryLineBreak(editText.Trim());
+            if (string.IsNullOrWhiteSpace(blockText))
+            {
+                throw new InvalidOperationException("EditText cannot be empty.");
+            }
+
+            try
+            {
+                var block = ParseEditBlock(1, blockText);
+                ValidateReplacementLineCount(block, SplitLines(block.FinalText).Lines.Count);
+                return [block];
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new InvalidOperationException(BuildFallbackBlockFailureMessage(editText, ex.Message));
+            }
         }
 
         private static AppliedEditBlock ApplyEditBlock(string content, EditBlock block, string newline)
@@ -852,6 +966,56 @@ namespace Skyweaver.Tools
             return trimmed.Length == prefix.Length || char.IsWhiteSpace(trimmed[prefix.Length]) || trimmed[prefix.Length] is '>' or '/';
         }
 
+        private static string ExtractElementText(XElement element)
+        {
+            var builder = new StringBuilder();
+            foreach (var node in element.Nodes())
+            {
+                switch (node)
+                {
+                    case XCData cdata:
+                        builder.Append(cdata.Value);
+                        break;
+                    case XText text:
+                        builder.Append(text.Value);
+                        break;
+                    default:
+                        builder.Append(node.ToString(SaveOptions.DisableFormatting));
+                        break;
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static string UnwrapOuterCData(string text)
+        {
+            var current = text.Trim();
+            while (TryUnwrapOuterCData(current, out var innerText))
+            {
+                current = innerText.Trim();
+            }
+
+            return current;
+        }
+
+        private static bool TryUnwrapOuterCData(string text, out string innerText)
+        {
+            const string cdataPrefix = "<![CDATA[";
+            const string cdataSuffix = "]]>";
+
+            if (text.StartsWith(cdataPrefix, StringComparison.Ordinal) &&
+                text.EndsWith(cdataSuffix, StringComparison.Ordinal) &&
+                text.Length >= cdataPrefix.Length + cdataSuffix.Length)
+            {
+                innerText = text[cdataPrefix.Length..^cdataSuffix.Length];
+                return true;
+            }
+
+            innerText = string.Empty;
+            return false;
+        }
+
         private static bool IsWhitespaceOnly(string text, int startIndex, int endIndex)
         {
             for (var index = startIndex; index < endIndex; index++)
@@ -863,6 +1027,71 @@ namespace Skyweaver.Tools
             }
 
             return true;
+        }
+
+        private static string BuildUnmatchedSentinelMessage(string editText)
+        {
+            if (ContainsNonStandaloneExistingCodeLine(editText))
+            {
+                return "EditText contains [Existing Code] on a non-sentinel line. [Existing Code] must appear alone on its own line. Put [BOF], [EOF], or any real code on the next/previous line instead. Example: [Existing Code]\\n[BOF]\\n...\\n[Existing Code]. If you only need one block, you may also omit [Existing Code] entirely and let the whole EditText body act as the block.";
+            }
+
+            return "EditText contains unmatched edit-block sentinels. The standard multi-block form is [Existing Code] ... [Existing Code]. The outermost first block may also start with [BOF], and the outermost last block may also end with [EOF]. If you only need one block, you may omit [Existing Code] entirely and use the whole EditText body as a single shorthand block.";
+        }
+
+        private static string BuildOutsideBlockTextMessage(string editText)
+        {
+            if (ContainsLiteralCDataMarker(editText))
+            {
+                return "Only whitespace is allowed outside [Existing Code] edit blocks. Literal <![CDATA[ or ]]> markers were found in EditText. CDATA should wrap the outer XML parameter only; do not leave the CDATA markers themselves inside the edit body.";
+            }
+
+            if (ContainsNonStandaloneExistingCodeLine(editText))
+            {
+                return "Only whitespace is allowed outside [Existing Code] edit blocks. [Existing Code] must be alone on its own line; do not combine it with [BOF], [EOF], or real code on the same line.";
+            }
+
+            return "Only whitespace is allowed outside edit blocks. Put all source/final text inside complete blocks; the standard multi-block form is [Existing Code] ... [Existing Code], and the outermost first/last block may also use [BOF] ... [Existing Code] or [Existing Code] ... [EOF]. If you only need one block, you may omit [Existing Code] entirely and let the whole EditText body be that block.";
+        }
+
+        private static string BuildFallbackBlockFailureMessage(string editText, string reason)
+        {
+            if (ContainsNonStandaloneExistingCodeLine(editText))
+            {
+                return $"{reason} [Existing Code] was found, but not as a standalone sentinel line. Put [Existing Code] on its own line, or omit it entirely and use the whole EditText body as one shorthand block.";
+            }
+
+            if (ContainsLiteralCDataMarker(editText))
+            {
+                return $"{reason} Literal <![CDATA[ or ]]> markers were found in EditText. CDATA should wrap the outer XML parameter only; do not keep those markers inside the edit body.";
+            }
+
+            return $"{reason} No complete edit block was found, so the whole EditText body was treated as one shorthand block. For multiple distant edits, wrap each block in matched sentinels: usually [Existing Code] ... [Existing Code], with [BOF] ... [Existing Code] and [Existing Code] ... [EOF] also accepted for the outermost first/last block. For a full-file fallback rewrite, use [BOF] as the first line and [EOF] as the last line.";
+        }
+
+        private static bool ContainsNonStandaloneExistingCodeLine(string text)
+        {
+            foreach (var line in SplitLines(text).LineTexts)
+            {
+                if (line.IndexOf("[Existing Code]", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    !IsExistingCodeSentinelLine(line))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsExistingCodeSentinelLine(string line)
+        {
+            return string.Equals(line.Trim(), "[Existing Code]", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool ContainsLiteralCDataMarker(string text)
+        {
+            return text.Contains("<![CDATA[", StringComparison.Ordinal) ||
+                text.Contains("]]>", StringComparison.Ordinal);
         }
 
         private static string BuildSuccessContent(

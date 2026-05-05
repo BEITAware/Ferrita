@@ -5,7 +5,8 @@
         Width="820"
         Height="480"
         ResizeMode="NoResize"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner"
+        Icon="/Skyweaver;component/Resources/Skyweaver.ico">
     <Window.Background>
         <SolidColorBrush Color="#FF111326"/>
     </Window.Background>

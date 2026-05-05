@@ -35,6 +35,8 @@ namespace Skyweaver.Services.SkyweaverTools
 
         public SkyweaverLineDiffEntryKind Kind { get; }
 
+        public string KindName => Kind.ToString();
+
         public bool IsSeparator => Kind == SkyweaverLineDiffEntryKind.Separator;
     }
 
@@ -53,14 +55,11 @@ namespace Skyweaver.Services.SkyweaverTools
             var updatedLines = SplitLines(updatedText);
             var operations = ComputeDiff(originalLines, updatedLines);
             var ranges = BuildDisplayRanges(operations, Math.Max(0, contextLineCount));
-            var displayedLines = CountDisplayedLines(ranges);
-            if (displayedLines == 0)
+            if (ranges.Count == 0)
             {
                 return string.Empty;
             }
 
-            var width = Math.Max(3, displayedLines.ToString(CultureInfo.InvariantCulture).Length);
-            var lineNumber = 1;
             var builder = new StringBuilder();
 
             for (var rangeIndex = 0; rangeIndex < ranges.Count; rangeIndex++)
@@ -75,13 +74,12 @@ namespace Skyweaver.Services.SkyweaverTools
                 {
                     var operation = operations[index];
                     builder
-                        .Append(lineNumber.ToString($"D{width}", CultureInfo.InvariantCulture))
+                        .Append(FormatLineNumber(operation.DisplayLineNumber))
                         .Append(' ')
                         .Append(GetMarker(operation.Kind))
                         .Append(" | ")
                         .Append(operation.Text);
 
-                    lineNumber++;
                     if (!(rangeIndex == ranges.Count - 1 && index == range.EndIndexExclusive - 1))
                     {
                         builder.AppendLine();
@@ -274,7 +272,7 @@ namespace Skyweaver.Services.SkyweaverTools
                     if (originalIndex >= originalCount && updatedIndex >= updatedCount)
                     {
                         trace.Add(nextFrontier);
-                        return Backtrack(trace, originalLines, updatedLines);
+                        return AnnotateLineNumbers(Backtrack(trace, originalLines, updatedLines));
                     }
                 }
 
@@ -282,15 +280,15 @@ namespace Skyweaver.Services.SkyweaverTools
                 frontier = nextFrontier;
             }
 
-            return BuildFallbackOperations(originalLines, updatedLines);
+            return AnnotateLineNumbers(BuildFallbackOperations(originalLines, updatedLines));
         }
 
-        private static IReadOnlyList<DiffOperation> Backtrack(
+        private static IReadOnlyList<DiffOperationSeed> Backtrack(
             IReadOnlyList<Dictionary<int, int>> trace,
             IReadOnlyList<string> originalLines,
             IReadOnlyList<string> updatedLines)
         {
-            var operations = new List<DiffOperation>();
+            var operations = new List<DiffOperationSeed>();
             var originalIndex = originalLines.Count;
             var updatedIndex = updatedLines.Count;
 
@@ -300,20 +298,20 @@ namespace Skyweaver.Services.SkyweaverTools
                 {
                     while (originalIndex > 0 && updatedIndex > 0)
                     {
-                        operations.Add(new DiffOperation(DiffOperationKind.Anchor, originalLines[originalIndex - 1]));
+                        operations.Add(new DiffOperationSeed(DiffOperationKind.Anchor, originalLines[originalIndex - 1]));
                         originalIndex--;
                         updatedIndex--;
                     }
 
                     while (originalIndex > 0)
                     {
-                        operations.Add(new DiffOperation(DiffOperationKind.Removed, originalLines[originalIndex - 1]));
+                        operations.Add(new DiffOperationSeed(DiffOperationKind.Removed, originalLines[originalIndex - 1]));
                         originalIndex--;
                     }
 
                     while (updatedIndex > 0)
                     {
-                        operations.Add(new DiffOperation(DiffOperationKind.Added, updatedLines[updatedIndex - 1]));
+                        operations.Add(new DiffOperationSeed(DiffOperationKind.Added, updatedLines[updatedIndex - 1]));
                         updatedIndex--;
                     }
 
@@ -333,19 +331,19 @@ namespace Skyweaver.Services.SkyweaverTools
 
                 while (originalIndex > previousOriginalIndex && updatedIndex > previousUpdatedIndex)
                 {
-                    operations.Add(new DiffOperation(DiffOperationKind.Anchor, originalLines[originalIndex - 1]));
+                    operations.Add(new DiffOperationSeed(DiffOperationKind.Anchor, originalLines[originalIndex - 1]));
                     originalIndex--;
                     updatedIndex--;
                 }
 
                 if (originalIndex == previousOriginalIndex && updatedIndex > previousUpdatedIndex)
                 {
-                    operations.Add(new DiffOperation(DiffOperationKind.Added, updatedLines[updatedIndex - 1]));
+                    operations.Add(new DiffOperationSeed(DiffOperationKind.Added, updatedLines[updatedIndex - 1]));
                     updatedIndex--;
                 }
                 else if (updatedIndex == previousUpdatedIndex && originalIndex > previousOriginalIndex)
                 {
-                    operations.Add(new DiffOperation(DiffOperationKind.Removed, originalLines[originalIndex - 1]));
+                    operations.Add(new DiffOperationSeed(DiffOperationKind.Removed, originalLines[originalIndex - 1]));
                     originalIndex--;
                 }
             }
@@ -354,14 +352,62 @@ namespace Skyweaver.Services.SkyweaverTools
             return operations;
         }
 
-        private static IReadOnlyList<DiffOperation> BuildFallbackOperations(
+        private static IReadOnlyList<DiffOperationSeed> BuildFallbackOperations(
             IReadOnlyList<string> originalLines,
             IReadOnlyList<string> updatedLines)
         {
             return originalLines
-                .Select(line => new DiffOperation(DiffOperationKind.Removed, line))
-                .Concat(updatedLines.Select(line => new DiffOperation(DiffOperationKind.Added, line)))
+                .Select(line => new DiffOperationSeed(DiffOperationKind.Removed, line))
+                .Concat(updatedLines.Select(line => new DiffOperationSeed(DiffOperationKind.Added, line)))
                 .ToArray();
+        }
+
+        private static IReadOnlyList<DiffOperation> AnnotateLineNumbers(
+            IReadOnlyList<DiffOperationSeed> operations)
+        {
+            if (operations.Count == 0)
+            {
+                return Array.Empty<DiffOperation>();
+            }
+
+            var annotatedOperations = new List<DiffOperation>(operations.Count);
+            var originalLineNumber = 1;
+            var updatedLineNumber = 1;
+
+            foreach (var operation in operations)
+            {
+                var originalNumber = default(int?);
+                var updatedNumber = default(int?);
+                var displayNumber = default(int?);
+
+                switch (operation.Kind)
+                {
+                    case DiffOperationKind.Anchor:
+                        originalNumber = originalLineNumber++;
+                        updatedNumber = updatedLineNumber++;
+                        displayNumber = updatedNumber;
+                        break;
+
+                    case DiffOperationKind.Added:
+                        updatedNumber = updatedLineNumber++;
+                        displayNumber = updatedNumber;
+                        break;
+
+                    case DiffOperationKind.Removed:
+                        originalNumber = originalLineNumber++;
+                        displayNumber = originalNumber;
+                        break;
+                }
+
+                annotatedOperations.Add(new DiffOperation(
+                    operation.Kind,
+                    operation.Text,
+                    displayNumber,
+                    originalNumber,
+                    updatedNumber));
+            }
+
+            return annotatedOperations;
         }
 
         private static IReadOnlyList<DisplayRange> BuildDisplayRanges(
@@ -405,15 +451,11 @@ namespace Skyweaver.Services.SkyweaverTools
             return ranges;
         }
 
-        private static int CountDisplayedLines(IReadOnlyList<DisplayRange> ranges)
+        private static string FormatLineNumber(int? lineNumber)
         {
-            var count = 0;
-            foreach (var range in ranges)
-            {
-                count += range.EndIndexExclusive - range.StartIndex;
-            }
-
-            return count;
+            return lineNumber.HasValue
+                ? lineNumber.Value.ToString(CultureInfo.InvariantCulture)
+                : string.Empty;
         }
 
         private static int GetFrontierValue(
@@ -447,9 +489,16 @@ namespace Skyweaver.Services.SkyweaverTools
             int StartIndex,
             int EndIndexExclusive);
 
-        private sealed record DiffOperation(
+        private sealed record DiffOperationSeed(
             DiffOperationKind Kind,
             string Text);
+
+        private sealed record DiffOperation(
+            DiffOperationKind Kind,
+            string Text,
+            int? DisplayLineNumber,
+            int? OriginalLineNumber,
+            int? UpdatedLineNumber);
 
         private enum DiffOperationKind
         {

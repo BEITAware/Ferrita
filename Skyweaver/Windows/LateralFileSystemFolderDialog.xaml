@@ -6,6 +6,7 @@
         Height="270"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
+        Icon="/Skyweaver;component/Resources/Skyweaver.ico"
         Background="{DynamicResource Layer_1}">
     <Border Padding="16"
             BorderBrush="{DynamicResource BorderBrush}"

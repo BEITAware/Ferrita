@@ -17,9 +17,12 @@ namespace Skyweaver.Controls.ChatSessionControl.Models
         private string? _callerAgentId;
         private string? _resourcePath;
         private string? _presentationKind;
+        private string _toolResultContent;
+        private string? _toolResultPresentationKind;
         private bool _isStreaming;
         private bool _isUserVisible;
         private bool _isCollapsible;
+        private bool _isExpanded;
         private SkyweaverToolInvocationPresentationState? _toolPresentationState;
         private FrameworkElement? _toolPresentationView;
 
@@ -80,6 +83,12 @@ namespace Skyweaver.Controls.ChatSessionControl.Models
             set => SetProperty(ref _isCollapsible, value);
         }
 
+        public bool IsExpanded
+        {
+            get => _isExpanded;
+            set => SetProperty(ref _isExpanded, value);
+        }
+
         public string? Title
         {
             get => _title;
@@ -122,6 +131,20 @@ namespace Skyweaver.Controls.ChatSessionControl.Models
             }
         }
 
+        public string ToolResultContent
+        {
+            get => _toolResultContent;
+            set => SetProperty(ref _toolResultContent, value ?? string.Empty);
+        }
+
+        public string? ToolResultPresentationKind
+        {
+            get => _toolResultPresentationKind;
+            set => SetProperty(ref _toolResultPresentationKind, NormalizeMetadataValue(value));
+        }
+
+        public bool HasToolResult => !string.IsNullOrWhiteSpace(ToolResultContent);
+
         public ObservableCollection<ChatStructuredXmlNodeModel> StructuredXmlNodes { get; } = new();
 
         public bool HasStructuredXmlNodes => StructuredXmlNodes.Count > 0;
@@ -153,16 +176,19 @@ namespace Skyweaver.Controls.ChatSessionControl.Models
             string? callerAgentId = null,
             string? resourcePath = null,
             bool isUserVisible = true,
-            bool isCollapsible = true)
+            bool isCollapsible = true,
+            bool isExpanded = false)
         {
             _partType = partType;
             _content = content;
             _title = title;
             _language = language;
             _badgeText = badgeText;
+            _toolResultContent = string.Empty;
             _isStreaming = isStreaming;
             _isUserVisible = isUserVisible;
             _isCollapsible = isCollapsible;
+            _isExpanded = isExpanded;
             _toolCallId = NormalizeMetadataValue(toolCallId);
             _callerAgentId = NormalizeMetadataValue(callerAgentId);
             _resourcePath = NormalizeMetadataValue(resourcePath);
@@ -238,7 +264,8 @@ namespace Skyweaver.Controls.ChatSessionControl.Models
             string content,
             string? title = null,
             bool isStreaming = false,
-            bool isCollapsible = true)
+            bool isCollapsible = true,
+            bool isExpanded = false)
         {
             return new ChatMessagePartModel(
                 ChatMessagePartType.Reasoning,
@@ -246,7 +273,8 @@ namespace Skyweaver.Controls.ChatSessionControl.Models
                 title ?? "推理过程",
                 badgeText: "推理过程",
                 isStreaming: isStreaming,
-                isCollapsible: isCollapsible);
+                isCollapsible: isCollapsible,
+                isExpanded: isExpanded);
         }
 
         public void AttachToolPresentation(

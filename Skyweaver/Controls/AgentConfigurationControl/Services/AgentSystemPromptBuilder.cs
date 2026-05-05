@@ -230,6 +230,7 @@ namespace Skyweaver.Controls.AgentConfigurationControl.Services
         {
             builder.AppendLine("响应规则");
             builder.AppendLine("- 若只是回答用户或结束当前代理循环，直接输出最终内容，不要调用工具。");
+            builder.AppendLine("- 如果还需要代理循环继续，必须调用工具，否则代理循环将结束。");
             builder.AppendLine("- 若需要工具结果，输出 <Tool> 标签并等待 Host 自动继续。");
             builder.AppendLine("- 不要输出格式错误的 XML 工具标签；Host 不会修复工具 XML。");
             builder.AppendLine("- 若正文需要提到字面量 <Tool> 标签，请使用实体转义（例如 &lt;Tool&gt;），否则 Host 会把它当成工具调用。");

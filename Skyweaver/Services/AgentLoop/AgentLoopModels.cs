@@ -51,6 +51,8 @@ namespace Skyweaver.Services.AgentLoop
         public int IterationNumber { get; init; }
 
         public int PartIndex { get; init; }
+
+        public int ToolCallIndex { get; init; }
     }
 
     public sealed class AgentToolConfirmationResult
