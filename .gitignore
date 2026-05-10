@@ -387,3 +387,4 @@ REF/
 **/*.fig
 **/*.xcf
 _gitrepo/
+Skyweaver/_buildcheck/

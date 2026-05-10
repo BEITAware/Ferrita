@@ -446,9 +446,12 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
             ArgumentNullException.ThrowIfNull(message);
 
             var sdkContents = BuildSdkContents(message);
+            var sdkRole = message.IsHostInjectedTail
+                ? ChatRole.System
+                : ToSdkRole(message.Role);
             var sdkMessage = sdkContents.Count == 0 || sdkContents.All(content => content is TextContent)
-                ? new ChatMessage(ToSdkRole(message.Role), message.Content)
-                : new ChatMessage(ToSdkRole(message.Role), sdkContents)
+                ? new ChatMessage(sdkRole, message.Content)
+                : new ChatMessage(sdkRole, sdkContents)
             {
                 AuthorName = message.AuthorName
             };

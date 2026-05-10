@@ -118,13 +118,16 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
 
         public string? AuthorName { get; init; }
 
+        public bool IsHostInjectedTail { get; init; }
+
         public LanguageModelChatMessage Clone()
         {
             return new LanguageModelChatMessage(
                 Role,
                 ContentBlocks.Select(block => block.Clone()).ToArray())
             {
-                AuthorName = AuthorName
+                AuthorName = AuthorName,
+                IsHostInjectedTail = IsHostInjectedTail
             };
         }
 

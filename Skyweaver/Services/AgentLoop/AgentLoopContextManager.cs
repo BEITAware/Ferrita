@@ -8,6 +8,13 @@ namespace Skyweaver.Services.AgentLoop
     public sealed class AgentLoopContextManager
     {
         private const double CompressionTargetRatio = 0.25d;
+        private const string ToolProtocolTailReminder =
+            """
+再次确认工具协议：
+- 只使用 <Tool> / <ToolAsync>。
+- 严禁 <tool_call>、<function_call>、CreateMessage、FinishTask、<tools>、<tool_calls> 等伪协议。
+- 工具标签必须是完整 XML；不要夹在普通正文里。
+""";
 
         private readonly IAgentLanguageModelResolver _languageModelResolver;
         private readonly ILanguageModelChatService _chatService;
@@ -229,7 +236,7 @@ namespace Skyweaver.Services.AgentLoop
             IReadOnlyList<LanguageModelChatContentBlock>? upstreamContentBlocks,
             IReadOnlyList<LanguageModelChatMessage> turnHistory)
         {
-            var messages = new List<LanguageModelChatMessage>(persistentHistory.Count + turnHistory.Count + 2)
+            var messages = new List<LanguageModelChatMessage>(persistentHistory.Count + turnHistory.Count + 3)
             {
                 new(LanguageModelChatRole.System, systemPrompt ?? string.Empty)
             };
@@ -237,6 +244,7 @@ namespace Skyweaver.Services.AgentLoop
             messages.AddRange(persistentHistory.Select(message => message.Clone()));
             messages.Add(CreateInputMessage(upstreamInput, upstreamContentBlocks));
             messages.AddRange(turnHistory.Select(message => message.Clone()));
+            messages.Add(CreateToolProtocolTailReminder());
             return messages;
         }
 
@@ -368,7 +376,8 @@ namespace Skyweaver.Services.AgentLoop
                 normalizedRole,
                 message.ContentBlocks.Select(block => block.Clone()).ToArray())
             {
-                AuthorName = message.AuthorName
+                AuthorName = message.AuthorName,
+                IsHostInjectedTail = message.IsHostInjectedTail
             };
         }
 
@@ -378,13 +387,14 @@ namespace Skyweaver.Services.AgentLoop
             IReadOnlyList<LanguageModelChatContentBlock>? upstreamContentBlocks,
             IReadOnlyList<LanguageModelChatMessage> turnHistory)
         {
-            var messages = new List<LanguageModelChatMessage>(turnHistory.Count + 2)
+            var messages = new List<LanguageModelChatMessage>(turnHistory.Count + 3)
             {
                 new(LanguageModelChatRole.System, systemPrompt ?? string.Empty),
                 CreateInputMessage(upstreamInput, upstreamContentBlocks)
             };
 
             messages.AddRange(turnHistory.Select(message => message.Clone()));
+            messages.Add(CreateToolProtocolTailReminder());
             return messages;
         }
 
@@ -406,6 +416,14 @@ namespace Skyweaver.Services.AgentLoop
             }
 
             return new LanguageModelChatMessage(LanguageModelChatRole.User, contentBlocks);
+        }
+
+        private static LanguageModelChatMessage CreateToolProtocolTailReminder()
+        {
+            return new LanguageModelChatMessage(LanguageModelChatRole.User, ToolProtocolTailReminder)
+            {
+                IsHostInjectedTail = true
+            };
         }
 
         private static IReadOnlyList<LanguageModelChatMessage> BuildCompressionMessages(

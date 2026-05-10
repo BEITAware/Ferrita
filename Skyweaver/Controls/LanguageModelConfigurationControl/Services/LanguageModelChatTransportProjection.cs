@@ -65,7 +65,8 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
                     message.Role,
                     projectedBlocks)
                 {
-                    AuthorName = message.AuthorName
+                    AuthorName = message.AuthorName,
+                    IsHostInjectedTail = message.IsHostInjectedTail
                 }
                 : message.Clone();
         }

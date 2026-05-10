@@ -30,7 +30,11 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
 
         private readonly Stopwatch _ribbonStopwatch = Stopwatch.StartNew();
         private INotifyCollectionChanged? _trackedMessages;
+        private ScrollViewer? _messagesScrollViewer;
         private bool _isRenderingHooked;
+        private bool _isPinnedToLatestMessage;
+        private bool _isScrollingToLatestMessage;
+        private bool _isScrollToLatestMessageQueued;
 
         public ChatSessionControl()
         {
@@ -38,19 +42,22 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
             Loaded += ChatSessionControl_Loaded;
             Unloaded += ChatSessionControl_Unloaded;
             DataContextChanged += ChatSessionControl_DataContextChanged;
+            MessagesList.PreviewMouseDown += MessagesList_PreviewMouseDown;
         }
 
         private void ChatSessionControl_Loaded(object sender, RoutedEventArgs e)
         {
             UpdateRibbonAspectRatio();
             HookRibbonRendering();
+            HookMessagesScrollViewer();
             TrackMessagesCollection();
-            ScrollToLatestMessage();
+            ScrollToLatestMessage(force: true);
         }
 
         private void ChatSessionControl_Unloaded(object sender, RoutedEventArgs e)
         {
             UnhookRibbonRendering();
+            DetachMessagesScrollViewer();
             DetachMessagesCollection();
         }
 
@@ -89,11 +96,26 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
 
         private void MessagesCollection_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            if (e.Action == NotifyCollectionChangedAction.Add &&
-                e.NewStartingIndex >= MessagesList.Items.Count - 1)
+            if (_isPinnedToLatestMessage)
             {
                 ScrollToLatestMessage();
             }
+        }
+
+        private void MessagesList_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Middle)
+            {
+                return;
+            }
+
+            _isPinnedToLatestMessage = !_isPinnedToLatestMessage;
+            if (_isPinnedToLatestMessage)
+            {
+                ScrollToLatestMessage();
+            }
+
+            e.Handled = true;
         }
 
         private void MessageListItem_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -107,18 +129,126 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
             listBoxItem.Focus();
         }
 
-        private void ScrollToLatestMessage()
+        private void HookMessagesScrollViewer()
         {
+            if (!IsLoaded || _messagesScrollViewer != null)
+            {
+                return;
+            }
+
+            MessagesList.ApplyTemplate();
+            _messagesScrollViewer = FindVisualChild<ScrollViewer>(MessagesList);
+            if (_messagesScrollViewer != null)
+            {
+                _messagesScrollViewer.ScrollChanged += MessagesScrollViewer_ScrollChanged;
+                return;
+            }
+
+            Dispatcher.BeginInvoke(new Action(HookMessagesScrollViewer), DispatcherPriority.Loaded);
+        }
+
+        private void DetachMessagesScrollViewer()
+        {
+            if (_messagesScrollViewer == null)
+            {
+                return;
+            }
+
+            _messagesScrollViewer.ScrollChanged -= MessagesScrollViewer_ScrollChanged;
+            _messagesScrollViewer = null;
+        }
+
+        private void MessagesScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            if (!_isPinnedToLatestMessage || _isScrollingToLatestMessage)
+            {
+                return;
+            }
+
+            if (IsMessagesScrollViewerAtBottom())
+            {
+                return;
+            }
+
+            ScrollToLatestMessage();
+        }
+
+        private void ScrollToLatestMessage(bool force = false)
+        {
+            if (!force && !_isPinnedToLatestMessage)
+            {
+                return;
+            }
+
             if (MessagesList.Items.Count == 0)
             {
                 return;
             }
 
+            if (_isScrollToLatestMessageQueued)
+            {
+                return;
+            }
+
+            _isScrollToLatestMessageQueued = true;
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                var latestMessage = MessagesList.Items[MessagesList.Items.Count - 1];
-                MessagesList.ScrollIntoView(latestMessage);
+                _isScrollToLatestMessageQueued = false;
+                if (!force && !_isPinnedToLatestMessage)
+                {
+                    return;
+                }
+
+                if (MessagesList.Items.Count == 0)
+                {
+                    return;
+                }
+
+                _isScrollingToLatestMessage = true;
+                try
+                {
+                    var latestMessage = MessagesList.Items[MessagesList.Items.Count - 1];
+                    MessagesList.ScrollIntoView(latestMessage);
+                    _messagesScrollViewer?.ScrollToEnd();
+                }
+                finally
+                {
+                    _isScrollingToLatestMessage = false;
+                }
             }), DispatcherPriority.Background);
+        }
+
+        private bool IsMessagesScrollViewerAtBottom()
+        {
+            if (_messagesScrollViewer == null)
+            {
+                return true;
+            }
+
+            return _messagesScrollViewer.ScrollableHeight <= 0.0 ||
+                   _messagesScrollViewer.VerticalOffset >= _messagesScrollViewer.ScrollableHeight - 0.5;
+        }
+
+        private static T? FindVisualChild<T>(DependencyObject parent)
+            where T : DependencyObject
+        {
+            var childrenCount = VisualTreeHelper.GetChildrenCount(parent);
+            for (var index = 0; index < childrenCount; index++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, index);
+                if (child is T typedChild)
+                {
+                    return typedChild;
+                }
+
+                var descendant = FindVisualChild<T>(child);
+                if (descendant != null)
+                {
+                    return descendant;
+                }
+            }
+
+            return null;
         }
 
         private void ComposerTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
