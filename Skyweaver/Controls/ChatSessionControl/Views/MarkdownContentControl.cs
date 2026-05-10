@@ -13,9 +13,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
     {
         private const double TableMaxHeight = 360.0;
         private const double TableMinColumnWidth = 72.0;
-        private const double TablePreferredColumnWidthCap = 220.0;
-        private const double TableCharacterWidthEstimate = 12.0;
-        private const double TableColumnChromeWidth = 36.0;
+        private const int StreamingRefreshThrottleMilliseconds = 60;
 
         private static readonly Brush HeadingForegroundBrush = CreateFrozenBrush(Color.FromRgb(0xBD, 0xEB, 0xFF));
         private static readonly Brush QuoteForegroundBrush = CreateFrozenBrush(Color.FromArgb(0xE0, 0xEA, 0xFD, 0xFF));
@@ -40,11 +38,27 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
                 typeof(MarkdownContentControl),
                 new PropertyMetadata(string.Empty, OnMarkdownTextChanged));
 
+        public static readonly DependencyProperty IsStreamingProperty =
+            DependencyProperty.Register(
+                nameof(IsStreaming),
+                typeof(bool),
+                typeof(MarkdownContentControl),
+                new PropertyMetadata(false, OnIsStreamingChanged));
+
         public string MarkdownText
         {
             get => (string)GetValue(MarkdownTextProperty);
             set => SetValue(MarkdownTextProperty, value);
         }
+
+        public bool IsStreaming
+        {
+            get => (bool)GetValue(IsStreamingProperty);
+            set => SetValue(IsStreamingProperty, value);
+        }
+
+        private DateTime _lastStreamingRefreshUtc = DateTime.MinValue;
+        private bool _refreshPending;
 
         public MarkdownContentControl()
         {
@@ -74,12 +88,54 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
 
         private static void OnMarkdownTextChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
         {
-            ((MarkdownContentControl)dependencyObject).RefreshContent();
+            ((MarkdownContentControl)dependencyObject).ScheduleRefresh();
+        }
+
+        private static void OnIsStreamingChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
+        {
+            ((MarkdownContentControl)dependencyObject).ScheduleRefresh(force: true);
+        }
+
+        private void ScheduleRefresh(bool force = false)
+        {
+            if (!IsLoaded)
+            {
+                RefreshContent();
+                return;
+            }
+
+            if (!IsStreaming)
+            {
+                RefreshContent();
+                return;
+            }
+
+            var now = DateTime.UtcNow;
+            var elapsedMilliseconds = (now - _lastStreamingRefreshUtc).TotalMilliseconds;
+            if (force || elapsedMilliseconds >= StreamingRefreshThrottleMilliseconds)
+            {
+                _lastStreamingRefreshUtc = now;
+                RefreshContent();
+                return;
+            }
+
+            if (_refreshPending)
+            {
+                return;
+            }
+
+            _refreshPending = true;
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                _refreshPending = false;
+                _lastStreamingRefreshUtc = DateTime.UtcNow;
+                RefreshContent();
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
         private void RefreshContent()
         {
-            var blocks = MarkdownDocumentParser.Parse(MarkdownText);
+            var blocks = MarkdownDocumentParser.Parse(MarkdownText, IsStreaming);
             if (blocks.Count == 0)
             {
                 Content = null;
@@ -257,7 +313,8 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
             {
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalAlignment = VerticalAlignment.Top,
-                MaxHeight = TableMaxHeight
+                MaxHeight = TableMaxHeight,
+                ColumnWidth = new DataGridLength(1.0, DataGridLengthUnitType.Star)
             };
 
             if (TryFindResource("TwilightBlue_DataGridStyle") is Style dataGridStyle)
@@ -280,8 +337,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
                     Binding = new Binding($"Cells[{columnIndex}]"),
                     ClipboardContentBinding = new Binding($"Cells[{columnIndex}]"),
                     ElementStyle = TableCellTextStyle,
-                    MinWidth = TableMinColumnWidth,
-                    Width = ResolveTableColumnWidth(block, columnIndex)
+                    MinWidth = TableMinColumnWidth
                 };
 
                 dataGrid.Columns.Add(column);
@@ -423,54 +479,6 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
         private static Thickness AppendBottomMargin(Thickness margin, double bottom)
         {
             return new Thickness(margin.Left, margin.Top, margin.Right, margin.Bottom + bottom);
-        }
-
-        private static DataGridLength ResolveTableColumnWidth(MarkdownTableBlock block, int columnIndex)
-        {
-            if (block.Columns.Count == 1 || columnIndex == block.Columns.Count - 1)
-            {
-                return new DataGridLength(1.0, DataGridLengthUnitType.Star);
-            }
-
-            var longestVisibleLineLength = GetLongestVisibleLineLength(block.Columns[columnIndex].Header);
-            foreach (var row in block.Rows)
-            {
-                longestVisibleLineLength = Math.Max(longestVisibleLineLength, GetLongestVisibleLineLength(row.GetCell(columnIndex)));
-            }
-
-            var preferredWidth = TableColumnChromeWidth + (longestVisibleLineLength * TableCharacterWidthEstimate);
-            preferredWidth = Math.Max(TableMinColumnWidth, preferredWidth);
-            preferredWidth = Math.Min(TablePreferredColumnWidthCap, preferredWidth);
-            return new DataGridLength(preferredWidth, DataGridLengthUnitType.Pixel);
-        }
-
-        private static int GetLongestVisibleLineLength(string? text)
-        {
-            if (string.IsNullOrEmpty(text))
-            {
-                return 0;
-            }
-
-            var longestLineLength = 0;
-            var currentLineLength = 0;
-            foreach (var character in text)
-            {
-                if (character == '\r')
-                {
-                    continue;
-                }
-
-                if (character == '\n')
-                {
-                    longestLineLength = Math.Max(longestLineLength, currentLineLength);
-                    currentLineLength = 0;
-                    continue;
-                }
-
-                currentLineLength++;
-            }
-
-            return Math.Max(longestLineLength, currentLineLength);
         }
 
         private static Brush CreateFrozenBrush(Color color)

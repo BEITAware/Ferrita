@@ -295,6 +295,11 @@ namespace Skyweaver.Services.ChatSession
                 throw CreateExecutionError(compiledNode, $"找不到代理配置：{node.AgentId}");
             }
 
+            if (!agent.CanRunAsMainAgent)
+            {
+                throw CreateExecutionError(compiledNode, $"代理“{agent.DisplayNameOrFallback}”不允许作为会话流主代理执行。");
+            }
+
             if (!_payloadRouter.TryBuildAgentInput(
                     agent,
                     deliveredBindings.Select(binding => (binding.Port, binding.Payload)),

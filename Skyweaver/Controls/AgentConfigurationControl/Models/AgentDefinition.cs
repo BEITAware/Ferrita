@@ -16,6 +16,8 @@ namespace Skyweaver.Controls.AgentConfigurationControl.Models
         private bool _isStructuredXmlIO;
         private string _inputDescription = string.Empty;
         private string _outputDescription = string.Empty;
+        private AgentRuntimeRole _runtimeRole = AgentRuntimeRole.MainOnly;
+        private string _subAgentIntroduction = string.Empty;
         private AgentLanguageModelSelectionMode _languageModelSelectionMode = AgentLanguageModelSelectionMode.SpecificLanguageModel;
         private string _selectedLanguageModelKey = string.Empty;
         private string _selectedCapabilityLayerKey = string.Empty;
@@ -92,6 +94,26 @@ namespace Skyweaver.Controls.AgentConfigurationControl.Models
             set => SetProperty(ref _outputDescription, value ?? string.Empty);
         }
 
+        public AgentRuntimeRole RuntimeRole
+        {
+            get => _runtimeRole;
+            set
+            {
+                if (SetProperty(ref _runtimeRole, value))
+                {
+                    OnPropertyChanged(nameof(CanRunAsMainAgent));
+                    OnPropertyChanged(nameof(CanRunAsSubAgent));
+                    OnPropertyChanged(nameof(RuntimeRoleText));
+                }
+            }
+        }
+
+        public string SubAgentIntroduction
+        {
+            get => _subAgentIntroduction;
+            set => SetProperty(ref _subAgentIntroduction, value ?? string.Empty);
+        }
+
         public AgentLanguageModelSelectionMode LanguageModelSelectionMode
         {
             get => _languageModelSelectionMode;
@@ -112,6 +134,8 @@ namespace Skyweaver.Controls.AgentConfigurationControl.Models
 
         public ObservableCollection<AgentToolPermissionDefinition> ToolPermissions { get; } = new();
 
+        public ObservableCollection<AgentToolKitSelectionDefinition> DefaultToolKits { get; } = new();
+
         public XmlElementNodeDefinition InputSchemaRoot { get; }
 
         public XmlElementNodeDefinition OutputSchemaRoot { get; }
@@ -124,6 +148,17 @@ namespace Skyweaver.Controls.AgentConfigurationControl.Models
 
         public string StructuredModeText => IsStructuredXmlIO ? "结构化 XML" : "自然语言";
 
+        public bool CanRunAsMainAgent => RuntimeRole is AgentRuntimeRole.MainOnly or AgentRuntimeRole.MainAndSubAgent;
+
+        public bool CanRunAsSubAgent => RuntimeRole is AgentRuntimeRole.SubAgentOnly or AgentRuntimeRole.MainAndSubAgent;
+
+        public string RuntimeRoleText => RuntimeRole switch
+        {
+            AgentRuntimeRole.SubAgentOnly => "仅子代理",
+            AgentRuntimeRole.MainAndSubAgent => "主/子代理",
+            _ => "仅主代理"
+        };
+
         public AgentDefinition DeepClone()
         {
             var clone = new AgentDefinition
@@ -135,10 +170,20 @@ namespace Skyweaver.Controls.AgentConfigurationControl.Models
                 IsStructuredXmlIO = IsStructuredXmlIO,
                 InputDescription = InputDescription,
                 OutputDescription = OutputDescription,
+                RuntimeRole = RuntimeRole,
+                SubAgentIntroduction = SubAgentIntroduction,
                 LanguageModelSelectionMode = LanguageModelSelectionMode,
                 SelectedLanguageModelKey = SelectedLanguageModelKey,
                 SelectedCapabilityLayerKey = SelectedCapabilityLayerKey
             };
+
+            foreach (var toolKit in DefaultToolKits)
+            {
+                clone.DefaultToolKits.Add(new AgentToolKitSelectionDefinition
+                {
+                    ToolKitKey = toolKit.ToolKitKey
+                });
+            }
 
             foreach (var toolPermission in ToolPermissions)
             {

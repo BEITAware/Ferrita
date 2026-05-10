@@ -19,7 +19,8 @@ namespace Skyweaver.Services.AgentLoop
     public enum AgentLoopFinalOutputSource
     {
         AssistantText = 0,
-        PassdownPayload = 1
+        PassdownPayload = 1,
+        PassToMainAgentPayload = 2
     }
 
     public sealed class AgentLoopRequest
@@ -36,6 +37,8 @@ namespace Skyweaver.Services.AgentLoop
         public SkyweaverToolContext ToolContext { get; init; } = new();
 
         public bool EnableGemmaThoughtCompatibility { get; init; } = true;
+
+        public bool IsSubAgent { get; init; }
 
         public Func<string>? ToolCallIdFactory { get; init; }
 

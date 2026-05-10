@@ -11,5 +11,17 @@ namespace Skyweaver.Services.SkyweaverTools
         public const string WaitForAsyncToolsParameter = "ToolCallIds";
 
         public const string LoadToolKits = "LoadToolKits";
+
+        public const string SpawnSubAgent = "SpawnSubAgent";
+
+        public const string SpawnSubAgentMissionParameter = "Mission";
+
+        public const string SpawnSubAgentRequirementsParameter = "Requirements";
+
+        public const string SpawnSubAgentResourcesParameter = "Resources";
+
+        public const string PassToMainAgent = "PassToMainAgent";
+
+        public const string PassToMainAgentParameter = "PassToMainAgent";
     }
 }

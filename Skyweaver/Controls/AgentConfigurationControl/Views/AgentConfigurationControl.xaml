@@ -214,13 +214,18 @@
                                                            Foreground="#D9FFFFFF"
                                                            Text="{Binding AgentIdOrFallback}"
                                                            TextWrapping="Wrap"/>
-                                                <WrapPanel Margin="0,8,0,0">
-                                                    <Border Style="{StaticResource CapsuleBorderStyle}">
-                                                        <TextBlock VerticalAlignment="Center"
-                                                                   FontSize="11"
-                                                                   Text="{Binding StructuredModeText}"/>
-                                                    </Border>
-                                                </WrapPanel>
+                                                 <WrapPanel Margin="0,8,0,0">
+                                                     <Border Style="{StaticResource CapsuleBorderStyle}">
+                                                         <TextBlock VerticalAlignment="Center"
+                                                                    FontSize="11"
+                                                                    Text="{Binding StructuredModeText}"/>
+                                                     </Border>
+                                                     <Border Style="{StaticResource CapsuleBorderStyle}">
+                                                         <TextBlock VerticalAlignment="Center"
+                                                                    FontSize="11"
+                                                                    Text="{Binding RuntimeRoleText}"/>
+                                                     </Border>
+                                                 </WrapPanel>
                                             </StackPanel>
                                         </Grid>
                                     </Border>
@@ -303,10 +308,31 @@
                                         <TextBox Margin="0,6,0,0"
                                                  Text="{Binding SelectedAgent.AgentId, UpdateSourceTrigger=LostFocus}"/>
                                     </StackPanel>
-                                </Grid>
+                                 </Grid>
 
                                 <StackPanel Margin="0,0,0,12">
-                                    <DockPanel>
+                                    <TextBlock Text="代理用途"
+                                               FontWeight="SemiBold"/>
+                                    <ComboBox Margin="0,6,0,0"
+                                              ItemsSource="{Binding RuntimeRoleOptions}"
+                                              DisplayMemberPath="DisplayName"
+                                              SelectedValuePath="Role"
+                                              SelectedValue="{Binding SelectedAgent.RuntimeRole, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <StackPanel Margin="0,10,0,0"
+                                                Visibility="{Binding IsSubAgentIntroductionVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <TextBlock Text="子代理介绍"
+                                                   FontWeight="SemiBold"/>
+                                        <TextBox Margin="0,6,0,0"
+                                                 MinHeight="90"
+                                                 AcceptsReturn="True"
+                                                 TextWrapping="Wrap"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 Text="{Binding SelectedAgent.SubAgentIntroduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                 <StackPanel Margin="0,0,0,12">
+                                     <DockPanel>
                                         <TextBlock Text="语言模型"
                                                    FontWeight="SemiBold"/>
                                         <Button DockPanel.Dock="Right"
@@ -350,15 +376,78 @@
                                         </StackPanel>
                                     </Grid>
 
-                                    <TextBlock Margin="0,8,0,0"
+                                     <TextBlock Margin="0,8,0,0"
                                                Foreground="#FFD3F6FF"
                                                TextWrapping="Wrap"
                                                Text="{Binding SelectedAgentLanguageModelBindingSummary}"/>
-                                </StackPanel>
+                                 </StackPanel>
 
-                                <StackPanel Margin="0,0,0,12">
-                                    <TextBlock Text="系统提示词"
-                                               FontWeight="SemiBold"/>
+                                 <Border Margin="0,0,0,12"
+                                         Style="{StaticResource GlassCardBorderStyle}">
+                                     <StackPanel>
+                                         <DockPanel>
+                                             <TextBlock Text="默认工具集"
+                                                        FontWeight="SemiBold"/>
+                                             <Button DockPanel.Dock="Right"
+                                                     Width="120"
+                                                     Command="{Binding AddDefaultToolKitCommand}"
+                                                     Content="添加工具集"/>
+                                         </DockPanel>
+
+                                         <TextBlock Margin="0,8,0,0"
+                                                    Foreground="#D9FFFFFF"
+                                                    TextWrapping="Wrap"
+                                                    Text="这里选择的工具集会在该代理启动时自动加载；主代理和子代理模式都会生效，无需再调用 LoadToolKits。"/>
+
+                                         <ListView Margin="0,10,0,0"
+                                                   ItemsSource="{Binding SelectedAgent.DefaultToolKits}"
+                                                   Style="{StaticResource ConfigurationListViewStyle}"
+                                                   ItemContainerStyle="{StaticResource ConfigurationListViewItemStyle}">
+                                             <ListView.ItemTemplate>
+                                                 <DataTemplate DataType="{x:Type models:AgentToolKitSelectionDefinition}">
+                                                     <Border Style="{StaticResource GlassCardBorderStyle}">
+                                                         <Grid>
+                                                             <Grid.ColumnDefinitions>
+                                                                 <ColumnDefinition Width="*"/>
+                                                                 <ColumnDefinition Width="Auto"/>
+                                                                 <ColumnDefinition Width="Auto"/>
+                                                                 <ColumnDefinition Width="Auto"/>
+                                                             </Grid.ColumnDefinitions>
+
+                                                             <ComboBox Grid.Column="0"
+                                                                       ItemsSource="{Binding DataContext.AvailableToolKits, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                       DisplayMemberPath="DisplayName"
+                                                                       SelectedValuePath="Key"
+                                                                       SelectedValue="{Binding ToolKitKey, UpdateSourceTrigger=PropertyChanged}"/>
+                                                             <Button Grid.Column="1"
+                                                                     Width="60"
+                                                                     Margin="8,0,0,0"
+                                                                     Command="{Binding DataContext.MoveDefaultToolKitUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                     CommandParameter="{Binding}"
+                                                                     Content="上移"/>
+                                                             <Button Grid.Column="2"
+                                                                     Width="60"
+                                                                     Margin="8,0,0,0"
+                                                                     Command="{Binding DataContext.MoveDefaultToolKitDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                     CommandParameter="{Binding}"
+                                                                     Content="下移"/>
+                                                             <Button Grid.Column="3"
+                                                                     Width="60"
+                                                                     Margin="8,0,0,0"
+                                                                     Command="{Binding DataContext.RemoveDefaultToolKitCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                     CommandParameter="{Binding}"
+                                                                     Content="删除"/>
+                                                         </Grid>
+                                                     </Border>
+                                                 </DataTemplate>
+                                             </ListView.ItemTemplate>
+                                         </ListView>
+                                     </StackPanel>
+                                 </Border>
+
+                                 <StackPanel Margin="0,0,0,12">
+                                     <TextBlock Text="系统提示词"
+                                                FontWeight="SemiBold"/>
                                     <TextBox Margin="0,6,0,0"
                                              MinHeight="110"
                                              AcceptsReturn="True"

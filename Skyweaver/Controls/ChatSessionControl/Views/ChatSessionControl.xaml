@@ -563,6 +563,7 @@
                            TextWrapping="Wrap"
                            Visibility="{Binding Title, Converter={StaticResource NullToVisibilityConverter}}"/>
                 <local:MarkdownContentControl MarkdownText="{Binding Content}"
+                                              IsStreaming="{Binding IsStreaming}"
                                               Foreground="White"
                                               FontSize="14"
                                               FontFamily="Segoe UI, Microsoft YaHei UI"/>

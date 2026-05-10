@@ -31,6 +31,7 @@ namespace Skyweaver.Services.ChatSession
                 History = request.History,
                 ToolContext = request.ToolContext,
                 EnableGemmaThoughtCompatibility = request.EnableGemmaThoughtCompatibility,
+                IsSubAgent = request.IsSubAgent,
                 ToolCallIdFactory = request.ToolCallIdFactory,
                 ToolConfirmationCallback = request.ToolConfirmationCallback
             };

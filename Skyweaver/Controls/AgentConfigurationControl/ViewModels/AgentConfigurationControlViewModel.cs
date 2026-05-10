@@ -28,6 +28,7 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
         private readonly CapabilityLayerConfigurationRepository _capabilityLayerRepository;
         private readonly AgentSystemPromptBuilder _agentSystemPromptBuilder = new();
         private readonly SkyweaverToolManager _toolManager = new();
+        private readonly SkyweaverToolKitService _toolKitService = new();
         private readonly Dictionary<string, ToolRegistrationSnapshot> _toolRegistrationMap = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, LanguageModelDefinition> _languageModelMap = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, CapabilityLayerDefinition> _capabilityLayerMap = new(StringComparer.OrdinalIgnoreCase);
@@ -101,6 +102,10 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
             AddOutputChildNodeCommand = new RelayCommand(AddOutputChildNode, () => SelectedOutputNode != null);
             RemoveInputNodeCommand = new RelayCommand(RemoveSelectedInputNode, () => SelectedInputNode != null && !SelectedInputNode.IsRoot);
             RemoveOutputNodeCommand = new RelayCommand(RemoveSelectedOutputNode, () => SelectedOutputNode != null && !SelectedOutputNode.IsRoot);
+            AddDefaultToolKitCommand = new RelayCommand(AddDefaultToolKit, () => SelectedAgent != null);
+            RemoveDefaultToolKitCommand = new RelayCommand<AgentToolKitSelectionDefinition>(RemoveDefaultToolKit, entry => entry != null);
+            MoveDefaultToolKitUpCommand = new RelayCommand<AgentToolKitSelectionDefinition>(MoveDefaultToolKitUp, CanMoveDefaultToolKitUp);
+            MoveDefaultToolKitDownCommand = new RelayCommand<AgentToolKitSelectionDefinition>(MoveDefaultToolKitDown, CanMoveDefaultToolKitDown);
             BuildPromptPreviewCommand = new RelayCommand(BuildPromptPreview, () => SelectedAgent != null);
             CopyPromptPreviewCommand = new RelayCommand(CopyPromptPreviewSafe, () => !string.IsNullOrWhiteSpace(PromptBuildResult));
 
@@ -116,6 +121,12 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
                 new AgentLanguageModelSelectionModeOption(AgentLanguageModelSelectionMode.SpecificLanguageModel, "具体语言模型"),
                 new AgentLanguageModelSelectionModeOption(AgentLanguageModelSelectionMode.CapabilityLayer, "功能层级")
             };
+            RuntimeRoleOptions = new[]
+            {
+                new AgentRuntimeRoleOption(AgentRuntimeRole.MainOnly, "只允许作为会话流主代理"),
+                new AgentRuntimeRoleOption(AgentRuntimeRole.SubAgentOnly, "只允许作为子代理"),
+                new AgentRuntimeRoleOption(AgentRuntimeRole.MainAndSubAgent, "两者皆可")
+            };
 
             LoadConfiguration();
         }
@@ -130,9 +141,13 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
 
         public IReadOnlyList<AgentLanguageModelSelectionModeOption> LanguageModelSelectionModes { get; }
 
+        public IReadOnlyList<AgentRuntimeRoleOption> RuntimeRoleOptions { get; }
+
         public ObservableCollection<AgentConfigurationReferenceOption> AvailableLanguageModels { get; } = new();
 
         public ObservableCollection<AgentConfigurationReferenceOption> AvailableCapabilityLayers { get; } = new();
+
+        public ObservableCollection<AgentConfigurationReferenceOption> AvailableToolKits { get; } = new();
 
         public string ConfigurationFilePath => _configurationRepository.ConfigurationFilePath;
 
@@ -159,6 +174,7 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
                 OnPropertyChanged(nameof(IsStructuredEditorVisible));
                 OnPropertyChanged(nameof(IsSpecificLanguageModelSelectionVisible));
                 OnPropertyChanged(nameof(IsCapabilityLayerSelectionVisible));
+                OnPropertyChanged(nameof(IsSubAgentIntroductionVisible));
                 OnPropertyChanged(nameof(SelectedAgentLanguageModelBindingSummary));
                 OnPropertyChanged(nameof(PromptBuildHintText));
                 CommandManager.InvalidateRequerySuggested();
@@ -196,6 +212,8 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
         public bool IsSpecificLanguageModelSelectionVisible => SelectedAgent?.LanguageModelSelectionMode == AgentLanguageModelSelectionMode.SpecificLanguageModel;
 
         public bool IsCapabilityLayerSelectionVisible => SelectedAgent?.LanguageModelSelectionMode == AgentLanguageModelSelectionMode.CapabilityLayer;
+
+        public bool IsSubAgentIntroductionVisible => SelectedAgent?.CanRunAsSubAgent == true;
 
         public string SelectedAgentLanguageModelBindingSummary => BuildLanguageModelBindingSummary(SelectedAgent);
 
@@ -264,6 +282,14 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
         public ICommand RemoveInputNodeCommand { get; }
 
         public ICommand RemoveOutputNodeCommand { get; }
+
+        public ICommand AddDefaultToolKitCommand { get; }
+
+        public ICommand RemoveDefaultToolKitCommand { get; }
+
+        public ICommand MoveDefaultToolKitUpCommand { get; }
+
+        public ICommand MoveDefaultToolKitDownCommand { get; }
 
         public ICommand BuildPromptPreviewCommand { get; }
 
@@ -604,6 +630,67 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
             PersistAll(successMessage);
         }
 
+        private void AddDefaultToolKit()
+        {
+            if (SelectedAgent == null || AvailableToolKits.Count == 0)
+            {
+                return;
+            }
+
+            var firstAvailableKey = AvailableToolKits[0].Key;
+            SelectedAgent.DefaultToolKits.Add(new AgentToolKitSelectionDefinition
+            {
+                ToolKitKey = firstAvailableKey
+            });
+        }
+
+        private void RemoveDefaultToolKit(AgentToolKitSelectionDefinition? toolKit)
+        {
+            if (SelectedAgent == null || toolKit == null)
+            {
+                return;
+            }
+
+            SelectedAgent.DefaultToolKits.Remove(toolKit);
+        }
+
+        private bool CanMoveDefaultToolKitUp(AgentToolKitSelectionDefinition? toolKit)
+        {
+            return SelectedAgent != null &&
+                   toolKit != null &&
+                   SelectedAgent.DefaultToolKits.IndexOf(toolKit) > 0;
+        }
+
+        private void MoveDefaultToolKitUp(AgentToolKitSelectionDefinition? toolKit)
+        {
+            if (!CanMoveDefaultToolKitUp(toolKit))
+            {
+                return;
+            }
+
+            var index = SelectedAgent!.DefaultToolKits.IndexOf(toolKit!);
+            SelectedAgent.DefaultToolKits.Move(index, index - 1);
+        }
+
+        private bool CanMoveDefaultToolKitDown(AgentToolKitSelectionDefinition? toolKit)
+        {
+            return SelectedAgent != null &&
+                   toolKit != null &&
+                   SelectedAgent.DefaultToolKits.IndexOf(toolKit) >= 0 &&
+                   SelectedAgent.DefaultToolKits.IndexOf(toolKit) < SelectedAgent.DefaultToolKits.Count - 1;
+        }
+
+        private void MoveDefaultToolKitDown(AgentToolKitSelectionDefinition? toolKit)
+        {
+            if (!CanMoveDefaultToolKitDown(toolKit))
+            {
+                return;
+            }
+
+            var index = SelectedAgent!.DefaultToolKits.IndexOf(toolKit!);
+            SelectedAgent.DefaultToolKits.Move(index, index + 1);
+        }
+
         private void OnAgentsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             if (e.NewItems != null)
@@ -638,6 +725,13 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
                 AttachToolPermission(permission);
             }
 
+            agent.DefaultToolKits.CollectionChanged -= OnDefaultToolKitsCollectionChanged;
+            agent.DefaultToolKits.CollectionChanged += OnDefaultToolKitsCollectionChanged;
+            foreach (var toolKit in agent.DefaultToolKits)
+            {
+                AttachDefaultToolKit(toolKit);
+            }
+
             AttachNodeSubtree(agent.InputSchemaRoot);
             AttachNodeSubtree(agent.OutputSchemaRoot);
         }
@@ -650,6 +744,12 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
             foreach (var permission in agent.ToolPermissions)
             {
                 DetachToolPermission(permission);
+            }
+
+            agent.DefaultToolKits.CollectionChanged -= OnDefaultToolKitsCollectionChanged;
+            foreach (var toolKit in agent.DefaultToolKits)
+            {
+                DetachDefaultToolKit(toolKit);
             }
 
             DetachNodeSubtree(agent.InputSchemaRoot);
@@ -665,6 +765,17 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
         private void DetachToolPermission(AgentToolPermissionDefinition permission)
         {
             permission.PropertyChanged -= OnToolPermissionPropertyChanged;
+        }
+
+        private void AttachDefaultToolKit(AgentToolKitSelectionDefinition toolKit)
+        {
+            toolKit.PropertyChanged -= OnDefaultToolKitPropertyChanged;
+            toolKit.PropertyChanged += OnDefaultToolKitPropertyChanged;
+        }
+
+        private void DetachDefaultToolKit(AgentToolKitSelectionDefinition toolKit)
+        {
+            toolKit.PropertyChanged -= OnDefaultToolKitPropertyChanged;
         }
 
         private void AttachNodeSubtree(XmlElementNodeDefinition node)
@@ -706,7 +817,17 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
                 OnPropertyChanged(nameof(SelectedAgentLanguageModelBindingSummary));
             }
 
+            if (sender == SelectedAgent &&
+                (string.Equals(e.PropertyName, nameof(AgentDefinition.RuntimeRole), StringComparison.Ordinal) ||
+                 string.Equals(e.PropertyName, nameof(AgentDefinition.CanRunAsSubAgent), StringComparison.Ordinal)))
+            {
+                OnPropertyChanged(nameof(IsSubAgentIntroductionVisible));
+            }
+
             if (string.Equals(e.PropertyName, nameof(AgentDefinition.StructuredModeText), StringComparison.Ordinal) ||
+                string.Equals(e.PropertyName, nameof(AgentDefinition.RuntimeRoleText), StringComparison.Ordinal) ||
+                string.Equals(e.PropertyName, nameof(AgentDefinition.CanRunAsMainAgent), StringComparison.Ordinal) ||
+                string.Equals(e.PropertyName, nameof(AgentDefinition.CanRunAsSubAgent), StringComparison.Ordinal) ||
                 string.Equals(e.PropertyName, nameof(AgentDefinition.DisplayNameOrFallback), StringComparison.Ordinal) ||
                 string.Equals(e.PropertyName, nameof(AgentDefinition.AgentIdOrFallback), StringComparison.Ordinal) ||
                 string.Equals(e.PropertyName, nameof(AgentDefinition.AvatarPreviewPath), StringComparison.Ordinal))
@@ -751,6 +872,37 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
             }
 
             PersistAll("工具权限已更新。");
+        }
+
+        private void OnDefaultToolKitPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (sender is not AgentToolKitSelectionDefinition)
+            {
+                return;
+            }
+
+            PersistAll("默认工具集已更新。");
+        }
+
+        private void OnDefaultToolKitsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.NewItems != null)
+            {
+                foreach (var toolKit in e.NewItems.OfType<AgentToolKitSelectionDefinition>())
+                {
+                    AttachDefaultToolKit(toolKit);
+                }
+            }
+
+            if (e.OldItems != null)
+            {
+                foreach (var toolKit in e.OldItems.OfType<AgentToolKitSelectionDefinition>())
+                {
+                    DetachDefaultToolKit(toolKit);
+                }
+            }
+
+            PersistAll("默认工具集列表已更新。");
         }
 
         private void OnXmlNodePropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -889,8 +1041,9 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
                 AvatarPath = AgentDefinition.DefaultAvatarPath,
                 SystemPrompt = string.Empty,
                 IsStructuredXmlIO = false,
-                InputDescription = "描述该代理期望接收的用户输入。",
-                OutputDescription = "描述该代理期望产出的助手输出。"
+                InputDescription = "用户发送的聊天消息",
+                OutputDescription = "无，无需调用Passdown工具",
+                RuntimeRole = AgentRuntimeRole.MainOnly
             };
         }
 
@@ -1004,6 +1157,14 @@ namespace Skyweaver.Controls.AgentConfigurationControl.ViewModels
                 }
 
                 AvailableCapabilityLayers.Add(new AgentConfigurationReferenceOption(layer.Key, GetCapabilityLayerOptionDisplayName(layer)));
+            }
+
+            AvailableToolKits.Clear();
+            foreach (var toolKit in _toolKitService.Load()
+                         .Where(item => !string.IsNullOrWhiteSpace(item.Key))
+                         .OrderBy(item => item.DisplayNameOrFallback, StringComparer.OrdinalIgnoreCase))
+            {
+                AvailableToolKits.Add(new AgentConfigurationReferenceOption(toolKit.Key, toolKit.DisplayNameOrFallback));
             }
 
             _languageModelCatalogErrorMessage = string.Join("；", errorMessages.Where(message => !string.IsNullOrWhiteSpace(message)));

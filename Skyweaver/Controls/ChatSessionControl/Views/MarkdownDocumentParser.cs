@@ -10,7 +10,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
         private static readonly Regex OrderedListPattern = new(@"^\s*(\d+)\.\s+(.*)$", RegexOptions.Compiled);
         private static readonly Regex TableDelimiterCellPattern = new(@"^\s*:?-{3,}:?\s*$", RegexOptions.Compiled);
 
-        public static IReadOnlyList<MarkdownBlock> Parse(string? markdown)
+        public static IReadOnlyList<MarkdownBlock> Parse(string? markdown, bool isStreaming = false)
         {
             if (string.IsNullOrEmpty(markdown))
             {
@@ -21,8 +21,10 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
             var lines = normalized.Split('\n');
             var blocks = new List<MarkdownBlock>();
             var paragraphLines = new List<string>();
+            var hasTrailingIncompleteLine = isStreaming && !normalized.EndsWith('\n');
+            var parseLineCount = hasTrailingIncompleteLine ? Math.Max(0, lines.Length - 1) : lines.Length;
 
-            for (var index = 0; index < lines.Length;)
+            for (var index = 0; index < parseLineCount;)
             {
                 var line = lines[index];
                 var trimmed = line.Trim();
@@ -34,21 +36,21 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
                     continue;
                 }
 
-                if (TryParseCodeBlock(lines, ref index, out var codeBlock))
+                if (TryParseCodeBlock(lines, parseLineCount, ref index, out var codeBlock))
                 {
                     FlushParagraph(blocks, paragraphLines);
                     blocks.Add(codeBlock);
                     continue;
                 }
 
-                if (TryParseMathBlock(lines, ref index, out var mathBlock))
+                if (TryParseMathBlock(lines, parseLineCount, ref index, out var mathBlock))
                 {
                     FlushParagraph(blocks, paragraphLines);
                     blocks.Add(mathBlock);
                     continue;
                 }
 
-                if (TryParseTable(lines, ref index, out var tableBlock, out var leadingText))
+                if (TryParseTable(lines, parseLineCount, ref index, out var tableBlock, out var leadingText))
                 {
                     if (!string.IsNullOrWhiteSpace(leadingText))
                     {
@@ -68,14 +70,14 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
                     continue;
                 }
 
-                if (TryParseList(lines, ref index, out var listBlock))
+                if (TryParseList(lines, parseLineCount, ref index, out var listBlock))
                 {
                     FlushParagraph(blocks, paragraphLines);
                     blocks.Add(listBlock);
                     continue;
                 }
 
-                if (TryParseQuote(lines, ref index, out var quoteBlock))
+                if (TryParseQuote(lines, parseLineCount, ref index, out var quoteBlock))
                 {
                     FlushParagraph(blocks, paragraphLines);
                     blocks.Add(quoteBlock);
@@ -87,6 +89,16 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
             }
 
             FlushParagraph(blocks, paragraphLines);
+
+            if (hasTrailingIncompleteLine)
+            {
+                var trailingLine = lines[^1].TrimEnd();
+                if (trailingLine.Length > 0)
+                {
+                    blocks.Add(new MarkdownParagraphBlock(ParseInlines(trailingLine)));
+                }
+            }
+
             return blocks;
         }
 
@@ -121,7 +133,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
             return true;
         }
 
-        private static bool TryParseCodeBlock(string[] lines, ref int index, out MarkdownCodeBlock block)
+        private static bool TryParseCodeBlock(string[] lines, int lineCount, ref int index, out MarkdownCodeBlock block)
         {
             var trimmed = lines[index].Trim();
             if (!trimmed.StartsWith("```", StringComparison.Ordinal))
@@ -134,7 +146,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
             var codeLines = new List<string>();
             index++;
 
-            while (index < lines.Length)
+            while (index < lineCount)
             {
                 if (lines[index].Trim().StartsWith("```", StringComparison.Ordinal))
                 {
@@ -150,7 +162,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
             return true;
         }
 
-        private static bool TryParseMathBlock(string[] lines, ref int index, out MarkdownMathBlock block)
+        private static bool TryParseMathBlock(string[] lines, int lineCount, ref int index, out MarkdownMathBlock block)
         {
             var line = lines[index];
             var openIndex = line.IndexOf("\\[", StringComparison.Ordinal);
@@ -174,7 +186,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
             contentLines.Add(remainder);
             index++;
 
-            while (index < lines.Length)
+            while (index < lineCount)
             {
                 var currentLine = lines[index];
                 closeIndex = currentLine.IndexOf("\\]", StringComparison.Ordinal);
@@ -194,7 +206,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
             return true;
         }
 
-        private static bool TryParseQuote(string[] lines, ref int index, out MarkdownQuoteBlock block)
+        private static bool TryParseQuote(string[] lines, int lineCount, ref int index, out MarkdownQuoteBlock block)
         {
             if (!lines[index].TrimStart().StartsWith(">", StringComparison.Ordinal))
             {
@@ -203,7 +215,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
             }
 
             var quoteLines = new List<string>();
-            while (index < lines.Length)
+            while (index < lineCount)
             {
                 var trimmedStart = lines[index].TrimStart();
                 if (!trimmedStart.StartsWith(">", StringComparison.Ordinal))
@@ -227,6 +239,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
 
         private static bool TryParseTable(
             string[] lines,
+            int lineCount,
             ref int index,
             out MarkdownTableBlock block,
             out string leadingText)
@@ -241,7 +254,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
 
             IReadOnlyList<string> headerCells;
             var rowStartIndex = index + 1;
-            if (index + 1 < lines.Length &&
+            if (index + 1 < lineCount &&
                 TryParseTableDelimiter(lines[index + 1], out var delimiterColumnCount) &&
                 TryResolveTableHeader(headerLine, delimiterColumnCount, out leadingText, out headerCells))
             {
@@ -265,7 +278,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
 
             var rows = new List<MarkdownTableRow>();
             index = rowStartIndex;
-            while (index < lines.Length && LooksLikeTableRow(lines[index]))
+            while (index < lineCount && LooksLikeTableRow(lines[index]))
             {
                 var rowCells = NormalizeTableCells(SplitTableCells(lines[index]), columns.Count);
                 rows.Add(new MarkdownTableRow(rowCells));
@@ -276,7 +289,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
             return true;
         }
 
-        private static bool TryParseList(string[] lines, ref int index, out MarkdownListBlock block)
+        private static bool TryParseList(string[] lines, int lineCount, ref int index, out MarkdownListBlock block)
         {
             if (!TryGetListItem(lines[index], out var markerText, out var itemContent))
             {
@@ -290,7 +303,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
             };
 
             index++;
-            while (index < lines.Length && TryGetListItem(lines[index], out markerText, out itemContent))
+            while (index < lineCount && TryGetListItem(lines[index], out markerText, out itemContent))
             {
                 items.Add(new MarkdownListItem(markerText, ParseInlines(itemContent)));
                 index++;
@@ -578,7 +591,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Views
 
         private static bool LooksLikeTableRow(string line)
         {
-            return CountUnescapedPipes(line) > 0;
+            return CountUnescapedPipes(line) > 1;
         }
 
         private static bool TryParseTableDelimiter(string line, out int columnCount)

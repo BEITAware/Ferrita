@@ -347,8 +347,9 @@ namespace Skyweaver.Controls.WorkflowEditorControl.ViewModels
             }
 
             foreach (var definition in definitions
-                         .Where(item => !string.IsNullOrWhiteSpace(item.AgentId))
-                         .OrderBy(item => item.DisplayNameOrFallback, StringComparer.OrdinalIgnoreCase))
+                          .Where(item => !string.IsNullOrWhiteSpace(item.AgentId))
+                          .Where(item => item.CanRunAsMainAgent)
+                          .OrderBy(item => item.DisplayNameOrFallback, StringComparer.OrdinalIgnoreCase))
             {
                 var inputFieldPaths = definition.IsStructuredXmlIO
                     ? FlattenXmlFieldPaths(definition.InputSchemaRoot)

@@ -27,6 +27,8 @@ namespace Skyweaver.Services.SkyweaverTools
         public IReadOnlyList<SkyweaverToolKitDefinition> AvailableToolKits { get; init; } =
             Array.Empty<SkyweaverToolKitDefinition>();
 
+        public bool IsSubAgent { get; init; }
+
         public SkyweaverToolContext WithRuntimeAgent(
             AgentDefinition? agent,
             bool supportsHostToolConfirmation)
@@ -46,7 +48,30 @@ namespace Skyweaver.Services.SkyweaverTools
                         CurrentToolConfiguration.GetPayload()),
                 CurrentAgent = agent,
                 SupportsHostToolConfirmation = supportsHostToolConfirmation,
-                AvailableToolKits = CloneToolKits(AvailableToolKits)
+                AvailableToolKits = CloneToolKits(AvailableToolKits),
+                IsSubAgent = IsSubAgent
+            };
+        }
+
+        public SkyweaverToolContext WithSubAgentMode(bool isSubAgent)
+        {
+            return new SkyweaverToolContext
+            {
+                ApplicationName = ApplicationName,
+                SessionTitle = SessionTitle,
+                WorkspacePath = WorkspacePath,
+                Timestamp = Timestamp,
+                Properties = CloneProperties(Properties),
+                CurrentToolName = CurrentToolName,
+                CurrentToolConfiguration = CurrentToolConfiguration == null
+                    ? null
+                    : new SkyweaverToolConfigurationState(
+                        CurrentToolConfiguration.ToolName,
+                        CurrentToolConfiguration.GetPayload()),
+                CurrentAgent = CurrentAgent,
+                SupportsHostToolConfirmation = SupportsHostToolConfirmation,
+                AvailableToolKits = CloneToolKits(AvailableToolKits),
+                IsSubAgent = isSubAgent
             };
         }
 
@@ -67,7 +92,8 @@ namespace Skyweaver.Services.SkyweaverTools
                         CurrentToolConfiguration.GetPayload()),
                 CurrentAgent = CurrentAgent,
                 SupportsHostToolConfirmation = SupportsHostToolConfirmation,
-                AvailableToolKits = CloneToolKits(availableToolKits)
+                AvailableToolKits = CloneToolKits(availableToolKits),
+                IsSubAgent = IsSubAgent
             };
         }
 
@@ -90,7 +116,8 @@ namespace Skyweaver.Services.SkyweaverTools
                 CurrentToolConfiguration = new SkyweaverToolConfigurationState(normalizedToolName, configuration),
                 CurrentAgent = CurrentAgent,
                 SupportsHostToolConfirmation = SupportsHostToolConfirmation,
-                AvailableToolKits = CloneToolKits(AvailableToolKits)
+                AvailableToolKits = CloneToolKits(AvailableToolKits),
+                IsSubAgent = IsSubAgent
             };
         }
 

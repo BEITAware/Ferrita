@@ -163,6 +163,9 @@ namespace Skyweaver.Services.ChatSession
                     userContentBlocks)
                     .Select(message => message.Clone())
                     .ToList();
+                var reservedToolCallIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var toolCallIdFactory = request.ToolCallIdFactory ??
+                                        (() => ChatSessionToolCallIdGenerator.Create(request.Session, reservedToolCallIds));
 
                 var compilationResult = _flowBindingService.CompileBinding(request.Session.FlowBinding);
                 if (!compilationResult.IsSuccess || compilationResult.Graph == null)
@@ -235,6 +238,7 @@ namespace Skyweaver.Services.ChatSession
                         ConversationHistory = conversationHistory,
                         AgentsById = agentsById,
                         EnableGemmaThoughtCompatibility = request.EnableGemmaThoughtCompatibility,
+                        ToolCallIdFactory = toolCallIdFactory,
                         ToolConfirmationCallback = ResolveToolConfirmationCallback(request)
                     },
                     PublishRuntimeEventAsync,

@@ -41,6 +41,8 @@ namespace Skyweaver.Services.ChatSession
 
         public bool EnableGemmaThoughtCompatibility { get; init; } = true;
 
+        public Func<string>? ToolCallIdFactory { get; init; }
+
         public IAgentToolConfirmationService? ToolConfirmationService { get; init; }
 
         public Func<AgentToolConfirmationRequest, CancellationToken, Task<AgentToolConfirmationResult>>? ToolConfirmationCallback { get; init; }
@@ -174,6 +176,8 @@ namespace Skyweaver.Services.ChatSession
         public Func<AgentLoopRuntimeEvent, CancellationToken, ValueTask>? EventSink { get; init; }
 
         public bool EnableGemmaThoughtCompatibility { get; init; } = true;
+
+        public bool IsSubAgent { get; init; }
 
         public Func<AgentToolConfirmationRequest, CancellationToken, Task<AgentToolConfirmationResult>>? ToolConfirmationCallback { get; init; }
     }

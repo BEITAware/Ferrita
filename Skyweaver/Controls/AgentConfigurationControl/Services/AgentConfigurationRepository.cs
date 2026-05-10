@@ -45,10 +45,21 @@ namespace Skyweaver.Controls.AgentConfigurationControl.Services
                         IsStructuredXmlIO = ParseBool((string?)agentElement.Element("IsStructuredXmlIO"), false),
                         InputDescription = ((string?)agentElement.Element("InputDescription") ?? string.Empty),
                         OutputDescription = ((string?)agentElement.Element("OutputDescription") ?? string.Empty),
+                        RuntimeRole = ParseRuntimeRole((string?)agentElement.Element("RuntimeRole")),
+                        SubAgentIntroduction = ((string?)agentElement.Element("SubAgentIntroduction") ?? string.Empty),
                         LanguageModelSelectionMode = ParseLanguageModelSelectionMode((string?)agentElement.Element("LanguageModelSelectionMode")),
                         SelectedLanguageModelKey = ((string?)agentElement.Element("SelectedLanguageModelKey") ?? string.Empty).Trim(),
                         SelectedCapabilityLayerKey = ((string?)agentElement.Element("SelectedCapabilityLayerKey") ?? string.Empty).Trim()
                     };
+
+                    var defaultToolKitElements = agentElement.Element("DefaultToolKits")?.Elements("ToolKit") ?? Enumerable.Empty<XElement>();
+                    foreach (var toolKitElement in defaultToolKitElements)
+                    {
+                        definition.DefaultToolKits.Add(new AgentToolKitSelectionDefinition
+                        {
+                            ToolKitKey = ((string?)toolKitElement.Attribute("Key") ?? string.Empty).Trim()
+                        });
+                    }
 
                     var toolElements = agentElement.Element("ToolPermissions")?.Elements("Tool") ?? Enumerable.Empty<XElement>();
                     foreach (var toolElement in toolElements)
@@ -86,7 +97,7 @@ namespace Skyweaver.Controls.AgentConfigurationControl.Services
 
                 var document = new XDocument(
                     new XElement("AgentConfigurations",
-                        new XAttribute("SchemaVersion", 2),
+                        new XAttribute("SchemaVersion", 3),
                         definitions.Select(definition =>
                             new XElement("Agent",
                                 new XAttribute("AgentId", definition.AgentId),
@@ -96,9 +107,16 @@ namespace Skyweaver.Controls.AgentConfigurationControl.Services
                                 new XElement("IsStructuredXmlIO", definition.IsStructuredXmlIO),
                                 new XElement("InputDescription", definition.InputDescription ?? string.Empty),
                                 new XElement("OutputDescription", definition.OutputDescription ?? string.Empty),
+                                new XElement("RuntimeRole", definition.RuntimeRole),
+                                new XElement("SubAgentIntroduction", definition.SubAgentIntroduction ?? string.Empty),
                                 new XElement("LanguageModelSelectionMode", definition.LanguageModelSelectionMode),
                                 new XElement("SelectedLanguageModelKey", definition.SelectedLanguageModelKey ?? string.Empty),
                                 new XElement("SelectedCapabilityLayerKey", definition.SelectedCapabilityLayerKey ?? string.Empty),
+                                new XElement("DefaultToolKits",
+                                    definition.DefaultToolKits
+                                        .Where(toolKit => !string.IsNullOrWhiteSpace(toolKit.ToolKitKey))
+                                        .Select(toolKit => new XElement("ToolKit",
+                                            new XAttribute("Key", toolKit.ToolKitKey)))),
                                 new XElement("ToolPermissions",
                                     definition.ToolPermissions
                                         .Where(tool => !string.IsNullOrWhiteSpace(tool.ToolName))
@@ -161,6 +179,13 @@ namespace Skyweaver.Controls.AgentConfigurationControl.Services
             return Enum.TryParse<AgentLanguageModelSelectionMode>(value, true, out var parsed)
                 ? parsed
                 : AgentLanguageModelSelectionMode.SpecificLanguageModel;
+        }
+
+        private static AgentRuntimeRole ParseRuntimeRole(string? value)
+        {
+            return Enum.TryParse<AgentRuntimeRole>(value, true, out var parsed)
+                ? parsed
+                : AgentRuntimeRole.MainOnly;
         }
 
     }
