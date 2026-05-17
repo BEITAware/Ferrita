@@ -29,6 +29,8 @@ namespace Skyweaver.Controls.SkyweaverPreferencesControl.ViewModels.Pages
                 () => BrowseDirectory("选择调试文件保存目录", DebugDirectoryPath, path => DebugDirectoryPath = path));
             BrowseSessionFlowsDirectoryCommand = new RelayCommand(
                 () => BrowseDirectory("选择会话流保存目录", SessionFlowsDirectoryPath, path => SessionFlowsDirectoryPath = path));
+            BrowseAerialCityDirectoryCommand = new RelayCommand(
+                () => BrowseDirectory("选择 AerialCity 目录", AerialCityDirectoryPath, path => AerialCityDirectoryPath = path));
             OpenDirectoriesConfigurationDirectoryCommand = new RelayCommand(OpenDirectoriesConfigurationDirectory);
         }
 
@@ -84,6 +86,16 @@ namespace Skyweaver.Controls.SkyweaverPreferencesControl.ViewModels.Pages
                 "会话流目录已保存。");
         }
 
+        public string AerialCityDirectoryPath
+        {
+            get => _configuration.AerialCityDirectoryPath;
+            set => SetDirectoryPath(
+                value,
+                _configuration.AerialCityDirectoryPath,
+                path => _configuration.AerialCityDirectoryPath = path,
+                "AerialCity 目录已保存。");
+        }
+
         public string StatusMessage
         {
             get => _statusMessage;
@@ -97,6 +109,8 @@ namespace Skyweaver.Controls.SkyweaverPreferencesControl.ViewModels.Pages
         public ICommand BrowseDebugDirectoryCommand { get; }
 
         public ICommand BrowseSessionFlowsDirectoryCommand { get; }
+
+        public ICommand BrowseAerialCityDirectoryCommand { get; }
 
         public ICommand OpenDirectoriesConfigurationDirectoryCommand { get; }
 
@@ -183,6 +197,7 @@ namespace Skyweaver.Controls.SkyweaverPreferencesControl.ViewModels.Pages
             OnPropertyChanged(nameof(ConfigurationFilesDirectoryPath));
             OnPropertyChanged(nameof(DebugDirectoryPath));
             OnPropertyChanged(nameof(SessionFlowsDirectoryPath));
+            OnPropertyChanged(nameof(AerialCityDirectoryPath));
             OnPropertyChanged(nameof(DirectoriesConfigurationFilePath));
             OnPropertyChanged(nameof(FixedConfigurationDirectoryPath));
             OnPropertyChanged(nameof(DefaultApplicationDirectoryPath));

@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skyweaver", "Skyweaver\Skyw
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InstallationWizard", "InstallationWizard\InstallationWizard.csproj", "{4304F673-7834-495C-B245-FB11048B81B9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AerialCity", "AerialCity\AerialCity.csproj", "{95D6DFA5-4CB4-4F05-A75B-1A3DBB78B89B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,6 +42,18 @@ Global
 		{4304F673-7834-495C-B245-FB11048B81B9}.Release|x64.Build.0 = Release|Any CPU
 		{4304F673-7834-495C-B245-FB11048B81B9}.Release|x86.ActiveCfg = Release|Any CPU
 		{4304F673-7834-495C-B245-FB11048B81B9}.Release|x86.Build.0 = Release|Any CPU
+		{95D6DFA5-4CB4-4F05-A75B-1A3DBB78B89B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95D6DFA5-4CB4-4F05-A75B-1A3DBB78B89B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95D6DFA5-4CB4-4F05-A75B-1A3DBB78B89B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{95D6DFA5-4CB4-4F05-A75B-1A3DBB78B89B}.Debug|x64.Build.0 = Debug|Any CPU
+		{95D6DFA5-4CB4-4F05-A75B-1A3DBB78B89B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{95D6DFA5-4CB4-4F05-A75B-1A3DBB78B89B}.Debug|x86.Build.0 = Debug|Any CPU
+		{95D6DFA5-4CB4-4F05-A75B-1A3DBB78B89B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95D6DFA5-4CB4-4F05-A75B-1A3DBB78B89B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{95D6DFA5-4CB4-4F05-A75B-1A3DBB78B89B}.Release|x64.ActiveCfg = Release|Any CPU
+		{95D6DFA5-4CB4-4F05-A75B-1A3DBB78B89B}.Release|x64.Build.0 = Release|Any CPU
+		{95D6DFA5-4CB4-4F05-A75B-1A3DBB78B89B}.Release|x86.ActiveCfg = Release|Any CPU
+		{95D6DFA5-4CB4-4F05-A75B-1A3DBB78B89B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

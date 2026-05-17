@@ -39,6 +39,10 @@ namespace Skyweaver.Services.Directories
             configuration => configuration.SessionFlowsDirectoryPath,
             SkyweaverDirectoryDefaults.DefaultSessionFlowsDirectoryPath);
 
+        public string AerialCityDirectoryPath => GetDirectoryPath(
+            configuration => configuration.AerialCityDirectoryPath,
+            SkyweaverDirectoryDefaults.DefaultAerialCityDirectoryPath);
+
         public event EventHandler? ConfigurationChanged;
 
         public DirectoriesConfiguration GetConfiguration()
@@ -80,7 +84,8 @@ namespace Skyweaver.Services.Directories
                 ChatSessionsDirectoryPath = configuration.ChatSessionsDirectoryPath,
                 ConfigurationDirectoryPath = configuration.ConfigurationDirectoryPath,
                 DebugDirectoryPath = configuration.DebugDirectoryPath,
-                SessionFlowsDirectoryPath = configuration.SessionFlowsDirectoryPath
+                SessionFlowsDirectoryPath = configuration.SessionFlowsDirectoryPath,
+                AerialCityDirectoryPath = configuration.AerialCityDirectoryPath
             };
         }
 
@@ -90,6 +95,7 @@ namespace Skyweaver.Services.Directories
             Directory.CreateDirectory(configuration.ConfigurationDirectoryPath);
             Directory.CreateDirectory(configuration.DebugDirectoryPath);
             Directory.CreateDirectory(configuration.SessionFlowsDirectoryPath);
+            Directory.CreateDirectory(configuration.AerialCityDirectoryPath);
         }
     }
 }

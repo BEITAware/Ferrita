@@ -66,6 +66,30 @@
             <Setter Property="Padding" Value="4,1"/>
             <Setter Property="Margin" Value="1"/>
         </Style>
+
+        <Style x:Key="TextEditorPlainDocumentTextBoxStyle"
+               TargetType="{x:Type TextBox}">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="CaretBrush" Value="#FF1F2D36"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TextBox}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          Focusable="False"
+                                          HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}"
+                                          VerticalScrollBarVisibility="{TemplateBinding VerticalScrollBarVisibility}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Border Background="{DynamicResource DocumentTabBackgroundBrush}">
@@ -395,21 +419,28 @@
                                     Background="#EEF0F5F8"
                                     BorderBrush="#FFC5D8E7"
                                     BorderThickness="0,0,1,0">
-                                <ScrollViewer x:Name="LineNumberScrollViewer"
-                                              HorizontalScrollBarVisibility="Disabled"
-                                              VerticalScrollBarVisibility="Hidden"
-                                              Focusable="False">
-                                    <TextBlock Text="{Binding LineNumbersText}"
-                                               TextAlignment="Right"
-                                               Padding="0,16,8,16"
-                                               Foreground="#FF7790A0"
-                                               FontFamily="{DynamicResource AeroFontFamily}"
-                                               FontSize="12"/>
-                                </ScrollViewer>
+                                <TextBox x:Name="LineNumberEditor"
+                                         Style="{StaticResource TextEditorPlainDocumentTextBoxStyle}"
+                                         Text="{Binding LineNumbersText, Mode=OneWay}"
+                                         Padding="0,16,8,16"
+                                         IsReadOnly="True"
+                                         IsTabStop="False"
+                                         Focusable="False"
+                                         BorderThickness="0"
+                                         Background="#EEF0F5F8"
+                                         Foreground="#FF7790A0"
+                                         FontFamily="Segoe UI, Microsoft YaHei UI, Arial"
+                                         FontSize="13"
+                                         TextAlignment="Right"
+                                         TextWrapping="NoWrap"
+                                         VerticalScrollBarVisibility="Hidden"
+                                         HorizontalScrollBarVisibility="Hidden"
+                                         SelectionBrush="Transparent"/>
                             </Border>
 
                             <TextBox x:Name="PlainTextEditor"
                                      Grid.Column="1"
+                                     Style="{StaticResource TextEditorPlainDocumentTextBoxStyle}"
                                      Text="{Binding TextContent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      Margin="0"
                                      Padding="20,16"

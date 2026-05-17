@@ -5,6 +5,8 @@ using Skyweaver.Controls.AgentConfigurationControl.Views;
 using Skyweaver.Commands;
 using Skyweaver.Controls.AgentWizardControl.ViewModels;
 using Skyweaver.Controls.AgentWizardControl.Views;
+using Skyweaver.Controls.EmbeddingModelConfigurationControl.ViewModels;
+using Skyweaver.Controls.EmbeddingModelConfigurationControl.Views;
 using Skyweaver.Controls.FileManagerControl.ViewModels;
 using Skyweaver.Controls.FileManagerControl.Views;
 using Skyweaver.Controls.LanguageModelConfigurationControl.ViewModels;
@@ -83,6 +85,7 @@ namespace Skyweaver.Panels.MultiFunctionArea.ViewModels
             public const string FileManager = "file-manager";
             public const string LateralFileSystemTree = "lateral-file-system-tree";
             public const string LanguageModelConfiguration = "language-model-configuration";
+            public const string EmbeddingModelConfiguration = "embedding-model-configuration";
             public const string ToolConfiguration = "tool-configuration";
             public const string AgentConfiguration = "agent-configuration";
             public const string TextEditor = "text-editor";
@@ -137,6 +140,15 @@ namespace Skyweaver.Panels.MultiFunctionArea.ViewModels
                     IconPath = "pack://application:,,,/Resources/Setup.png",
                     MaxCount = 1,
                     ContentFactory = _ => CreateLanguageModelConfigurationView()
+                },
+                new()
+                {
+                    TypeKey = TabTypes.EmbeddingModelConfiguration,
+                    Title = "嵌入模型配置",
+                    Description = "配置向量嵌入模型来源、维度、调用参数与连通性测试。",
+                    IconPath = "pack://application:,,,/Resources/Setup.png",
+                    MaxCount = 1,
+                    ContentFactory = _ => CreateEmbeddingModelConfigurationView()
                 },
                 new()
                 {
@@ -302,6 +314,14 @@ namespace Skyweaver.Panels.MultiFunctionArea.ViewModels
             return new LanguageModelConfigurationControl
             {
                 DataContext = new LanguageModelConfigurationControlViewModel()
+            };
+        }
+
+        private static EmbeddingModelConfigurationControl CreateEmbeddingModelConfigurationView()
+        {
+            return new EmbeddingModelConfigurationControl
+            {
+                DataContext = new EmbeddingModelConfigurationControlViewModel()
             };
         }
 

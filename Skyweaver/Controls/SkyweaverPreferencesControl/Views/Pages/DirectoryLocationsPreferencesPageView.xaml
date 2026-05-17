@@ -64,6 +64,10 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="8"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="14"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="8"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="170"/>
@@ -145,6 +149,25 @@
                            Grid.Column="1"
                            Grid.ColumnSpan="2"
                            Text="设定会话流节点图保存的位置。默认在用户文件夹/Skyweaver/Nodegraphs 之下。"
+                           Style="{StaticResource PreferenceMetaStyle}"/>
+
+                <TextBlock Grid.Row="16"
+                           Grid.Column="0"
+                           Text="AerialCity 目录"
+                           Style="{StaticResource PreferenceLabelStyle}"/>
+                <TextBox Grid.Row="16"
+                         Grid.Column="1"
+                         Margin="0,0,10,0"
+                         Text="{Binding AerialCityDirectoryPath, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                <Button Grid.Row="16"
+                        Grid.Column="2"
+                        MinWidth="96"
+                        Content="浏览..."
+                        Command="{Binding BrowseAerialCityDirectoryCommand}"/>
+                <TextBlock Grid.Row="18"
+                           Grid.Column="1"
+                           Grid.ColumnSpan="2"
+                           Text="设定 AerialCity RAG 数据库与映射文件保存的位置。默认在用户文件夹/Skyweaver/AerialCity 之下。"
                            Style="{StaticResource PreferenceMetaStyle}"/>
             </Grid>
 

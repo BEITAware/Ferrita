@@ -8,6 +8,7 @@ namespace Skyweaver.Models.Directories
         private string _configurationDirectoryPath = string.Empty;
         private string _debugDirectoryPath = string.Empty;
         private string _sessionFlowsDirectoryPath = string.Empty;
+        private string _aerialCityDirectoryPath = string.Empty;
 
         public string ChatSessionsDirectoryPath
         {
@@ -31,6 +32,12 @@ namespace Skyweaver.Models.Directories
         {
             get => _sessionFlowsDirectoryPath;
             set => SetProperty(ref _sessionFlowsDirectoryPath, value?.Trim() ?? string.Empty);
+        }
+
+        public string AerialCityDirectoryPath
+        {
+            get => _aerialCityDirectoryPath;
+            set => SetProperty(ref _aerialCityDirectoryPath, value?.Trim() ?? string.Empty);
         }
     }
 }

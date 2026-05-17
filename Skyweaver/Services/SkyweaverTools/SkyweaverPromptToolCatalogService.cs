@@ -1,5 +1,6 @@
 using Skyweaver.Controls.AgentConfigurationControl.Models;
 using Skyweaver.Controls.AgentConfigurationControl.Services;
+using Skyweaver.Services.AerialCityRag;
 
 namespace Skyweaver.Services.SkyweaverTools
 {
@@ -44,11 +45,18 @@ namespace Skyweaver.Services.SkyweaverTools
             var toolKitMembershipMap = _toolKitService.BuildToolKitMembershipMap(toolKits);
 
             var tools = new List<SkyweaverPromptToolDefinition>();
+            var exposeAerialCityRagTools = AerialCityRagAvailability.AreToolsAvailable();
 
             foreach (var registration in _toolManager.GetRegisteredTools(resolveIcons: false)
                          .Where(item => item.RequiresAgentPermission && item.Definition.SupportsAsyncInvocation)
                          .OrderBy(item => item.Definition.Name, StringComparer.OrdinalIgnoreCase))
             {
+                if (AerialCityRagAvailability.IsAerialCityRagTool(registration.Definition.Name) &&
+                    !exposeAerialCityRagTools)
+                {
+                    continue;
+                }
+
                 if (restrictedToolNameSet != null &&
                     !restrictedToolNameSet.Contains(registration.Definition.Name))
                 {

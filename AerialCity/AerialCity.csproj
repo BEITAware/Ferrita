@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>AerialCity</RootNamespace>
+    <AssemblyName>AerialCity</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <Description>AerialCity — A novel hybrid vector-graph database engine with integrated RAG capabilities.</Description>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SIMD-accelerated vector/tensor operations for embedding similarity -->
+    <PackageReference Include="System.Numerics.Tensors" Version="10.0.0-preview.4.25258.110" />
+
+    <!-- Roslyn C# syntax analysis for AST-based code segmentation -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" />
+
+    <!-- Tree-sitter syntax analysis for API-backed whole code file embedding -->
+    <PackageReference Include="TreeSitter.DotNet" Version="1.3.0" />
+
+    <!-- Standard .NET infrastructure: logging, DI, options pattern -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0-preview.4.25258.110" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0-preview.4.25258.110" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0-preview.4.25258.110" />
+
+    <!-- High-performance hashing (XxHash, Crc32) for BM25 and storage checksums -->
+    <PackageReference Include="System.IO.Hashing" Version="10.0.0-preview.4.25258.110" />
+  </ItemGroup>
+
+</Project>

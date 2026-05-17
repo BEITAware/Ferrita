@@ -65,6 +65,9 @@ namespace Skyweaver.Controls.SkyweaverPreferencesControl.ViewModels
             OpenLanguageModelConfigurationCommand = new RelayCommand(
                 () => OpenTab(MultiFunctionAreaPanelViewModel.TabTypes.LanguageModelConfiguration),
                 CanOpenExternalPanel);
+            OpenEmbeddingModelConfigurationCommand = new RelayCommand(
+                () => OpenTab(MultiFunctionAreaPanelViewModel.TabTypes.EmbeddingModelConfiguration),
+                CanOpenExternalPanel);
             OpenToolConfigurationCommand = new RelayCommand(
                 () => OpenTab(MultiFunctionAreaPanelViewModel.TabTypes.ToolConfiguration),
                 CanOpenExternalPanel);
@@ -87,6 +90,8 @@ namespace Skyweaver.Controls.SkyweaverPreferencesControl.ViewModels
         public ICommand SelectPageCommand { get; }
 
         public ICommand OpenLanguageModelConfigurationCommand { get; }
+
+        public ICommand OpenEmbeddingModelConfigurationCommand { get; }
 
         public ICommand OpenToolConfigurationCommand { get; }
 

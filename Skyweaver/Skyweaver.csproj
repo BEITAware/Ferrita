@@ -21,6 +21,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AerialCity\AerialCity.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ComputeSharp" Version="3.2.0" />
     <PackageReference Include="ComputeSharp.D2D1" Version="3.2.0" />
     <PackageReference Include="ComputeSharp.Dxc" Version="3.2.0" />

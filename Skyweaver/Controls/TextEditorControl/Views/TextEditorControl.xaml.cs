@@ -31,7 +31,7 @@ namespace Skyweaver.Controls.TextEditorControl.Views
         {
             if (e.VerticalChange != 0 || e.ExtentHeightChange != 0)
             {
-                LineNumberScrollViewer.ScrollToVerticalOffset(e.VerticalOffset);
+                LineNumberEditor.ScrollToVerticalOffset(e.VerticalOffset);
             }
         }
 

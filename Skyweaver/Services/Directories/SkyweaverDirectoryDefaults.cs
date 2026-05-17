@@ -10,6 +10,7 @@ namespace Skyweaver.Services.Directories
         public const string ConfigurationFolderName = "Configuration";
         public const string DebugFolderName = "Debug";
         public const string SessionFlowsFolderName = "Nodegraphs";
+        public const string AerialCityFolderName = "AerialCity";
         public const string DirectoriesFileName = "Directories.xml";
 
         public static string UserProfileDirectoryPath => ResolveUserProfileDirectoryPath();
@@ -34,6 +35,10 @@ namespace Skyweaver.Services.Directories
             ApplicationDirectoryPath,
             SessionFlowsFolderName);
 
+        public static string DefaultAerialCityDirectoryPath => Path.Combine(
+            ApplicationDirectoryPath,
+            AerialCityFolderName);
+
         public static string DirectoriesConfigurationFilePath => Path.Combine(
             DefaultConfigurationDirectoryPath,
             DirectoriesFileName);
@@ -45,7 +50,8 @@ namespace Skyweaver.Services.Directories
                 ChatSessionsDirectoryPath = DefaultChatSessionsDirectoryPath,
                 ConfigurationDirectoryPath = DefaultConfigurationDirectoryPath,
                 DebugDirectoryPath = DefaultDebugDirectoryPath,
-                SessionFlowsDirectoryPath = DefaultSessionFlowsDirectoryPath
+                SessionFlowsDirectoryPath = DefaultSessionFlowsDirectoryPath,
+                AerialCityDirectoryPath = DefaultAerialCityDirectoryPath
             };
         }
 
@@ -66,7 +72,10 @@ namespace Skyweaver.Services.Directories
                     DefaultDebugDirectoryPath),
                 SessionFlowsDirectoryPath = NormalizeDirectoryPath(
                     configuration.SessionFlowsDirectoryPath,
-                    DefaultSessionFlowsDirectoryPath)
+                    DefaultSessionFlowsDirectoryPath),
+                AerialCityDirectoryPath = NormalizeDirectoryPath(
+                    configuration.AerialCityDirectoryPath,
+                    DefaultAerialCityDirectoryPath)
             };
         }
 

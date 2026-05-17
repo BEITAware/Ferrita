@@ -64,6 +64,15 @@ namespace Skyweaver.Controls.SkyweaverPreferencesControl.Services
                     Order = 10
                 });
 
+                registry.RegisterPage("context-management", new PreferencePageInfo
+                {
+                    Id = "preferences-semantic-search",
+                    DisplayName = "语义搜索",
+                    ViewType = typeof(SemanticSearchPreferencesPageView),
+                    ViewModelType = typeof(SemanticSearchPreferencesPageViewModel),
+                    Order = 20
+                });
+
                 s_isRegistered = true;
             }
         }
