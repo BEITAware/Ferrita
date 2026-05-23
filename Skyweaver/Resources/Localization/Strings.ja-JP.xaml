@@ -2237,6 +2237,10 @@
     <system:String x:Key="FileManager.EmptyState.Hint">将来的に、パス状態、フィルター、および選択されたアイテムを独立したモデルに抽出することを検討してください。</system:String>
 
 
+    <system:String x:Key="ShellChat.Window.Title">Shell チャット</system:String>
+
+    <system:String x:Key="ShellChat.Button.Send">送信</system:String>
+
     <system:String x:Key="ChatSessionControl.Stop">停止</system:String>
 
     <system:String x:Key="ChatSessionControl.SessionTitleFallback">チャットセッション</system:String>

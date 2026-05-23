@@ -723,6 +723,9 @@
     <system:String x:Key="ChatSessionControl.AddFile">Add File</system:String>
     <system:String x:Key="ChatSessionControl.Send">Send</system:String>
 
+    <system:String x:Key="ShellChat.Window.Title">Shell Chat</system:String>
+    <system:String x:Key="ShellChat.Button.Send">SEND</system:String>
+
     <system:String x:Key="Common.Open">Open</system:String>
     <system:String x:Key="Common.Save">Save</system:String>
     <system:String x:Key="Common.Rename">Rename</system:String>

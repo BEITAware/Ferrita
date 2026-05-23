@@ -722,6 +722,9 @@
     <system:String x:Key="ChatSessionControl.AddFile">添加文件</system:String>
     <system:String x:Key="ChatSessionControl.Send">发送</system:String>
 
+    <system:String x:Key="ShellChat.Window.Title">Shell 聊天</system:String>
+    <system:String x:Key="ShellChat.Button.Send">发送</system:String>
+
     <system:String x:Key="Common.Open">打开</system:String>
     <system:String x:Key="Common.Save">保存</system:String>
     <system:String x:Key="Common.Rename">重命名</system:String>
