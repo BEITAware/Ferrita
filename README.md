@@ -5,6 +5,10 @@
 </p>
 
 <p align="center">
+  <a href="./README.md">简体中文</a> | <a href="./README.en.md">English</a>
+</p>
+
+<p align="center">
   <img src="ReadmeResources/HeroImage2.png" alt="Skyweaver Hero Image">
 </p>
 
