@@ -1593,19 +1593,24 @@ To the greatest extent permitted by, but not in contravention of, applicable law
                 CreateShortcut(Path.Combine(startMenuDir, shortcutName), executablePath, destinationPath);
             }
 
-            var startupShortcut = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), "Skylifter.lnk");
+            var oldStartupShortcut = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), "Skylifter.lnk");
+            if (File.Exists(oldStartupShortcut))
+            {
+                try { File.Delete(oldStartupShortcut); } catch { }
+            }
+
+            var startupShortcut = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), "Skyweaver.lnk");
             if (createStartupShortcut)
             {
-                var skylifterPath = Path.Combine(destinationPath, "Skylifter.exe");
-                CreateShortcut(startupShortcut, File.Exists(skylifterPath) ? skylifterPath : executablePath, destinationPath);
+                CreateShortcut(startupShortcut, executablePath, destinationPath, "--daemon");
             }
             else if (File.Exists(startupShortcut))
             {
-                File.Delete(startupShortcut);
+                try { File.Delete(startupShortcut); } catch { }
             }
         }
 
-        private static void CreateShortcut(string shortcutPath, string targetPath, string workingDirectory)
+        private static void CreateShortcut(string shortcutPath, string targetPath, string workingDirectory, string? arguments = null)
         {
             var shellType = Type.GetTypeFromProgID("WScript.Shell")
                 ?? throw new InvalidOperationException("WScript.Shell is not available on this system.");
@@ -1622,6 +1627,10 @@ To the greatest extent permitted by, but not in contravention of, applicable law
             shortcutType.InvokeMember("TargetPath", System.Reflection.BindingFlags.SetProperty, null, shortcut, new object[] { targetPath });
             shortcutType.InvokeMember("WorkingDirectory", System.Reflection.BindingFlags.SetProperty, null, shortcut, new object[] { workingDirectory });
             shortcutType.InvokeMember("IconLocation", System.Reflection.BindingFlags.SetProperty, null, shortcut, new object[] { targetPath });
+            if (!string.IsNullOrWhiteSpace(arguments))
+            {
+                shortcutType.InvokeMember("Arguments", System.Reflection.BindingFlags.SetProperty, null, shortcut, new object[] { arguments });
+            }
             shortcutType.InvokeMember("Save", System.Reflection.BindingFlags.InvokeMethod, null, shortcut, Array.Empty<object>());
             if (Marshal.IsComObject(shortcut)) Marshal.FinalReleaseComObject(shortcut);
             if (Marshal.IsComObject(shell)) Marshal.FinalReleaseComObject(shell);
@@ -2307,7 +2316,7 @@ To the greatest extent permitted by, but not in contravention of, applicable law
                 }
                 else if (_progressVal <= 70)
                 {
-                    TxtProgressStatus.Text = TryFindResource("Progress_DeployDaemon") as string ?? "正在部署后台守护进程 (Skylifter)...";
+                    TxtProgressStatus.Text = TryFindResource("Progress_DeployDaemon") as string ?? "正在配置后台守护进程 (Skyweaver)...";
                 }
                 else if (_progressVal <= 85)
                 {

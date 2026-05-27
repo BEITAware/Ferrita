@@ -1,11 +1,21 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using System.Threading.Channels;
+using System.Threading.Tasks;
 using Skyweaver.Services.ChatSession;
 using Skyweaver.Services.Memory;
 
-namespace Skylifter
+namespace Skyweaver.Services.Daemon
 {
-    internal sealed class SkylifterMemoryQueue : IDisposable
+    public sealed class BackgroundMemoryQueue : IDisposable
     {
+        private static readonly Lazy<BackgroundMemoryQueue> LazyInstance =
+            new(() => new BackgroundMemoryQueue());
+
+        public static BackgroundMemoryQueue Instance => LazyInstance.Value;
+
         private readonly Channel<string> _sessionIds = Channel.CreateUnbounded<string>();
         private readonly CancellationTokenSource _cancellationTokenSource = new();
         private readonly ChatSessionRepository _repository = new();
@@ -15,6 +25,10 @@ namespace Skylifter
         private Task? _workerTask;
         private bool _isAcceptingWork = true;
         private bool _isDisposed;
+
+        private BackgroundMemoryQueue()
+        {
+        }
 
         public bool IsIdle
         {
@@ -29,7 +43,13 @@ namespace Skylifter
 
         public void Start()
         {
-            _workerTask = Task.Run(() => ProcessQueueAsync(_cancellationTokenSource.Token));
+            lock (_gate)
+            {
+                if (_workerTask == null)
+                {
+                    _workerTask = Task.Run(() => ProcessQueueAsync(_cancellationTokenSource.Token));
+                }
+            }
         }
 
         public void Enqueue(IEnumerable<string>? sessionIds)
@@ -70,48 +90,6 @@ namespace Skylifter
             }
         }
 
-        public async Task WaitUntilIdleAsync(TimeSpan timeout, CancellationToken cancellationToken)
-        {
-            var deadline = DateTime.UtcNow + timeout;
-            while (!IsIdle && DateTime.UtcNow < deadline)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        public async Task WaitUntilIdleAsync(CancellationToken cancellationToken)
-        {
-            while (!IsIdle)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        public async Task WaitUntilIdleAndQuietAsync(TimeSpan quietPeriod, CancellationToken cancellationToken)
-        {
-            var quietStartedAtUtc = DateTime.MinValue;
-            while (true)
-            {
-                if (IsIdle)
-                {
-                    quietStartedAtUtc = quietStartedAtUtc == DateTime.MinValue
-                        ? DateTime.UtcNow
-                        : quietStartedAtUtc;
-
-                    if (DateTime.UtcNow - quietStartedAtUtc >= quietPeriod)
-                    {
-                        return;
-                    }
-                }
-                else
-                {
-                    quietStartedAtUtc = DateTime.MinValue;
-                }
-
-                await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken).ConfigureAwait(false);
-            }
-        }
-
         public void Dispose()
         {
             if (_isDisposed)
@@ -144,7 +122,6 @@ namespace Skylifter
             }
             catch (ObjectDisposedException)
             {
-                // Shutdown can race with final disposal during process exit.
             }
         }
 
@@ -167,7 +144,7 @@ namespace Skylifter
                 }
                 catch
                 {
-                    // Background memory generation should not tear down the tray daemon.
+                    // Background memory generation should not crash the main application.
                 }
                 finally
                 {

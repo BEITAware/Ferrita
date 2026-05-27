@@ -212,6 +212,8 @@ namespace Skyweaver.Services.ChatSession
         public string? ToolCallResourceFolderPath { get; init; }
 
         public Func<AgentToolConfirmationRequest, CancellationToken, Task<AgentToolConfirmationResult>>? ToolConfirmationCallback { get; init; }
+
+        public bool IsScheduledTaskSession { get; init; }
     }
 
     public interface ISessionFlowAgentExecutor

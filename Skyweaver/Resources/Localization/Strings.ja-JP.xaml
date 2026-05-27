@@ -1275,6 +1275,12 @@
 
     <system:String x:Key="PersonaSettings.ConfigTitle">設定パネル</system:String>
 
+    <system:String x:Key="Tabs.ScheduledTasks.Title">スケジュールタスク</system:String>
+
+    <system:String x:Key="Tabs.ScheduledTasks.Description">定期的なスケジュールタスクや自動実行タスクを管理および表示します。</system:String>
+
+    <system:String x:Key="Tabs.ScheduledTasks.Hint">このパネルには現在コンテンツがありません。</system:String>
+
     <system:String x:Key="Tabs.Placeholder.NoContentFormat">タブ '{0}' にはまだコンテンツがありません。</system:String>
 
     <system:String x:Key="DocumentWorkspace.Placeholder.Default">ドキュメントの内容がここに表示されます...</system:String>

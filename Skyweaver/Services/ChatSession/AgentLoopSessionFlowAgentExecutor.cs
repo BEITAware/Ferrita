@@ -38,7 +38,8 @@ namespace Skyweaver.Services.ChatSession
                 ToolCallIdFactory = request.ToolCallIdFactory,
                 AsyncToolStateScopeId = request.AsyncToolStateScopeId,
                 ToolCallResourceFolderPath = request.ToolCallResourceFolderPath,
-                ToolConfirmationCallback = request.ToolConfirmationCallback
+                ToolConfirmationCallback = request.ToolConfirmationCallback,
+                IsScheduledTaskSession = request.IsScheduledTaskSession
             };
 
             if (request.EventSink != null)

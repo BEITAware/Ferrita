@@ -168,6 +168,7 @@ namespace Skyweaver.Services.ChatSession
                                      ((string?)metadataElement?.Element("SessionKind") ?? string.Empty).Trim(),
                                      "Shell",
                                      StringComparison.OrdinalIgnoreCase),
+                IsScheduledTaskSession = ParseBool((string?)metadataElement?.Element("IsScheduledTaskSession")),
                 SessionFilePath = sessionFilePath,
                 SessionFolderPath = Path.GetDirectoryName(sessionFilePath) ?? string.Empty,
                 ResourcesFolderPath = Path.Combine(
@@ -205,6 +206,7 @@ namespace Skyweaver.Services.ChatSession
                         new XElement("IconPath", session.IconPath),
                         new XElement("Note", session.MetadataNote),
                         session.IsShellSession ? new XElement("IsShellSession", true) : null,
+                        session.IsScheduledTaskSession ? new XElement("IsScheduledTaskSession", true) : null,
                         new XElement(
                             "BoundSessionFlow",
                             new XElement("GraphId", session.FlowBinding.GraphId),

@@ -144,7 +144,7 @@
     <system:String x:Key="Integration_SubTitle">请选择 Skyweaver 与您的操作系统的集成偏好设定。</system:String>
     <system:String x:Key="Integration_Shortcut">在桌面创建快捷方式</system:String>
     <system:String x:Key="Integration_StartMenu">将 Skyweaver 添加到开始菜单程序文件夹</system:String>
-    <system:String x:Key="Integration_Startup">在登录 Windows 时自动启动后台守护进程 (Skylifter)</system:String>
+    <system:String x:Key="Integration_Startup">在登录 Windows 时自动以托盘守护模式启动 Skyweaver</system:String>
     <system:String x:Key="Integration_Service">注册为 Windows 系统服务以提供持续 Agent 计算能力</system:String>
     <system:String x:Key="Integration_Shell">启用资源管理器右键菜单 Shell 集成 (推荐)</system:String>
     <system:String x:Key="Integration_ShellDesc1">• 启用后会为文件、多选文件、目录以及资源管理器背景空白处添加「问问Skyweaver...」右键菜单项。</system:String>
@@ -186,7 +186,7 @@
     <system:String x:Key="Progress_PrepareFiles">准备释放文件...</system:String>
     <system:String x:Key="Progress_ExtractCore">正在解压 Skyweaver 核心运行库...</system:String>
     <system:String x:Key="Progress_ExtractDB">正在释放向量图数据库引擎 (AerialCity)...</system:String>
-    <system:String x:Key="Progress_DeployDaemon">正在部署后台守护进程 (Skylifter)...</system:String>
+    <system:String x:Key="Progress_DeployDaemon">正在配置后台守护模式 (Skyweaver)...</system:String>
     <system:String x:Key="Progress_ConfigureNetwork">正在配置本地端口与网络通道 (Tunnel-Next)...</system:String>
     <system:String x:Key="Progress_CreateShortcuts">正在创建系统快捷方式与初始化环境变量...</system:String>
     <system:String x:Key="Progress_CleanCache">正在清理临时安装程序缓存...</system:String>

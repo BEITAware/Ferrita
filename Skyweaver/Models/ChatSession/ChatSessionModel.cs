@@ -21,6 +21,8 @@ namespace Skyweaver.Models.ChatSession
 
         public bool IsShellSession { get; set; }
 
+        public bool IsScheduledTaskSession { get; set; }
+
         public ChatSessionFlowBinding FlowBinding { get; } = new();
 
         public ChatSessionTranscript Transcript { get; } = new();

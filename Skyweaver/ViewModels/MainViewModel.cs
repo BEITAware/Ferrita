@@ -6,7 +6,7 @@ using Skyweaver.Panels.FileExplorer.ViewModels;
 using Skyweaver.Panels.Filmstrip.ViewModels;
 using Skyweaver.Panels.MultiFunctionArea.ViewModels;
 using Skyweaver.Panels.SessionList.ViewModels;
-using Skyweaver.Services.Skylifter;
+using Skyweaver.Services.Daemon;
 
 namespace Skyweaver.ViewModels
 {
@@ -65,23 +65,8 @@ namespace Skyweaver.ViewModels
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
-            if (await SkylifterIpcClient.TryRunMemoryForClosedSessionsAsync(sessionIds).ConfigureAwait(true))
-            {
-                return;
-            }
-
-            var skyweaverExecutablePath = SkylifterLauncher.GetCurrentSkyweaverExecutablePath();
-            SkylifterLauncher.EnsureStarted(skyweaverExecutablePath);
-            _ = SkylifterIpcClient.TryRegisterSkyweaverPathAsync(skyweaverExecutablePath);
-            await Task.Delay(600).ConfigureAwait(true);
-
-            if (await SkylifterIpcClient.TryRunMemoryForClosedSessionsAsync(sessionIds).ConfigureAwait(true))
-            {
-                return;
-            }
-
-            await Task.WhenAll(openSessionViewModels.Select(viewModel =>
-                viewModel.GenerateMemoryForClosedSessionAsync())).ConfigureAwait(true);
+            BackgroundMemoryQueue.Instance.Enqueue(sessionIds);
+            await Task.CompletedTask;
         }
     }
 }

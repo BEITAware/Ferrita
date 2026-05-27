@@ -704,6 +704,9 @@
     <system:String x:Key="PersonaSettings.ResponseSpeed">Response Speed</system:String>
     <system:String x:Key="PersonaSettings.Prompt">Persona Prompt</system:String>
     <system:String x:Key="PersonaSettings.ConfigTitle">Configuration Panel</system:String>
+    <system:String x:Key="Tabs.ScheduledTasks.Title">Scheduled Tasks</system:String>
+    <system:String x:Key="Tabs.ScheduledTasks.Description">Manage and view timed scheduled tasks and automated execution tasks.</system:String>
+    <system:String x:Key="Tabs.ScheduledTasks.Hint">This panel currently has no content.</system:String>
     <system:String x:Key="Tabs.Placeholder.NoContentFormat">Tab '{0}' has no content yet.</system:String>
     <system:String x:Key="DocumentWorkspace.Placeholder.Default">Document content here...</system:String>
     <system:String x:Key="DocumentWorkspace.Placeholder.NoContentViewModelFormat">Document '{0}' has no content view model yet.</system:String>

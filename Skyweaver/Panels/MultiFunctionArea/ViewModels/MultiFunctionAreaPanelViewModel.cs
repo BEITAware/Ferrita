@@ -23,11 +23,13 @@ using Skyweaver.Controls.WorkflowEditorControl.ViewModels;
 using Skyweaver.Controls.WorkflowEditorControl.Views;
 using Skyweaver.Controls.PersonaSettingsControl.ViewModels;
 using Skyweaver.Controls.PersonaSettingsControl.Views;
+using Skyweaver.Controls.ScheduledTasksControl.Views;
 using Skyweaver.Infrastructure.Mvvm;
 using Skyweaver.Panels.DocumentWorkspace.Models;
 using Skyweaver.Panels.DocumentWorkspace.ViewModels;
 using Skyweaver.Panels.MultiFunctionArea.Models;
 using Skyweaver.Services.Localization;
+using Skyweaver.Panels.MultiFunctionArea.Views;
 
 namespace Skyweaver.Panels.MultiFunctionArea.ViewModels
 {
@@ -95,6 +97,7 @@ namespace Skyweaver.Panels.MultiFunctionArea.ViewModels
             public const string TextEditor = "text-editor";
             public const string AgentWizard = "agent-wizard";
             public const string PersonaSettings = "persona-settings";
+            public const string ScheduledTasks = "scheduled-tasks";
         }
 
         private IReadOnlyList<MultiFunctionTabDefinition> CreateDefinitions()
@@ -221,6 +224,17 @@ namespace Skyweaver.Panels.MultiFunctionArea.ViewModels
                     IconPath = "pack://application:,,,/Resources/GuideBot.png",
                     MaxCount = 1,
                     ContentFactory = _ => CreatePersonaSettingsView()
+                },
+                new()
+                {
+                    TypeKey = TabTypes.ScheduledTasks,
+                    TitleResourceKey = "Tabs.ScheduledTasks.Title",
+                    Title = L("Tabs.ScheduledTasks.Title", "计划任务"),
+                    DescriptionResourceKey = "Tabs.ScheduledTasks.Description",
+                    Description = L("Tabs.ScheduledTasks.Description", "管理和查看定时计划任务以及自动执行的任务。"),
+                    IconPath = "pack://application:,,,/Resources/BatchProcess.png",
+                    MaxCount = 1,
+                    ContentFactory = _ => CreateScheduledTasksView()
                 }
             };
         }
@@ -426,6 +440,11 @@ namespace Skyweaver.Panels.MultiFunctionArea.ViewModels
             {
                 DataContext = new PersonaSettingsControlViewModel()
             };
+        }
+
+        private static object CreateScheduledTasksView()
+        {
+            return new ScheduledTasksControl();
         }
     }
 }

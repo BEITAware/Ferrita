@@ -55,6 +55,8 @@ namespace Skyweaver.Services.AgentLoop
         public string? ToolCallResourceFolderPath { get; init; }
 
         public Func<AgentToolConfirmationRequest, CancellationToken, Task<AgentToolConfirmationResult>>? ToolConfirmationCallback { get; init; }
+
+        public bool IsScheduledTaskSession { get; init; }
     }
 
     public sealed class AgentLoopMediaProcessingProgress

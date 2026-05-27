@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Skyweaver.ViewModels;
@@ -8,8 +9,6 @@ namespace Skyweaver
     public partial class MainWindow : Window
     {
         private readonly MainViewModel _viewModel;
-        private bool _isGuiClosingInProgress;
-        private bool _allowGuiClose;
 
         public MainWindow()
         {
@@ -37,34 +36,28 @@ namespace Skyweaver
 
         }
 
-        private async void MainWindow_Closing(object? sender, CancelEventArgs e)
+        private void MainWindow_Closing(object? sender, CancelEventArgs e)
         {
-            if (_allowGuiClose)
+            var app = Application.Current as App;
+            if (app != null && app.IsShuttingDown)
             {
                 return;
             }
 
             e.Cancel = true;
+            Hide();
 
-            if (_isGuiClosingInProgress)
+            _ = Task.Run(async () =>
             {
-                return;
-            }
-
-            _isGuiClosingInProgress = true;
-            IsEnabled = false;
-
-            try
-            {
-                await _viewModel.HandleGuiClosingAsync();
-            }
-            finally
-            {
-                _allowGuiClose = true;
-                _ = Dispatcher.BeginInvoke(
-                    DispatcherPriority.ApplicationIdle,
-                    new Action(Close));
-            }
+                try
+                {
+                    await _viewModel.HandleGuiClosingAsync();
+                }
+                catch
+                {
+                    // Protection against unhandled exceptions on background thread
+                }
+            });
         }
 
         private void ChatFullViewSplitter_DragDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)

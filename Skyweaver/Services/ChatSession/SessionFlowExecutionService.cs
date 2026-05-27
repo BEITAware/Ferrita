@@ -339,6 +339,7 @@ namespace Skyweaver.Services.ChatSession
                     AsyncToolStateScopeId = request.Session.SessionId,
                     ToolCallResourceFolderPath = ChatSessionResourceLayout.GetToolCallsFolderPath(request.Session),
                     ToolConfirmationCallback = request.ToolConfirmationCallback,
+                    IsScheduledTaskSession = request.Session.IsScheduledTaskSession,
                     EventSink = (update, ct) => PublishAgentLoopUpdateAsync(
                         request,
                         compiledNode,

@@ -1,7 +1,6 @@
 using System.IO;
 using Microsoft.Win32;
 using Skyweaver.Services.Localization;
-using Skyweaver.Services.Skylifter;
 
 namespace Skyweaver.Services.ShellIntegration
 {
@@ -102,7 +101,7 @@ namespace Skyweaver.Services.ShellIntegration
                 return baseDirectoryExecutablePath;
             }
 
-            var currentExecutablePath = SkylifterLauncher.GetCurrentSkyweaverExecutablePath();
+            var currentExecutablePath = Environment.ProcessPath ?? System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(currentExecutablePath) && File.Exists(currentExecutablePath))
             {
                 return currentExecutablePath;

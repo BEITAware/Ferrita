@@ -144,7 +144,7 @@ To the greatest extent permitted by, but not in contravention of, applicable law
     <system:String x:Key="Integration_SubTitle">Select integration preferences for Skyweaver and your operating system.</system:String>
     <system:String x:Key="Integration_Shortcut">Create shortcut on Desktop</system:String>
     <system:String x:Key="Integration_StartMenu">Add Skyweaver to Start Menu programs</system:String>
-    <system:String x:Key="Integration_Startup">Auto-start background daemon (Skylifter) on Windows login</system:String>
+    <system:String x:Key="Integration_Startup">Auto-start Skyweaver in background tray mode on Windows login</system:String>
     <system:String x:Key="Integration_Service">Register as Windows System Service for continuous agent capacity</system:String>
     <system:String x:Key="Integration_Shell">Enable File Explorer context menu integration (Recommended)</system:String>
     <system:String x:Key="Integration_ShellDesc1">• Adds "Ask Skyweaver..." to context menus of files, folders, and background whitespace.</system:String>
@@ -186,7 +186,7 @@ To the greatest extent permitted by, but not in contravention of, applicable law
     <system:String x:Key="Progress_PrepareFiles">Preparing files...</system:String>
     <system:String x:Key="Progress_ExtractCore">Extracting Skyweaver core runtime...</system:String>
     <system:String x:Key="Progress_ExtractDB">Extracting vector database engine (AerialCity)...</system:String>
-    <system:String x:Key="Progress_DeployDaemon">Deploying background daemon (Skylifter)...</system:String>
+    <system:String x:Key="Progress_DeployDaemon">Configuring background tray mode (Skyweaver)...</system:String>
     <system:String x:Key="Progress_ConfigureNetwork">Configuring local ports and network channels (Tunnel-Next)...</system:String>
     <system:String x:Key="Progress_CreateShortcuts">Creating system shortcuts and initializing environment variables...</system:String>
     <system:String x:Key="Progress_CleanCache">Cleaning up temporary installer cache...</system:String>

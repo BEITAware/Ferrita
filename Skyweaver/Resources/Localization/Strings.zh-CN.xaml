@@ -694,6 +694,9 @@
     <system:String x:Key="Tabs.TextEditor.Description">用于脚本、提示词或配置文件编辑的文本工作页。</system:String>
     <system:String x:Key="Tabs.AgentWizard.Title">创建代理向导</system:String>
     <system:String x:Key="Tabs.AgentWizard.Description">通过分步向导快速配置新的代理、职责和行为模板。</system:String>
+    <system:String x:Key="Tabs.ScheduledTasks.Title">计划任务</system:String>
+    <system:String x:Key="Tabs.ScheduledTasks.Description">管理和查看定时计划任务以及自动执行的任务。</system:String>
+    <system:String x:Key="Tabs.ScheduledTasks.Hint">此面板目前没有实际内容。</system:String>
     <system:String x:Key="Tabs.Placeholder.NoContentFormat">标签页“{0}”还没有内容。</system:String>
     <system:String x:Key="DocumentWorkspace.Placeholder.Default">文档内容将显示在这里...</system:String>
     <system:String x:Key="DocumentWorkspace.Placeholder.NoContentViewModelFormat">文档“{0}”尚未绑定内容视图模型。</system:String>

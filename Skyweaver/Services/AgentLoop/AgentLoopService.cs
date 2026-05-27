@@ -697,6 +697,16 @@ namespace Skyweaver.Services.AgentLoop
                 availableToolKits: availableToolKits,
                 activeToolKitKeys: activeToolKitKeys,
                 isSubAgent: request.IsSubAgent);
+
+            if (request.IsScheduledTaskSession)
+            {
+                baseSystemPrompt += "\n\n### 计划任务后台运行特别指令\n" +
+                                    "- 代理现在正在后台的计划任务中操作。\n" +
+                                    "- 用户提示词是系统自动注入的。\n" +
+                                    "- 运行时自主性更强，请根据预设的计划直接执行任务，无需等待、也不得等待用户意见或进行交互确认。\n" +
+                                    "- 如果评估该任务可能会伤害用户（例如删除重要系统文件、暴露敏感凭据）或损害用户财产，应直接拒绝执行该任务。";
+            }
+
             var debugRunContext = AgentLoopDebugRecorder.TryCreateRunContext(request);
             AgentLoopDebugRecorder.RecordRunStart(debugRunContext, request, baseSystemPrompt);
 
