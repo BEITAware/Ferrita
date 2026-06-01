@@ -1271,9 +1271,9 @@
                 </Border>
 
                 <Grid Grid.Column="1" Width="50" Height="50" VerticalAlignment="Top">
-                    <Rectangle Fill="{DynamicResource ChatAvatarBackgroundGlassBrush}" RadiusX="25" RadiusY="25"/>
-                    <Border CornerRadius="25" Margin="5" Background="#22FFFFFF">
-                        <Image Source="{Binding AvatarPath}" Stretch="Uniform" Margin="5"/>
+                    <Rectangle Fill="{DynamicResource ChatAvatarBackgroundGlassBrush}"/>
+                    <Border CornerRadius="18" Margin="1.5" ClipToBounds="True">
+                        <Image Source="{Binding AvatarPath}" Stretch="Uniform"/>
                     </Border>
                 </Grid>
             </Grid>
@@ -1289,9 +1289,9 @@
                 </Grid.ColumnDefinitions>
 
                 <Grid Grid.Column="0" Width="50" Height="50" VerticalAlignment="Top">
-                    <Rectangle Fill="{DynamicResource ChatAvatarBackgroundGlassBrush}" RadiusX="25" RadiusY="25"/>
-                    <Border CornerRadius="25" Margin="5" Background="#22FFFFFF">
-                        <Image Source="{Binding AvatarPath}" Stretch="Uniform" Margin="5"/>
+                    <Rectangle Fill="{DynamicResource ChatAvatarBackgroundGlassBrush}"/>
+                    <Border CornerRadius="18" Margin="1.5" ClipToBounds="True">
+                        <Image Source="{Binding AvatarPath}" Stretch="Uniform"/>
                     </Border>
                 </Grid>
 

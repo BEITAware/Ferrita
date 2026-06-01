@@ -183,53 +183,43 @@
                                   ItemContainerStyle="{StaticResource ConfigurationListViewItemStyle}">
                             <ListView.ItemTemplate>
                                 <DataTemplate DataType="{x:Type models:AgentDefinition}">
-                                    <Border Style="{StaticResource GlassCardBorderStyle}">
+                                    <Border Style="{StaticResource GlassCardBorderStyle}" ClipToBounds="True">
                                         <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="56"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
+                                            <Image Source="{Binding AvatarPreviewPath}"
+                                                   Stretch="Uniform"
+                                                   Width="90"
+                                                   Height="90"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,-20,-20"
+                                                   Opacity="0.2"
+                                                   IsHitTestVisible="False"/>
 
-                                            <Border Width="44"
-                                                    Height="44"
-                                                    Margin="0,2,10,2"
-                                                    Background="#12000000"
-                                                    BorderBrush="#40FFFFFF"
-                                                    BorderThickness="1"
-                                                    CornerRadius="10">
-                                                <Image Width="28"
-                                                       Height="28"
-                                                       Source="{Binding AvatarPreviewPath}"
-                                                       Stretch="Uniform"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"/>
-                                            </Border>
-
-                                            <StackPanel Grid.Column="1">
-                                                <TextBlock Text="{Binding DisplayNameOrFallback}"
-                                                           FontSize="14"
-                                                           FontWeight="SemiBold"
-                                                           TextWrapping="Wrap"/>
-                                                <TextBlock Margin="0,4,0,0"
-                                                           Foreground="#D9FFFFFF"
-                                                           Text="{Binding AgentIdOrFallback}"
-                                                           TextWrapping="Wrap"/>
-                                                 <WrapPanel Margin="0,8,0,0">
-                                                     <Border Style="{StaticResource CapsuleBorderStyle}">
-                                                         <TextBlock VerticalAlignment="Center"
-                                                                    FontSize="11"
-                                                                    Text="{Binding StructuredModeText}"/>
-                                                     </Border>
-                                                     <Border Style="{StaticResource CapsuleBorderStyle}">
-                                                         <TextBlock VerticalAlignment="Center"
-                                                                    FontSize="11"
-                                                                    Text="{Binding RuntimeRoleText}"/>
-                                                     </Border>
-                                                 </WrapPanel>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
+                                             <StackPanel Margin="0,0,60,0">
+                                                 <TextBlock Text="{Binding DisplayNameOrFallback}"
+                                                            FontSize="14"
+                                                            FontWeight="SemiBold"
+                                                            TextWrapping="Wrap"/>
+                                                 <TextBlock Margin="0,4,0,0"
+                                                            Foreground="#D9FFFFFF"
+                                                            Text="{Binding AgentIdOrFallback}"
+                                                            TextWrapping="Wrap"/>
+                                                  <WrapPanel Margin="0,8,0,0">
+                                                      <Border Style="{StaticResource CapsuleBorderStyle}">
+                                                          <TextBlock VerticalAlignment="Center"
+                                                                     FontSize="11"
+                                                                     Text="{Binding StructuredModeText}"/>
+                                                      </Border>
+                                                      <Border Style="{StaticResource CapsuleBorderStyle}">
+                                                          <TextBlock VerticalAlignment="Center"
+                                                                     FontSize="11"
+                                                                     Text="{Binding RuntimeRoleText}"/>
+                                                      </Border>
+                                                  </WrapPanel>
+                                             </StackPanel>
+                                         </Grid>
+                                     </Border>
+                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
                     </Border>
@@ -266,9 +256,7 @@
 
                                     <Border Width="82"
                                             Height="82"
-                                            Background="#18000000"
-                                            BorderBrush="#45FFFFFF"
-                                            BorderThickness="1"
+                                            Background="{DynamicResource ChatAvatarBackgroundGlassBrush}"
                                             CornerRadius="12">
                                         <Image Width="56"
                                                Height="56"

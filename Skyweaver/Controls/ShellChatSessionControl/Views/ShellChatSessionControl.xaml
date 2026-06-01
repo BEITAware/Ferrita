@@ -287,9 +287,8 @@
                         VerticalAlignment="Top"
                         HorizontalAlignment="Right"
                         Margin="0,2,0,0"
-                        CornerRadius="12"
                         Background="{DynamicResource ChatAvatarBackgroundGlassBrush}">
-                    <Border CornerRadius="10" Margin="2" ClipToBounds="True">
+                    <Border CornerRadius="12" Margin="1" ClipToBounds="True">
                         <Image Source="{Binding AvatarPath}" Stretch="Uniform"/>
                     </Border>
                 </Border>
@@ -310,9 +309,8 @@
                         VerticalAlignment="Top"
                         HorizontalAlignment="Left"
                         Margin="0,2,0,0"
-                        CornerRadius="12"
                         Background="{DynamicResource ChatAvatarBackgroundGlassBrush}">
-                    <Border CornerRadius="10" Margin="2" ClipToBounds="True">
+                    <Border CornerRadius="12" Margin="1" ClipToBounds="True">
                         <Image Source="{Binding AvatarPath}" Stretch="Uniform"/>
                     </Border>
                 </Border>
