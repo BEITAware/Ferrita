@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img alt=".NET 8" src="https://img.shields.io/badge/.NET-8-512BD4?style=plastic">
+  <img alt=".NET 10" src="https://img.shields.io/badge/.NET-10-512BD4?style=plastic">
   <img alt="Platform Windows" src="https://img.shields.io/badge/Platform-Windows-0078D6?style=plastic">
   <img alt="UI WPF" src="https://img.shields.io/badge/UI-WPF-0C7D9D?style=plastic">
   <img alt="Status Early Preview" src="https://img.shields.io/badge/Status-Early_Preview-B22222?style=plastic">

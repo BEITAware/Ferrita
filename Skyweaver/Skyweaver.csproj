@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <RootNamespace>Skyweaver</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -41,6 +41,7 @@
     <PackageReference Include="System.Drawing.Common" Version="8.0.11" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.72" />
     <PackageReference Include="WpfMath" Version="2.1.0" />
+    <PackageReference Include="ManagedCode.MarkItDown" Version="0.0.5" />
   </ItemGroup>
 
   <ItemGroup>

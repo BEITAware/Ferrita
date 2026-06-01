@@ -724,9 +724,34 @@ namespace Skyweaver.Services.AgentLoop
             var minCompactionAttemptState = new MinCompactionAttemptState();
             bool isMinCompacted = false;
 
+            var compactionCandidates = _languageModelResolver.GetCandidateModels(request.Agent)
+                .Where(model => model.InterfaceSettings.IsFullyConfigured)
+                .ToArray();
+            var compactionModel = compactionCandidates.Length > 0
+                ? compactionCandidates.OrderBy(model => model.EffectiveContextWindowTokens).First()
+                : null;
+
             for (var iterationNumber = 1; iterationNumber <= MaxIterations; iterationNumber++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                Func<LanguageModelMediaProcessingProgress, CancellationToken, ValueTask>? mediaProgressCallback = null;
+                if (compactionModel != null)
+                {
+                    mediaProgressCallback = (progress, ct) => PublishAsync(
+                        onEventAsync,
+                        new AgentLoopRuntimeEvent
+                        {
+                            Kind = AgentLoopRuntimeEventKind.MediaProcessingProgressUpdated,
+                            IterationNumber = iterationNumber,
+                            ModelId = compactionModel.Key,
+                            MediaProcessingProgress = new AgentLoopMediaProcessingProgress
+                            {
+                                Progress = progress
+                            }
+                        },
+                        ct);
+                }
 
                 var flushedAsyncTools = await FlushCompletedAsyncToolBackfillsAsync(
                     request,
@@ -773,6 +798,7 @@ namespace Skyweaver.Services.AgentLoop
                     persistentHistory,
                     turnHistory,
                     minCompactionAttemptState,
+                    mediaProgressCallback,
                     cancellationToken).ConfigureAwait(false);
 
                 if (appliedMinCompaction != null)
@@ -800,18 +826,19 @@ namespace Skyweaver.Services.AgentLoop
                         .ToArray();
                     if (candidates.Length > 0)
                     {
-                        var compactionModel = candidates
+                        var maxCompactionModel = candidates
                             .OrderBy(model => model.EffectiveContextWindowTokens)
                             .First();
-                        var contextWindowTokens = compactionModel.EffectiveContextWindowTokens;
+                        var contextWindowTokens = maxCompactionModel.EffectiveContextWindowTokens;
                         
                         int currentTokenCount = 0;
                         try
                         {
                             var tokenCountResult = await _tokenCounter.CountAsync(
-                                compactionModel,
+                                maxCompactionModel,
                                 preparedContext.PreparedMessages,
                                 request.CompactionFilePath,
+                                mediaProgressCallback,
                                 cancellationToken).ConfigureAwait(false);
                             currentTokenCount = tokenCountResult.TokenCount;
                         }
@@ -929,9 +956,10 @@ namespace Skyweaver.Services.AgentLoop
                             try
                             {
                                 var tokenCountResult = await _tokenCounter.CountAsync(
-                                    compactionModel,
+                                    maxCompactionModel,
                                     preparedContext.PreparedMessages,
                                     request.CompactionFilePath,
+                                    mediaProgressCallback,
                                     cancellationToken).ConfigureAwait(false);
                                 afterTokenCount = tokenCountResult.TokenCount;
                             }
@@ -947,7 +975,7 @@ namespace Skyweaver.Services.AgentLoop
                                 EstimatedTokenCountAfterCompression = afterTokenCount,
                                 TargetTokenCountAfterCompression = (int)(contextWindowTokens * 0.95d),
                                 CompressionLayerKey = "MaxCompaction",
-                                CompressionModelId = compactionModel.SummaryModelId,
+                                CompressionModelId = maxCompactionModel.SummaryModelId,
                                 CompactedToolCallIds = Array.Empty<string>()
                             };
                         }
@@ -1097,6 +1125,7 @@ namespace Skyweaver.Services.AgentLoop
             IReadOnlyList<LanguageModelChatMessage> persistentHistory,
             IReadOnlyList<LanguageModelChatMessage> turnHistory,
             MinCompactionAttemptState attemptState,
+            Func<LanguageModelMediaProcessingProgress, CancellationToken, ValueTask>? progressCallback,
             CancellationToken cancellationToken)
         {
             if (!request.MinCompactionEnabled ||
@@ -1126,6 +1155,7 @@ namespace Skyweaver.Services.AgentLoop
                     compactionModel,
                     preparedContext.PreparedMessages,
                     request.CompactionFilePath,
+                    progressCallback,
                     cancellationToken).ConfigureAwait(false);
             }
             catch
@@ -1193,6 +1223,7 @@ namespace Skyweaver.Services.AgentLoop
                     compactionModel,
                     compactedPrepared.PreparedMessages,
                     request.CompactionFilePath,
+                    progressCallback,
                     cancellationToken).ConfigureAwait(false);
                 estimatedAfter = afterCount.TokenCount;
             }

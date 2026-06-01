@@ -25,6 +25,7 @@ namespace Skyweaver.Services.AgentLoop
             LanguageModelDefinition model,
             IReadOnlyList<LanguageModelChatMessage> messages,
             string? compactionFilePath,
+            Func<LanguageModelMediaProcessingProgress, CancellationToken, ValueTask>? progressCallback = null,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(model);
@@ -40,7 +41,8 @@ namespace Skyweaver.Services.AgentLoop
             var tokenCount = await _chatService.CountTokensAsync(
                 model,
                 messages.Select(message => message.Clone()).ToArray(),
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken,
+                progressCallback).ConfigureAwait(false);
             _compactionStore.SaveTokenCount(
                 compactionFilePath,
                 modelKey,

@@ -323,6 +323,7 @@ namespace Skyweaver.Services.ChatSession
             var reservedToolCallIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var toolCallIdsByKey = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             ChatSessionResourceLayout.EnsureResources(request.Session);
+            using var _ = DocumentProjectionContext.Establish(ChatSessionResourceLayout.GetResourcesFolderPath(request.Session));
             var agentResult = await _agentExecutor.ExecuteAsync(
                 new SessionFlowAgentExecutionRequest
                 {

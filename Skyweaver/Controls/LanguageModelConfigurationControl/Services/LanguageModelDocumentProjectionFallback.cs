@@ -56,7 +56,6 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
         {
             ArgumentNullException.ThrowIfNull(block);
 
-            // 将所有图像渲染、OCR、IO等密集型同步操作全部转移到后台线程执行，避免阻塞 UI 线程导致卡顿
             return await Task.Run(async () =>
             {
                 var path = block.ResourcePath ?? block.Content;
@@ -67,27 +66,59 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
                     "Preparing document projection.",
                     progressCallback,
                     cancellationToken).ConfigureAwait(false);
-                if (imageInputEnabled)
+
+                if (!TryPrepareDocumentPath(path, out var localPath, out var failureBlock))
                 {
-                    return await ProjectDocumentAsImagesAsync(block, path, preservedContentXml, progressCallback, cancellationToken).ConfigureAwait(false);
+                    return [CreatePreservedText(preservedContentXml, failureBlock)];
                 }
 
-                return await ProjectDocumentAsOcrAsync(block, path, preservedContentXml, progressCallback, cancellationToken).ConfigureAwait(false);
+                var extension = Path.GetExtension(localPath).ToLowerInvariant();
+                var isPdf = extension == ".pdf";
+                var isOffice = extension is ".doc" or ".docx" or ".ppt" or ".pptx" or ".xls" or ".xlsx";
+                var isText = extension is ".txt" or ".md" or ".csv" or ".json" or ".xml" or ".html" or ".htm" || IsTextMediaType(block.MediaType);
+
+                if (isPdf)
+                {
+                    if (imageInputEnabled)
+                    {
+                        return await ProjectPdfAsImagesAsync(block, localPath, preservedContentXml, progressCallback, cancellationToken).ConfigureAwait(false);
+                    }
+                    return await ProjectPdfAsOcrAsync(block, localPath, preservedContentXml, progressCallback, cancellationToken).ConfigureAwait(false);
+                }
+                else if (isOffice)
+                {
+                    return await ProjectOfficeDocumentAsync(block, localPath, preservedContentXml, progressCallback, cancellationToken).ConfigureAwait(false);
+                }
+                else if (isText)
+                {
+                    return await ProjectTextDocumentAsync(block, localPath, preservedContentXml, progressCallback, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    try
+                    {
+                        return await ProjectTextDocumentAsync(block, localPath, preservedContentXml, progressCallback, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        return [CreatePreservedText(
+                            preservedContentXml,
+                            CreateProjectionNotice(
+                                "DocumentProjectionFailed",
+                                localPath,
+                                $"Unsupported document format: {extension}. {ex.Message}"))];
+                    }
+                }
             }, cancellationToken).ConfigureAwait(false);
         }
 
-        private static async Task<IReadOnlyList<LanguageModelChatContentBlock>> ProjectDocumentAsImagesAsync(
+        private static async Task<IReadOnlyList<LanguageModelChatContentBlock>> ProjectPdfAsImagesAsync(
             LanguageModelChatContentBlock block,
-            string? path,
+            string localPath,
             string preservedContentXml,
             Func<LanguageModelMediaProcessingProgress, CancellationToken, ValueTask>? progressCallback,
             CancellationToken cancellationToken)
         {
-            if (!TryPrepareDocumentPath(path, out var localPath, out var failureBlock))
-            {
-                return [CreatePreservedText(preservedContentXml, failureBlock)];
-            }
-
             try
             {
                 var pageImagePaths = await RenderDocumentPagesAsync(
@@ -150,20 +181,29 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
             }
         }
 
-        private static async Task<IReadOnlyList<LanguageModelChatContentBlock>> ProjectDocumentAsOcrAsync(
+        private static async Task<IReadOnlyList<LanguageModelChatContentBlock>> ProjectPdfAsOcrAsync(
             LanguageModelChatContentBlock block,
-            string? path,
+            string localPath,
             string preservedContentXml,
             Func<LanguageModelMediaProcessingProgress, CancellationToken, ValueTask>? progressCallback,
             CancellationToken cancellationToken)
         {
-            if (!TryPrepareDocumentPath(path, out var localPath, out var failureBlock))
-            {
-                return [CreatePreservedText(preservedContentXml, failureBlock)];
-            }
-
             try
             {
+                var cachedOcr = TryGetCachedOcr(localPath);
+                if (cachedOcr != null)
+                {
+                    await ReportProgressAsync(
+                        block,
+                        localPath,
+                        "Ready",
+                        "Using cached OCR projection.",
+                        progressCallback,
+                        cancellationToken,
+                        isCompleted: true).ConfigureAwait(false);
+                    return [CreatePreservedText(preservedContentXml, cachedOcr)];
+                }
+
                 var pageImagePaths = await RenderDocumentPagesAsync(
                         localPath,
                         block.MediaType,
@@ -187,23 +227,52 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
                     var index = i;
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    // 报告单页开始 OCR 识别
-                    await ReportProgressAsync(
-                        block,
-                        localPath,
-                        "OCR",
-                        $"Running PaddleOCR on page {index + 1} of {pageImagePaths.Count}.",
-                        progressCallback,
-                        cancellationToken,
-                        index,
-                        pageImagePaths.Count,
-                        pageImagePaths.Count == 0 ? null : index / (double)pageImagePaths.Count,
-                        activeItems: [Path.GetFileName(pageImagePaths[index])]).ConfigureAwait(false);
+                    var cachedOcrPath = pageImagePaths[index] + ".ocr.txt";
+                    string pageText;
 
-                    var pageText = RunPaddleOcr(pageImagePaths[index]);
+                    if (File.Exists(cachedOcrPath))
+                    {
+                        await ReportProgressAsync(
+                            block,
+                            localPath,
+                            "OCR",
+                            $"Loading OCR result from cache for page {index + 1} of {pageImagePaths.Count}.",
+                            progressCallback,
+                            cancellationToken,
+                            index,
+                            pageImagePaths.Count,
+                            pageImagePaths.Count == 0 ? null : index / (double)pageImagePaths.Count,
+                            activeItems: [Path.GetFileName(pageImagePaths[index])]).ConfigureAwait(false);
+
+                        pageText = await File.ReadAllTextAsync(cachedOcrPath, Encoding.UTF8, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await ReportProgressAsync(
+                            block,
+                            localPath,
+                            "OCR",
+                            $"Running PaddleOCR on page {index + 1} of {pageImagePaths.Count}.",
+                            progressCallback,
+                            cancellationToken,
+                            index,
+                            pageImagePaths.Count,
+                            pageImagePaths.Count == 0 ? null : index / (double)pageImagePaths.Count,
+                            activeItems: [Path.GetFileName(pageImagePaths[index])]).ConfigureAwait(false);
+
+                        pageText = RunPaddleOcr(pageImagePaths[index]);
+
+                        try
+                        {
+                            await File.WriteAllTextAsync(cachedOcrPath, pageText, Encoding.UTF8, cancellationToken).ConfigureAwait(false);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
                     pageTexts[index] = pageText;
 
-                    // 报告单页完成 OCR 识别
                     await ReportProgressAsync(
                         block,
                         localPath,
@@ -239,7 +308,10 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
                     pageImagePaths.Count,
                     1d,
                     isCompleted: true).ConfigureAwait(false);
-                return [CreatePreservedText(preservedContentXml, builder.ToString())];
+
+                var finalProjection = builder.ToString();
+                TrySaveOcrCache(localPath, finalProjection);
+                return [CreatePreservedText(preservedContentXml, finalProjection)];
             }
             catch (Exception ex) when (IsProjectionException(ex))
             {
@@ -257,6 +329,174 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
                         "DocumentOcrProjectionFailed",
                         localPath,
                         $"Skyweaver could not OCR this document with PaddlePaddle: {ex.Message}"))];
+            }
+        }
+
+        private static string? TryGetCachedOcr(string localPath)
+        {
+            try
+            {
+                var directory = DocumentProjectionContext.CurrentResourcesPath;
+                if (string.IsNullOrWhiteSpace(directory))
+                {
+                    directory = Path.GetDirectoryName(localPath);
+                }
+                if (string.IsNullOrWhiteSpace(directory))
+                {
+                    return null;
+                }
+
+                var sourceStamp = GetSourceStamp(localPath);
+                var stampHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(sourceStamp)))[..16];
+                var cacheFile = Path.Combine(directory, ProjectionFolderName, $"{Path.GetFileNameWithoutExtension(localPath)}-{stampHash}-ocr.xml");
+                if (File.Exists(cacheFile))
+                {
+                    return File.ReadAllText(cacheFile, Encoding.UTF8);
+                }
+            }
+            catch
+            {
+            }
+            return null;
+        }
+
+        private static void TrySaveOcrCache(string localPath, string content)
+        {
+            try
+            {
+                var directory = DocumentProjectionContext.CurrentResourcesPath;
+                if (string.IsNullOrWhiteSpace(directory))
+                {
+                    directory = Path.GetDirectoryName(localPath);
+                }
+                if (string.IsNullOrWhiteSpace(directory))
+                {
+                    return;
+                }
+
+                var sourceStamp = GetSourceStamp(localPath);
+                var stampHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(sourceStamp)))[..16];
+                var cacheFolder = Path.Combine(directory, ProjectionFolderName);
+                Directory.CreateDirectory(cacheFolder);
+                var cacheFile = Path.Combine(cacheFolder, $"{Path.GetFileNameWithoutExtension(localPath)}-{stampHash}-ocr.xml");
+                File.WriteAllText(cacheFile, content, Encoding.UTF8);
+            }
+            catch
+            {
+            }
+        }
+
+        private static async Task<IReadOnlyList<LanguageModelChatContentBlock>> ProjectOfficeDocumentAsync(
+            LanguageModelChatContentBlock block,
+            string localPath,
+            string preservedContentXml,
+            Func<LanguageModelMediaProcessingProgress, CancellationToken, ValueTask>? progressCallback,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                await ReportProgressAsync(
+                    block,
+                    localPath,
+                    "Decoding",
+                    "Converting Office document to Markdown using MarkItDown.",
+                    progressCallback,
+                    cancellationToken).ConfigureAwait(false);
+
+                var converter = new MarkItDown.MarkItDownClient();
+                await using var result = await converter.ConvertAsync(localPath, cancellationToken).ConfigureAwait(false);
+                var markdownText = result.Markdown ?? string.Empty;
+
+                var builder = new StringBuilder();
+                builder.AppendLine("<DocumentMarkdownProjection>");
+                builder.AppendLine($"  <Source Path=\"{Escape(localPath)}\" MediaType=\"{Escape(block.MediaType)}\" />");
+                builder.AppendLine(markdownText);
+                builder.AppendLine("</DocumentMarkdownProjection>");
+
+                await ReportProgressAsync(
+                    block,
+                    localPath,
+                    "Ready",
+                    "Office document conversion completed.",
+                    progressCallback,
+                    cancellationToken,
+                    isCompleted: true).ConfigureAwait(false);
+
+                return [CreatePreservedText(preservedContentXml, builder.ToString())];
+            }
+            catch (Exception ex) when (IsProjectionException(ex))
+            {
+                await ReportProgressAsync(
+                    block,
+                    localPath,
+                    "Failed",
+                    $"Office document conversion failed: {ex.Message}",
+                    progressCallback,
+                    cancellationToken,
+                    isCompleted: true).ConfigureAwait(false);
+
+                return [CreatePreservedText(
+                    preservedContentXml,
+                    CreateProjectionNotice(
+                        "DocumentOfficeProjectionFailed",
+                        localPath,
+                        $"Skyweaver could not convert this Office document to Markdown: {ex.Message}"))];
+            }
+        }
+
+        private static async Task<IReadOnlyList<LanguageModelChatContentBlock>> ProjectTextDocumentAsync(
+            LanguageModelChatContentBlock block,
+            string localPath,
+            string preservedContentXml,
+            Func<LanguageModelMediaProcessingProgress, CancellationToken, ValueTask>? progressCallback,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                await ReportProgressAsync(
+                    block,
+                    localPath,
+                    "Decoding",
+                    "Reading text document content.",
+                    progressCallback,
+                    cancellationToken).ConfigureAwait(false);
+
+                var text = await File.ReadAllTextAsync(localPath, Encoding.UTF8, cancellationToken).ConfigureAwait(false);
+
+                var builder = new StringBuilder();
+                builder.AppendLine("<DocumentTextProjection>");
+                builder.AppendLine($"  <Source Path=\"{Escape(localPath)}\" MediaType=\"{Escape(block.MediaType)}\" />");
+                builder.AppendLine(text);
+                builder.AppendLine("</DocumentTextProjection>");
+
+                await ReportProgressAsync(
+                    block,
+                    localPath,
+                    "Ready",
+                    "Text document projection completed.",
+                    progressCallback,
+                    cancellationToken,
+                    isCompleted: true).ConfigureAwait(false);
+
+                return [CreatePreservedText(preservedContentXml, builder.ToString())];
+            }
+            catch (Exception ex) when (IsProjectionException(ex))
+            {
+                await ReportProgressAsync(
+                    block,
+                    localPath,
+                    "Failed",
+                    $"Text document projection failed: {ex.Message}",
+                    progressCallback,
+                    cancellationToken,
+                    isCompleted: true).ConfigureAwait(false);
+
+                return [CreatePreservedText(
+                    preservedContentXml,
+                    CreateProjectionNotice(
+                        "DocumentTextProjectionFailed",
+                        localPath,
+                        $"Skyweaver could not project this text document: {ex.Message}"))];
             }
         }
 
@@ -314,52 +554,11 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
         {
             cancellationToken.ThrowIfCancellationRequested();
             var extension = Path.GetExtension(localPath).ToLowerInvariant();
-            return extension switch
+            if (extension == ".pdf")
             {
-                ".pdf" => await RenderPdfPagesAsync(localPath, block, progressCallback, cancellationToken).ConfigureAwait(false),
-                ".doc" or ".docx" or ".ppt" or ".pptx" or ".xls" or ".xlsx" => await RenderOfficeDocumentPagesAsync(localPath, block, progressCallback, cancellationToken).ConfigureAwait(false),
-                ".txt" or ".md" or ".csv" or ".json" or ".xml" or ".html" or ".htm" => await RenderTextDocumentPagesAsync(localPath, block, progressCallback, cancellationToken).ConfigureAwait(false),
-                _ when IsTextMediaType(mediaType) => await RenderTextDocumentPagesAsync(localPath, block, progressCallback, cancellationToken).ConfigureAwait(false),
-                _ => throw new NotSupportedException($"Unsupported document rendering type: {extension}")
-            };
-        }
-
-        private static async Task<IReadOnlyList<string>> RenderOfficeDocumentPagesAsync(
-            string localPath,
-            LanguageModelChatContentBlock block,
-            Func<LanguageModelMediaProcessingProgress, CancellationToken, ValueTask>? progressCallback,
-            CancellationToken cancellationToken)
-        {
-            if (!TryFindLibreOfficeExecutable(out var executablePath))
-            {
-                throw new NotSupportedException("Office document rendering requires LibreOffice/soffice to be installed.");
+                return await RenderPdfPagesAsync(localPath, block, progressCallback, cancellationToken).ConfigureAwait(false);
             }
-
-            var outputFolder = EnsureProjectionFolder(localPath, "office-pdf");
-            var sourceStamp = GetSourceStamp(localPath);
-            var stampPath = Path.Combine(outputFolder, ".source-stamp");
-            var outputPdfPath = Path.Combine(outputFolder, $"{Path.GetFileNameWithoutExtension(localPath)}.pdf");
-            if (!File.Exists(outputPdfPath) ||
-                !File.Exists(stampPath) ||
-                !string.Equals(File.ReadAllText(stampPath), sourceStamp, StringComparison.Ordinal))
-            {
-                if (File.Exists(outputPdfPath))
-                {
-                    File.Delete(outputPdfPath);
-                }
-
-                await ReportProgressAsync(
-                    block,
-                    localPath,
-                    "Decoding",
-                    "Converting Office document to PDF.",
-                    progressCallback,
-                    cancellationToken).ConfigureAwait(false);
-                ConvertOfficeDocumentToPdf(executablePath, localPath, outputFolder, outputPdfPath);
-                File.WriteAllText(stampPath, sourceStamp);
-            }
-
-            return await RenderPdfPagesAsync(outputPdfPath, block, progressCallback, cancellationToken).ConfigureAwait(false);
+            throw new NotSupportedException($"Unsupported document rendering type: {extension}");
         }
 
         private static async Task<IReadOnlyList<string>> RenderPdfPagesAsync(
@@ -439,76 +638,7 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
             return renderedPages;
         }
 
-        private static async Task<IReadOnlyList<string>> RenderTextDocumentPagesAsync(
-            string localPath,
-            LanguageModelChatContentBlock block,
-            Func<LanguageModelMediaProcessingProgress, CancellationToken, ValueTask>? progressCallback,
-            CancellationToken cancellationToken)
-        {
-            var outputFolder = EnsureProjectionFolder(localPath, "text-pages");
-            var sourceStamp = GetSourceStamp(localPath);
-            var stampPath = Path.Combine(outputFolder, ".source-stamp");
-            var existingPages = GetExistingPageImages(outputFolder);
-            if (existingPages.Count > 0 &&
-                File.Exists(stampPath) &&
-                string.Equals(File.ReadAllText(stampPath), sourceStamp, StringComparison.Ordinal))
-            {
-                await ReportProgressAsync(
-                    block,
-                    localPath,
-                    "Decoding",
-                    $"Using {existingPages.Count} cached rendered text page image(s).",
-                    progressCallback,
-                    cancellationToken,
-                    existingPages.Count,
-                    existingPages.Count,
-                    1d).ConfigureAwait(false);
-                return existingPages;
-            }
 
-            ClearPngFiles(outputFolder);
-
-            await ReportProgressAsync(
-                block,
-                localPath,
-                "Decoding",
-                "Reading text document.",
-                progressCallback,
-                cancellationToken).ConfigureAwait(false);
-            var text = File.ReadAllText(localPath);
-            var pages = PaginateText(text, MaxTextRenderPages);
-            var renderedPages = new List<string>(pages.Count);
-            for (var pageIndex = 0; pageIndex < pages.Count; pageIndex++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                await ReportProgressAsync(
-                    block,
-                    localPath,
-                    "Decoding",
-                    $"Rendering text page {pageIndex + 1} of {pages.Count}.",
-                    progressCallback,
-                    cancellationToken,
-                    pageIndex,
-                    pages.Count,
-                    pages.Count == 0 ? null : pageIndex / (double)pages.Count).ConfigureAwait(false);
-                var outputPath = Path.Combine(outputFolder, BuildPageImageFileName(pageIndex));
-                SaveTextPagePng(pages[pageIndex], outputPath);
-                renderedPages.Add(outputPath);
-                await ReportProgressAsync(
-                    block,
-                    localPath,
-                    "Decoding",
-                    $"Rendered text page {pageIndex + 1} of {pages.Count}.",
-                    progressCallback,
-                    cancellationToken,
-                    pageIndex + 1,
-                    pages.Count,
-                    (pageIndex + 1) / (double)pages.Count).ConfigureAwait(false);
-            }
-
-            File.WriteAllText(stampPath, sourceStamp);
-            return renderedPages;
-        }
 
         private static string RunPaddleOcr(string imagePath)
         {
@@ -523,85 +653,6 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
 
                 var result = ocr.Run(source);
                 return result.Text ?? string.Empty;
-            }
-        }
-
-        private static bool TryFindLibreOfficeExecutable(out string executablePath)
-        {
-            var candidates = new List<string>
-            {
-                Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                    "LibreOffice",
-                    "program",
-                    "soffice.exe"),
-                Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-                    "LibreOffice",
-                    "program",
-                    "soffice.exe")
-            };
-
-            var pathValue = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-            foreach (var folder in pathValue.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
-            {
-                candidates.Add(Path.Combine(folder.Trim(), "soffice.exe"));
-                candidates.Add(Path.Combine(folder.Trim(), "soffice.com"));
-                candidates.Add(Path.Combine(folder.Trim(), "libreoffice.exe"));
-            }
-
-            executablePath = candidates.FirstOrDefault(File.Exists) ?? string.Empty;
-            return executablePath.Length > 0;
-        }
-
-        private static void ConvertOfficeDocumentToPdf(
-            string executablePath,
-            string documentPath,
-            string outputFolder,
-            string expectedPdfPath)
-        {
-            using var process = new Process();
-            process.StartInfo.FileName = executablePath;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.CreateNoWindow = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.ArgumentList.Add("--headless");
-            process.StartInfo.ArgumentList.Add("--convert-to");
-            process.StartInfo.ArgumentList.Add("pdf");
-            process.StartInfo.ArgumentList.Add("--outdir");
-            process.StartInfo.ArgumentList.Add(outputFolder);
-            process.StartInfo.ArgumentList.Add(documentPath);
-
-            if (!process.Start())
-            {
-                throw new InvalidOperationException("LibreOffice conversion process could not be started.");
-            }
-
-            if (!process.WaitForExit(120_000))
-            {
-                try
-                {
-                    process.Kill(entireProcessTree: true);
-                }
-                catch
-                {
-                }
-
-                throw new TimeoutException("LibreOffice document conversion timed out.");
-            }
-
-            var output = process.StandardOutput.ReadToEnd();
-            var error = process.StandardError.ReadToEnd();
-            if (process.ExitCode != 0 || !File.Exists(expectedPdfPath))
-            {
-                var message = string.Join(
-                    " ",
-                    new[] { output, error }.Where(text => !string.IsNullOrWhiteSpace(text))).Trim();
-                throw new InvalidOperationException(
-                    message.Length == 0
-                        ? "LibreOffice did not produce a PDF."
-                        : $"LibreOffice did not produce a PDF. {message}");
             }
         }
 
@@ -719,7 +770,11 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
             string localPath,
             string suffix)
         {
-            var directory = Path.GetDirectoryName(localPath);
+            var directory = DocumentProjectionContext.CurrentResourcesPath;
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                directory = Path.GetDirectoryName(localPath);
+            }
             if (string.IsNullOrWhiteSpace(directory))
             {
                 directory = Path.GetTempPath();
@@ -804,109 +859,7 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
             File.WriteAllBytes(outputPath, encodedBytes);
         }
 
-        private static void SaveTextPagePng(
-            string text,
-            string outputPath)
-        {
-            using var bitmap = new Bitmap(TextRenderWidth, TextRenderHeight, PixelFormat.Format32bppArgb);
-            using var graphics = Graphics.FromImage(bitmap);
-            graphics.Clear(Color.White);
-            graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 
-            using var font = new Font("Consolas", 20, FontStyle.Regular, GraphicsUnit.Pixel);
-            using var brush = new SolidBrush(Color.Black);
-            var layout = new RectangleF(
-                TextRenderMargin,
-                TextRenderMargin,
-                TextRenderWidth - TextRenderMargin * 2,
-                TextRenderHeight - TextRenderMargin * 2);
-            graphics.DrawString(text, font, brush, layout);
-            SaveBitmapWithWpfEncoder(bitmap, outputPath);
-        }
-
-        private static void SaveBitmapWithWpfEncoder(
-            Bitmap bitmap,
-            string outputPath)
-        {
-            var bitmapData = bitmap.LockBits(
-                new Rectangle(0, 0, bitmap.Width, bitmap.Height),
-                System.Drawing.Imaging.ImageLockMode.ReadOnly,
-                System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            try
-            {
-                var stride = bitmapData.Stride;
-                var source = WpfImaging.BitmapSource.Create(
-                    bitmap.Width,
-                    bitmap.Height,
-                    bitmap.HorizontalResolution,
-                    bitmap.VerticalResolution,
-                    WpfMedia.PixelFormats.Bgra32,
-                    null,
-                    bitmapData.Scan0,
-                    Math.Abs(stride) * bitmap.Height,
-                    stride);
-                source.Freeze();
-
-                var encoder = new WpfImaging.PngBitmapEncoder();
-                encoder.Frames.Add(WpfImaging.BitmapFrame.Create(source));
-                using var stream = File.Create(outputPath);
-                encoder.Save(stream);
-            }
-            finally
-            {
-                bitmap.UnlockBits(bitmapData);
-            }
-        }
-
-        private static IReadOnlyList<string> PaginateText(
-            string text,
-            int maxPages)
-        {
-            if (string.IsNullOrEmpty(text))
-            {
-                return [string.Empty];
-            }
-
-            var maxLinesPerPage = 54;
-            var maxCharactersPerLine = 94;
-            var pages = new List<string>();
-            var currentPage = new StringBuilder();
-            var currentLines = 0;
-
-            foreach (var rawLine in text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
-            {
-                var line = rawLine.Length == 0 ? string.Empty : rawLine;
-                var cursor = 0;
-                do
-                {
-                    var take = Math.Min(maxCharactersPerLine, Math.Max(0, line.Length - cursor));
-                    var segment = take == 0 ? string.Empty : line.Substring(cursor, take);
-                    currentPage.AppendLine(segment);
-                    currentLines++;
-                    cursor += take;
-
-                    if (currentLines >= maxLinesPerPage)
-                    {
-                        pages.Add(currentPage.ToString());
-                        if (pages.Count >= maxPages)
-                        {
-                            return pages;
-                        }
-
-                        currentPage.Clear();
-                        currentLines = 0;
-                    }
-                }
-                while (cursor < line.Length);
-            }
-
-            if (currentPage.Length > 0 || pages.Count == 0)
-            {
-                pages.Add(currentPage.ToString());
-            }
-
-            return pages;
-        }
 
         private static bool IsTextMediaType(string? mediaType)
         {

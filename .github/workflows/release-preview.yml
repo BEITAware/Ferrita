@@ -19,12 +19,12 @@ jobs:
         uses: actions/checkout@v4
 
       # ── 安装 .NET SDK ────────────────────────────────────────
-      # 项目需要 .NET 9.x（global.json 指定 9.0.201 + rollForward）
+      # 项目需要 .NET 10.x（global.json 指定 10.0.102 + rollForward）
       # 同时需要 .NET Framework 4.8 目标包（用于 InstallationWizard）
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
       # ── 添加 MSBuild 到 PATH（用于编译 net48 WPF 安装器）─────
       - name: Add MSBuild to PATH
@@ -111,7 +111,7 @@ jobs:
             3. 运行 `InstallationWizard.exe` 启动安装向导
             4. 按照向导指引完成安装与配置
 
-            > ⚠️ **注意**：Skyweaver 目前处于早期预览阶段，不代表最终成果。需要 .NET 8 Desktop Runtime。
+            > ⚠️ **注意**：Skyweaver 目前处于早期预览阶段，不代表最终成果。需要 .NET 10 Desktop Runtime。
 
             ---
 
@@ -122,7 +122,7 @@ jobs:
             3. Run `InstallationWizard.exe` to launch the setup wizard
             4. Follow the wizard to complete installation and configuration
 
-            > ⚠️ **Note**: Skyweaver is currently in early preview and does not represent the final product. Requires .NET 8 Desktop Runtime.
+            > ⚠️ **Note**: Skyweaver is currently in early preview and does not represent the final product. Requires .NET 10 Desktop Runtime.
           draft: false
           prerelease: true
           files: |

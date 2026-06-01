@@ -150,6 +150,9 @@ namespace Skyweaver.Services.ChatSession
                 _activeSessionId = sessionId;
                 _isExecutionActive = true;
 
+                // 确保后续的所有重型 I/O 及计算操作都在后台线程上执行，释放 UI 线程
+                await Task.Run(() => { }).ConfigureAwait(false);
+
                 _transcriptWriter.BeginTurn(
                     request.Session,
                     new ChatSessionUserInput
