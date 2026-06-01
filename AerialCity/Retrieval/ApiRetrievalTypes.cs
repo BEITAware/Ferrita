@@ -72,7 +72,7 @@ public sealed class ApiRetrievalRequest
     public bool Normalize { get; init; } = true;
 
     /// <summary>
-    /// Includes base64 binary payloads in SkyweaverPreservedContent XML blocks for the embedding request.
+    /// Includes base64 binary payloads in PreservedContent XML blocks for the embedding request.
     /// </summary>
     public bool IncludeBinaryDataInTextProjection { get; init; }
 
