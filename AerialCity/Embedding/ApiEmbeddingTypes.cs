@@ -163,7 +163,7 @@ public sealed class ApiEmbeddingRequest
     public bool Normalize { get; init; } = true;
 
     /// <summary>
-    /// Includes base64 binary payloads in SkyweaverPreservedContent XML blocks.
+    /// Includes base64 binary payloads in PreservedContent XML blocks.
     /// The default keeps binary metadata and text only, avoiding huge embedding prompts.
     /// </summary>
     public bool IncludeBinaryDataInTextProjection { get; init; }
@@ -241,7 +241,7 @@ public sealed class ApiCodeFileEmbeddingRequest
     public Dictionary<string, object> Metadata { get; init; } = [];
 
     /// <summary>
-    /// Includes base64 binary payloads in SkyweaverPreservedContent XML blocks.
+    /// Includes base64 binary payloads in PreservedContent XML blocks.
     /// Code file embedding normally sends text only, so this is reserved for future mixed inputs.
     /// </summary>
     public bool IncludeBinaryDataInTextProjection { get; init; }
@@ -318,7 +318,7 @@ public sealed class ApiTextFileEmbeddingRequest
     public Dictionary<string, object> Metadata { get; init; } = [];
 
     /// <summary>
-    /// Includes base64 binary payloads in SkyweaverPreservedContent XML blocks.
+    /// Includes base64 binary payloads in PreservedContent XML blocks.
     /// Text file embedding normally sends text only, so this is reserved for future mixed inputs.
     /// </summary>
     public bool IncludeBinaryDataInTextProjection { get; init; }
