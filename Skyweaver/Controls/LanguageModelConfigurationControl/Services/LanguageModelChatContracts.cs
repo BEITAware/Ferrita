@@ -221,7 +221,7 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
                 return string.Empty;
             }
 
-            return $"<SkyweaverPreservedContent><{elementName} Path=\"{System.Security.SecurityElement.Escape(normalizedPath)}\" /></SkyweaverPreservedContent>";
+            return $"<PreservedContent><{elementName} Path=\"{System.Security.SecurityElement.Escape(normalizedPath)}\" /></PreservedContent>";
         }
     }
 

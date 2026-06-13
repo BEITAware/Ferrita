@@ -649,7 +649,7 @@ public sealed class ApiEmbeddingService
 
         var mimeType = ResolveMimeType(part);
         var sb = new StringBuilder();
-        sb.Append("<SkyweaverPreservedContent");
+        sb.Append("<PreservedContent");
         AppendXmlAttribute(sb, "index", index.ToString(CultureInfo.InvariantCulture));
         AppendXmlAttribute(sb, "mimeType", mimeType);
         AppendXmlAttribute(sb, "sourceUri", part.SourceUri);
@@ -680,7 +680,7 @@ public sealed class ApiEmbeddingService
             sb.AppendLine("</Binary>");
         }
 
-        sb.Append("</SkyweaverPreservedContent>");
+        sb.Append("</PreservedContent>");
         return sb.ToString();
     }
 

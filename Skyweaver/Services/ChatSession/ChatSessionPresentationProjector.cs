@@ -266,7 +266,7 @@ namespace Skyweaver.Services.ChatSession
         private static string ResolvePresentationContent(ChatSessionTranscriptBlock block)
         {
             if (block.Kind == ChatSessionTranscriptBlockKind.ResourceReference &&
-                SkyweaverPreservedTextContentXml.TryParse(block.Content, out var textContent))
+                PreservedTextContentXml.TryParse(block.Content, out var textContent))
             {
                 return textContent.Text;
             }
@@ -284,7 +284,7 @@ namespace Skyweaver.Services.ChatSession
             }
 
             if (block.Kind == ChatSessionTranscriptBlockKind.ResourceReference &&
-                SkyweaverPreservedTextContentXml.TryParse(block.Content, out var textContent))
+                PreservedTextContentXml.TryParse(block.Content, out var textContent))
             {
                 return textContent.DisplayName;
             }
@@ -307,7 +307,7 @@ namespace Skyweaver.Services.ChatSession
             }
 
             if (block.Kind == ChatSessionTranscriptBlockKind.ResourceReference &&
-                SkyweaverPreservedTextContentXml.IsTextContent(block.Content))
+                PreservedTextContentXml.IsTextContent(block.Content))
             {
                 return ChatMessagePartType.TextAttachment;
             }
@@ -331,7 +331,7 @@ namespace Skyweaver.Services.ChatSession
 
         private static string? ResolvePreservedTextPath(ChatSessionTranscriptBlock block)
         {
-            return SkyweaverPreservedTextContentXml.TryParse(block.Content, out var textContent)
+            return PreservedTextContentXml.TryParse(block.Content, out var textContent)
                 ? textContent.Path
                 : block.ResourcePath;
         }
@@ -341,7 +341,7 @@ namespace Skyweaver.Services.ChatSession
             ChatSessionTranscriptEntryKind entryKind)
         {
             if (block.Kind == ChatSessionTranscriptBlockKind.ResourceReference &&
-                SkyweaverPreservedTextContentXml.IsTextContent(block.Content))
+                PreservedTextContentXml.IsTextContent(block.Content))
             {
                 return "Text";
             }

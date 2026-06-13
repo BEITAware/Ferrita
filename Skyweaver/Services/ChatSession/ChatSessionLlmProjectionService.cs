@@ -389,7 +389,7 @@ namespace Skyweaver.Services.ChatSession
 
             if (block.Kind == ChatSessionTranscriptBlockKind.ResourceReference)
             {
-                return SkyweaverPreservedTextContentXml.TryParse(content, out var textContent)
+                return PreservedTextContentXml.TryParse(content, out var textContent)
                     ? textContent.Text
                     : EnsurePreservedContentWrapper(content);
             }
@@ -418,9 +418,9 @@ namespace Skyweaver.Services.ChatSession
 
         private static string EnsurePreservedContentWrapper(string content)
         {
-            return content.StartsWith("<SkyweaverPreservedContent", StringComparison.OrdinalIgnoreCase)
+            return content.StartsWith("<PreservedContent", StringComparison.OrdinalIgnoreCase)
                 ? content
-                : $"<SkyweaverPreservedContent>{content}</SkyweaverPreservedContent>";
+                : $"<PreservedContent>{content}</PreservedContent>";
         }
 
         private static bool IsCurrentTurnEntry(

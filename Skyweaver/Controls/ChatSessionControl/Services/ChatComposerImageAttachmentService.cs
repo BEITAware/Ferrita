@@ -68,7 +68,7 @@ namespace Skyweaver.Controls.ChatSessionControl.Services
             File.Copy(sourceFilePath, filePath, overwrite: false);
             var resourceKind = ResolveResourceKind(sourceFilePath, mediaType);
             var preservedTextXml = resourceKind == "Text"
-                ? SkyweaverPreservedTextContentXml.Build(
+                ? PreservedTextContentXml.Build(
                     ReadTextFile(filePath),
                     Path.GetFileName(sourceFilePath),
                     filePath,

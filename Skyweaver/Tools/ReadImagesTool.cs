@@ -64,7 +64,7 @@ namespace Skyweaver.Tools
             var builder = new StringBuilder();
             foreach (var image in validatedImages)
             {
-                builder.AppendLine($"<SkyweaverPreservedContent><Image Path=\"{SecurityElement.Escape(image.ResolvedPath)}\" /></SkyweaverPreservedContent>");
+                builder.AppendLine($"<PreservedContent><Image Path=\"{SecurityElement.Escape(image.ResolvedPath)}\" /></PreservedContent>");
             }
 
             if (errors.Count > 0)

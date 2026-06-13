@@ -3,7 +3,7 @@ using System.Xml.Linq;
 
 namespace Skyweaver.Services.ChatSession
 {
-    internal sealed class SkyweaverPreservedTextContent
+    internal sealed class PreservedTextContent
     {
         public string Text { get; init; } = string.Empty;
 
@@ -21,9 +21,9 @@ namespace Skyweaver.Services.ChatSession
         }
     }
 
-    internal static class SkyweaverPreservedTextContentXml
+    internal static class PreservedTextContentXml
     {
-        public const string RootElementName = "SkyweaverPreservedContent";
+        public const string RootElementName = "PreservedContent";
         public const string TextElementName = "Text";
         public const string MetadataKindKey = "PreservedContentKind";
         public const string TextKindValue = "Text";
@@ -44,9 +44,9 @@ namespace Skyweaver.Services.ChatSession
             return new XElement(RootElementName, textElement).ToString(SaveOptions.DisableFormatting);
         }
 
-        public static bool TryParse(string? xml, out SkyweaverPreservedTextContent content)
+        public static bool TryParse(string? xml, out PreservedTextContent content)
         {
-            content = new SkyweaverPreservedTextContent();
+            content = new PreservedTextContent();
             if (string.IsNullOrWhiteSpace(xml))
             {
                 return false;
@@ -70,7 +70,7 @@ namespace Skyweaver.Services.ChatSession
                     return false;
                 }
 
-                content = new SkyweaverPreservedTextContent
+                content = new PreservedTextContent
                 {
                     Text = textElement.Value ?? string.Empty,
                     Name = GetAttributeValue(textElement, "Name") ?? GetAttributeValue(textElement, "DisplayName"),

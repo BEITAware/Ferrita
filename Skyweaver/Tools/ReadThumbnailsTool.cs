@@ -104,7 +104,7 @@ namespace Skyweaver.Tools
             var builder = new StringBuilder();
             foreach (var sheetPath in generationResult.SheetPaths)
             {
-                builder.AppendLine($"<SkyweaverPreservedContent><Image Path=\"{SecurityElement.Escape(sheetPath)}\" /></SkyweaverPreservedContent>");
+                builder.AppendLine($"<PreservedContent><Image Path=\"{SecurityElement.Escape(sheetPath)}\" /></PreservedContent>");
             }
 
             if (errors.Count > 0)

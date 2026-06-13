@@ -30,10 +30,10 @@ namespace Skyweaver.Services.Memory
         private const int RetrievalCandidateCount = 120;
         private const string MemoryCollectionName = "Skyweaver.Memory.Blocks";
         private const string VectorsDatabaseName = "Vectors";
-        private const string PreservedContentStartToken = "<SkyweaverPreservedContent";
-        private const string PreservedContentEndToken = "</SkyweaverPreservedContent>";
-        private const string EscapedPreservedContentStartToken = "&lt;SkyweaverPreservedContent";
-        private const string EscapedPreservedContentEndToken = "&lt;/SkyweaverPreservedContent&gt;";
+        private const string PreservedContentStartToken = "<PreservedContent";
+        private const string PreservedContentEndToken = "</PreservedContent>";
+        private const string EscapedPreservedContentStartToken = "&lt;PreservedContent";
+        private const string EscapedPreservedContentEndToken = "&lt;/PreservedContent&gt;";
 
         private static readonly Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         private static readonly SemaphoreSlim s_vectorDatabaseGate = new(1, 1);
@@ -653,7 +653,7 @@ namespace Skyweaver.Services.Memory
             out PreservedMemoryContent content)
         {
             content = default;
-            if (SkyweaverPreservedTextContentXml.TryParse(fragment, out var textContent))
+            if (PreservedTextContentXml.TryParse(fragment, out var textContent))
             {
                 var text = Normalize(textContent.Text);
                 if (text.Length == 0)
@@ -663,7 +663,7 @@ namespace Skyweaver.Services.Memory
 
                 content = new PreservedMemoryContent(
                     MemoryBlockKind.Text,
-                    SkyweaverPreservedTextContentXml.Build(
+                    PreservedTextContentXml.Build(
                         text,
                         textContent.Name,
                         textContent.Path,
@@ -676,7 +676,7 @@ namespace Skyweaver.Services.Memory
             try
             {
                 var root = XElement.Parse(fragment, LoadOptions.PreserveWhitespace);
-                if (!string.Equals(root.Name.LocalName, "SkyweaverPreservedContent", StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(root.Name.LocalName, "PreservedContent", StringComparison.OrdinalIgnoreCase))
                 {
                     return false;
                 }
@@ -998,7 +998,7 @@ namespace Skyweaver.Services.Memory
                 return string.Empty;
             }
 
-            return SkyweaverPreservedTextContentXml.TryParse(normalizedContent, out var preservedText)
+            return PreservedTextContentXml.TryParse(normalizedContent, out var preservedText)
                 ? Normalize(preservedText.Text)
                 : normalizedContent;
         }
@@ -1100,7 +1100,7 @@ namespace Skyweaver.Services.Memory
                 element.Add(new XAttribute("MediaType", normalizedMediaType));
             }
 
-            return new XElement("SkyweaverPreservedContent", element).ToString(SaveOptions.DisableFormatting);
+            return new XElement("PreservedContent", element).ToString(SaveOptions.DisableFormatting);
         }
 
         private static string ResolveImageMediaType(string? pathOrUri, string? declaredMediaType)
@@ -1584,7 +1584,7 @@ namespace Skyweaver.Services.Memory
                         new XElement("Content", segment.Content));
                 }));
             var root = new XElement(
-                "SkyweaverPreservedContent",
+                "PreservedContent",
                 new XComment("Relevant memory from previous conversations between you and the user. This preserved content block is injected by Skyweaver and is only visible to the LLM. The user must never see this block directly."),
                 memoryElement);
             var xml = root.ToString(SaveOptions.DisableFormatting);
@@ -1609,7 +1609,7 @@ namespace Skyweaver.Services.Memory
         private static bool IsPreservedContentXml(string? value)
         {
             return Normalize(value).StartsWith(
-                "<SkyweaverPreservedContent",
+                "<PreservedContent",
                 StringComparison.OrdinalIgnoreCase);
         }
 

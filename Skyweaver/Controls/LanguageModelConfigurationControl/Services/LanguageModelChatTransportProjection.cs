@@ -8,10 +8,10 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
 {
     internal static class LanguageModelChatTransportProjection
     {
-        private const string LiteralStartToken = "<SkyweaverPreservedContent";
-        private const string LiteralEndToken = "</SkyweaverPreservedContent>";
-        private const string EscapedStartToken = "&lt;SkyweaverPreservedContent";
-        private const string EscapedEndToken = "&lt;/SkyweaverPreservedContent&gt;";
+        private const string LiteralStartToken = "<PreservedContent";
+        private const string LiteralEndToken = "</PreservedContent>";
+        private const string EscapedStartToken = "&lt;PreservedContent";
+        private const string EscapedEndToken = "&lt;/PreservedContent&gt;";
 
         public static async Task<IReadOnlyList<LanguageModelChatMessage>> ProjectMessagesAsync(
             IReadOnlyList<LanguageModelChatMessage> messages,
@@ -181,7 +181,7 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
                 var normalizedFragment = isEscaped
                     ? WebUtility.HtmlDecode(rawFragment)
                     : rawFragment;
-                if (SkyweaverPreservedTextContentXml.TryParse(normalizedFragment, out var preservedText))
+                if (PreservedTextContentXml.TryParse(normalizedFragment, out var preservedText))
                 {
                     AppendTextBlock(projectedBlocks, LanguageModelChatContentBlockKind.Text, preservedText.Text);
                     foundResource = true;
@@ -296,7 +296,7 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
                 var preservedContent = XElement.Parse(normalizedFragment, LoadOptions.PreserveWhitespace);
                 if (!string.Equals(
                         preservedContent.Name.LocalName,
-                        "SkyweaverPreservedContent",
+                        "PreservedContent",
                         StringComparison.OrdinalIgnoreCase))
                 {
                     return false;
@@ -426,7 +426,7 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
                 var preservedContent = XElement.Parse(normalizedFragment, LoadOptions.PreserveWhitespace);
                 if (!string.Equals(
                         preservedContent.Name.LocalName,
-                        "SkyweaverPreservedContent",
+                        "PreservedContent",
                         StringComparison.OrdinalIgnoreCase))
                 {
                     return null;
@@ -511,7 +511,7 @@ namespace Skyweaver.Controls.LanguageModelConfigurationControl.Services
                 element.Add(new XAttribute("MediaType", block.MediaType.Trim()));
             }
 
-            return new XElement("SkyweaverPreservedContent", element).ToString(SaveOptions.DisableFormatting);
+            return new XElement("PreservedContent", element).ToString(SaveOptions.DisableFormatting);
         }
 
         /// <summary>

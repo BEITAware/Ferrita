@@ -205,7 +205,7 @@ namespace Skyweaver.Tools
 
                 var fullText = await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
                 blocks.Add(LanguageModelChatContentBlock.CreateHostPreservedContent(
-                    $"<SkyweaverPreservedContent><Resource Path=\"{System.Security.SecurityElement.Escape(path)}\">{System.Security.SecurityElement.Escape(fullText)}</Resource></SkyweaverPreservedContent>"));
+                    $"<PreservedContent><Resource Path=\"{System.Security.SecurityElement.Escape(path)}\">{System.Security.SecurityElement.Escape(fullText)}</Resource></PreservedContent>"));
             }
 
             return blocks;

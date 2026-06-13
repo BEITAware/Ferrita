@@ -907,7 +907,7 @@ namespace Skyweaver.Controls.ShellChatSessionControl.ViewModels
             }
 
             return new XElement(
-                "SkyweaverPreservedContent",
+                "PreservedContent",
                 new XElement(
                     descriptor.ElementName,
                     new XAttribute("Path", path),
@@ -928,7 +928,7 @@ namespace Skyweaver.Controls.ShellChatSessionControl.ViewModels
                        descriptor.MediaType,
                        out _,
                        out _)
-                ? "SkyweaverPreservedContent"
+                ? "PreservedContent"
                 : "PathOnly";
         }
 
