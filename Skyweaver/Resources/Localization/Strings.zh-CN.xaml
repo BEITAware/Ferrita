@@ -664,8 +664,8 @@
     <system:String x:Key="SessionList.Create.ToolTip">创建一个新的会话</system:String>
     <system:String x:Key="SessionList.Delete">删除会话...</system:String>
     <system:String x:Key="SessionList.Delete.ToolTip">删除当前选中的会话</system:String>
-    <system:String x:Key="SessionList.Search">搜索会话...</system:String>
-    <system:String x:Key="SessionList.Search.ToolTip">按标题关键词搜索会话</system:String>
+    <system:String x:Key="SessionList.Refresh">刷新会话</system:String>
+    <system:String x:Key="SessionList.Refresh.ToolTip">刷新会话列表</system:String>
     <system:String x:Key="SessionList.SearchPlaceholder">搜索标题</system:String>
     <system:String x:Key="SessionList.DefaultSessionName">新建会话</system:String>
     <system:String x:Key="SessionList.TimeFormat">HH:mm</system:String>

@@ -2,7 +2,7 @@ using Skyweaver.Controls.ChatSessionControl.ViewModels;
 using Skyweaver.Infrastructure.Mvvm;
 using Skyweaver.Services.ChatSession;
 using Skyweaver.Panels.DocumentWorkspace.ViewModels;
-using Skyweaver.Panels.FileExplorer.ViewModels;
+using Skyweaver.Panels.LiveTasks.ViewModels;
 using Skyweaver.Panels.Filmstrip.ViewModels;
 using Skyweaver.Panels.MultiFunctionArea.ViewModels;
 using Skyweaver.Panels.SessionList.ViewModels;
@@ -18,7 +18,7 @@ namespace Skyweaver.ViewModels
 
         public SessionListPanelViewModel SessionListPanel { get; }
 
-        public FileExplorerPanelViewModel FileExplorerPanel { get; }
+        public LiveTasksPanelViewModel LiveTasksPanel { get; }
 
         public DocumentWorkspacePanelViewModel DocumentWorkspacePanel { get; }
 
@@ -35,7 +35,7 @@ namespace Skyweaver.ViewModels
             SessionWorkspaceBridge = new SessionWorkspaceBridgeViewModel(DocumentWorkspacePanel, _chatSessionRepository);
 
             SessionListPanel = new SessionListPanelViewModel(SessionWorkspaceBridge.OpenSession, _chatSessionRepository);
-            FileExplorerPanel = new FileExplorerPanelViewModel();
+            LiveTasksPanel = new LiveTasksPanelViewModel();
             FilmstripPanel = new FilmstripPanelViewModel();
             MultiFunctionAreaPanel = new MultiFunctionAreaPanelViewModel();
         }

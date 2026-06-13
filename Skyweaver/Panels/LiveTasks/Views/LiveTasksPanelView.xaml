@@ -1,0 +1,454 @@
+<UserControl x:Class="Skyweaver.Panels.LiveTasks.Views.LiveTasksPanelView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:Skyweaver.Panels.LiveTasks.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=viewModels:LiveTasksPanelViewModel, IsDesignTimeCreatable=False}"
+             d:DesignHeight="300"
+             d:DesignWidth="320">
+    <UserControl.Resources>
+        <Style x:Key="LiveTaskListBoxStyle" TargetType="ListBox">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#35000000"/>
+            <Setter Property="BorderBrush" Value="#25FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBox">
+                        <Grid>
+                            <Border CornerRadius="6"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"/>
+
+                            <Border CornerRadius="6,6,0,0"
+                                    Height="12"
+                                    VerticalAlignment="Top"
+                                    IsHitTestVisible="False">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#50000000" Offset="0"/>
+                                        <GradientStop Color="#20000000" Offset="0.5"/>
+                                        <GradientStop Color="#00000000" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+
+                            <Border CornerRadius="6,0,0,6"
+                                    Width="8"
+                                    HorizontalAlignment="Left"
+                                    IsHitTestVisible="False">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#30000000" Offset="0"/>
+                                        <GradientStop Color="#15000000" Offset="0.5"/>
+                                        <GradientStop Color="#00000000" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+
+                            <Border CornerRadius="0,6,6,0"
+                                    Width="8"
+                                    HorizontalAlignment="Right"
+                                    IsHitTestVisible="False">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="1,0" EndPoint="0,0">
+                                        <GradientStop Color="#30000000" Offset="0"/>
+                                        <GradientStop Color="#15000000" Offset="0.5"/>
+                                        <GradientStop Color="#00000000" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+
+                            <Border CornerRadius="0,0,6,6"
+                                    Height="8"
+                                    VerticalAlignment="Bottom"
+                                    IsHitTestVisible="False">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                        <GradientStop Color="#25000000" Offset="0"/>
+                                        <GradientStop Color="#08000000" Offset="0.5"/>
+                                        <GradientStop Color="#00000000" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+
+                            <ScrollViewer Margin="6" Focusable="False"
+                                          HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                          VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}">
+                                <ItemsPresenter/>
+                            </ScrollViewer>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="LiveTaskListBoxItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Grid Margin="0,0,0,4">
+                            <Border x:Name="HoverBackground" Opacity="0" CornerRadius="3" BorderThickness="1">
+                                <Border.BorderBrush>
+                                    <RadialGradientBrush RadiusX="1.18" RadiusY="1.1" Center="0.5,-0.2" GradientOrigin="0.5,-0.2">
+                                        <GradientStop Color="#FF5984AD" Offset="0"/>
+                                        <GradientStop Color="#FFFFFFFF" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Border.BorderBrush>
+                                <Border.Background>
+                                    <RadialGradientBrush RadiusX="1.18" RadiusY="1.1" Center="0.5,-0.2" GradientOrigin="0.5,-0.2">
+                                        <GradientStop Color="#374588BD" Offset="0"/>
+                                        <GradientStop Color="#081AD5FF" Offset="0.69"/>
+                                        <GradientStop Color="#1FFFFFFF" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Border.Background>
+                            </Border>
+
+                            <Border x:Name="SelectedBackground" Opacity="0" CornerRadius="3" BorderThickness="1">
+                                <Border.BorderBrush>
+                                    <RadialGradientBrush RadiusX="1.18" RadiusY="1.1" Center="0.5,-0.2" GradientOrigin="0.5,-0.2">
+                                        <GradientStop Color="#FF5984AD" Offset="0"/>
+                                        <GradientStop Color="#FFFFFFFF" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Border.BorderBrush>
+                                <Border.Background>
+                                    <RadialGradientBrush RadiusX="1.18" RadiusY="1.1" Center="0.5,-0.2" GradientOrigin="0.5,-0.2">
+                                        <GradientStop Color="#A34588BD" Offset="0"/>
+                                        <GradientStop Color="#111AD5FF" Offset="0.69"/>
+                                        <GradientStop Color="#31FFFFFF" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Border.Background>
+                            </Border>
+
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="HoverBackground" Property="Opacity" Value="1"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="SelectedBackground" Property="Opacity" Value="1"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="True"/>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="SelectedBackground" Property="Opacity" Value="1"/>
+                                <Setter TargetName="HoverBackground" Property="Opacity" Value="0"/>
+                            </MultiTrigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="LiveTaskCapsuleBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource ButtonIdleBrush}"/>
+            <Setter Property="MinHeight" Value="24"/>
+            <Setter Property="MinWidth" Value="58"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="Margin" Value="0,0,6,6"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Border Style="{DynamicResource WorkAreaStyle}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Background="{DynamicResource ToolbarBackgroundBrush}"
+                    BorderBrush="{DynamicResource TransparentBrush}"
+                    BorderThickness="0"
+                    Padding="8,5">
+                <TextBlock Text="实时任务"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource LightTextBrush}"
+                           FontFamily="{DynamicResource AeroFontFamily}"
+                           FontSize="{DynamicResource AeroFontSize}"/>
+            </Border>
+
+            <Border Grid.Row="1"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,0,0,1"
+                    Padding="8,6">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#FF2A3240" Offset="0"/>
+                        <GradientStop Color="#FF1A1F28" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Column="0"
+                            ToolTip="刷新"
+                            Style="{StaticResource ResourceToolbarButtonStyle}"
+                            Height="32"
+                            Margin="0,0,6,0"
+                            HorizontalContentAlignment="Stretch"
+                            Command="{Binding RefreshCommand}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Image Source="pack://application:,,,/Resources/Refresh.png"
+                                   Width="16"
+                                   Height="16"
+                                   Margin="0,0,4,0"
+                                   VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="{DynamicResource Common.Refresh}"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource PrimaryForeground}"/>
+                        </Grid>
+                    </Button>
+
+                    <Button Grid.Column="1"
+                            ToolTip="中止选中的正在运行会话"
+                            Style="{StaticResource ResourceToolbarButtonStyle}"
+                            Height="32"
+                            Margin="3,0"
+                            HorizontalContentAlignment="Stretch"
+                            Command="{Binding AbortSessionCommand}"
+                            IsEnabled="{Binding IsSessionSelected}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Image Source="pack://application:,,,/Resources/CrossMark.png"
+                                   Width="16"
+                                   Height="16"
+                                   Margin="0,0,4,0"
+                                   VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="中止"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource PrimaryForeground}"/>
+                        </Grid>
+                    </Button>
+
+                    <Button Grid.Column="2"
+                            ToolTip="{DynamicResource FileExplorer.Manage.ToolTip}"
+                            Style="{StaticResource ResourceToolbarButtonStyle}"
+                            Height="32"
+                            Margin="6,0,0,0"
+                            HorizontalContentAlignment="Stretch"
+                            IsEnabled="False">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Image Source="pack://application:,,,/Resources/WorkFolder.png"
+                                   Width="16"
+                                   Height="16"
+                                   Margin="0,0,4,0"
+                                   VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="{DynamicResource FileExplorer.Manage}"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource PrimaryForeground}"/>
+                        </Grid>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,0,0,1"
+                    Padding="8,6">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#FF1A1F28" Offset="0"/>
+                        <GradientStop Color="#FF141924" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+
+                <Grid>
+                    <TextBox x:Name="LiveTaskSearchTextBox"
+                             Height="24"
+                             VerticalContentAlignment="Center"
+                             Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <TextBlock Margin="10,0,0,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource SecondaryForeground}"
+                               IsHitTestVisible="False"
+                               Text="搜索正在运行的会话...">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding Text, ElementName=LiveTaskSearchTextBox}" Value=""/>
+                                            <Condition Binding="{Binding IsKeyboardFocusWithin, ElementName=LiveTaskSearchTextBox}" Value="False"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="3" Style="{DynamicResource ResourcePanelStyle}">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#FF141924" Offset="0"/>
+                        <GradientStop Color="#FF0F1419" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+
+                <Grid Margin="4">
+                    <TextBlock Text="当前没有正在运行的会话。"
+                               Foreground="#80FFFFFF"
+                               FontSize="12"
+                               FontStyle="Italic"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Visibility="{Binding EmptyStateVisibility}"/>
+
+                    <ListBox ItemsSource="{Binding RunningSessions}"
+                             SelectedItem="{Binding SelectedSession, Mode=TwoWay}"
+                             Style="{StaticResource LiveTaskListBoxStyle}"
+                             ItemContainerStyle="{StaticResource LiveTaskListBoxItemStyle}"
+                             Visibility="{Binding RunningSessionsVisibility}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type viewModels:LiveTaskSessionItem}">
+                                <Grid Margin="2,4">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0"
+                                               Text="{Binding DisplayName}"
+                                               Foreground="White"
+                                               FontSize="13"
+                                               FontWeight="Bold"
+                                               TextTrimming="CharacterEllipsis"/>
+
+                                    <StackPanel Grid.Row="1" Margin="0,5,0,8">
+                                        <TextBlock Text="{Binding SessionLineText}"
+                                                   Foreground="#B0FFFFFF"
+                                                   FontSize="11"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding FlowLineText}"
+                                                   Foreground="#A0FFFFFF"
+                                                   FontSize="11"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding StatusLineText}"
+                                                   Foreground="#80FFFFFF"
+                                                   FontSize="11"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding UserTextLineText}"
+                                                   Foreground="#70FFFFFF"
+                                                   FontSize="11"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Margin="0,2,0,0"
+                                                   Visibility="{Binding UserTextLineVisibility}"/>
+                                    </StackPanel>
+
+                                    <WrapPanel Grid.Row="2">
+                                        <Border Style="{StaticResource LiveTaskCapsuleBorderStyle}">
+                                            <TextBlock VerticalAlignment="Center"
+                                                       FontSize="11"
+                                                       Text="{Binding KindCapsuleText}"
+                                                       Foreground="#FFA2D6FF"/>
+                                        </Border>
+                                        <Border Style="{StaticResource LiveTaskCapsuleBorderStyle}">
+                                            <TextBlock VerticalAlignment="Center"
+                                                       FontSize="11"
+                                                       Text="{Binding DurationCapsuleText}"
+                                                       Foreground="#FFA2D6FF"/>
+                                        </Border>
+                                        <Border Style="{StaticResource LiveTaskCapsuleBorderStyle}">
+                                            <TextBlock VerticalAlignment="Center"
+                                                       FontSize="11"
+                                                       Text="{Binding StartedCapsuleText}"
+                                                       Foreground="#FFA2D6FF"/>
+                                        </Border>
+                                        <Border Style="{StaticResource LiveTaskCapsuleBorderStyle}">
+                                            <TextBlock VerticalAlignment="Center"
+                                                       FontSize="11"
+                                                       Text="{Binding StatusCapsuleText}"
+                                                       Foreground="#FFA2D6FF"/>
+                                        </Border>
+                                        <Border Style="{StaticResource LiveTaskCapsuleBorderStyle}"
+                                                Visibility="{Binding NodeCapsuleVisibility}">
+                                            <TextBlock VerticalAlignment="Center"
+                                                       FontSize="11"
+                                                       Text="{Binding NodeCapsuleText}"
+                                                       Foreground="#FFA2D6FF"/>
+                                        </Border>
+                                        <Border Style="{StaticResource LiveTaskCapsuleBorderStyle}"
+                                                Visibility="{Binding AgentCapsuleVisibility}">
+                                            <TextBlock VerticalAlignment="Center"
+                                                       FontSize="11"
+                                                       Text="{Binding AgentCapsuleText}"
+                                                       Foreground="#FFA2D6FF"/>
+                                        </Border>
+                                        <Border Style="{StaticResource LiveTaskCapsuleBorderStyle}"
+                                                Visibility="{Binding ModelCapsuleVisibility}">
+                                            <TextBlock VerticalAlignment="Center"
+                                                       FontSize="11"
+                                                       Text="{Binding ModelCapsuleText}"
+                                                       Foreground="#FFA2D6FF"/>
+                                        </Border>
+                                    </WrapPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

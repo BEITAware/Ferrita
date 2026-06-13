@@ -55,7 +55,7 @@ namespace Skyweaver.Panels.SessionList.ViewModels
 
         public ICommand DeleteSessionCommand { get; }
 
-        public ICommand SearchSessionCommand { get; }
+        public ICommand RefreshSessionCommand { get; }
 
         public SessionListPanelViewModel(Action<SessionListItem> openSession, ChatSessionRepository chatSessionRepository)
         {
@@ -65,7 +65,7 @@ namespace Skyweaver.Panels.SessionList.ViewModels
             OpenSessionCommand = new RelayCommand<SessionListItem>(OpenSession, session => session != null);
             CreateSessionCommand = new RelayCommand(CreateSession);
             DeleteSessionCommand = new RelayCommand(DeleteSelectedSession, () => SelectedSession != null);
-            SearchSessionCommand = new RelayCommand(ApplySessionFilter);
+            RefreshSessionCommand = new RelayCommand(LoadSessions);
 
             LoadSessions();
         }
@@ -82,6 +82,7 @@ namespace Skyweaver.Panels.SessionList.ViewModels
 
         private void LoadSessions()
         {
+            var selectedId = SelectedSession?.Id;
             _allSessions.Clear();
 
             foreach (var session in _chatSessionRepository.LoadAll())
@@ -89,7 +90,8 @@ namespace Skyweaver.Panels.SessionList.ViewModels
                 _allSessions.Add(CreateSessionListItem(session));
             }
 
-            ApplySessionFilter();
+            var preferredSelection = _allSessions.FirstOrDefault(s => s.Id == selectedId);
+            ApplySessionFilter(preferredSelection);
         }
 
         private void CreateSession()

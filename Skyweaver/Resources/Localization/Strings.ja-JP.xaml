@@ -1197,9 +1197,9 @@
 
     <system:String x:Key="SessionList.Delete.ToolTip">選択したセッションを削除</system:String>
 
-    <system:String x:Key="SessionList.Search">セッションを検索...</system:String>
+    <system:String x:Key="SessionList.Refresh">セッションを更新</system:String>
 
-    <system:String x:Key="SessionList.Search.ToolTip">タイトルキーワードでセッションを検索</system:String>
+    <system:String x:Key="SessionList.Refresh.ToolTip">セッション一覧を更新します</system:String>
 
     <system:String x:Key="SessionList.SearchPlaceholder">タイトルを検索</system:String>
 

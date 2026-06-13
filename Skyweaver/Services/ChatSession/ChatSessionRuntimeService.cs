@@ -79,7 +79,11 @@ namespace Skyweaver.Services.ChatSession
             if (!string.IsNullOrWhiteSpace(sessionId) &&
                 s_activeExecutions.TryGetValue(sessionId, out var globalCancellationSource))
             {
-                globalCancellationSource.Cancel();
+                if (!ActiveChatSessionExecutionRegistry.Instance.Cancel(sessionId))
+                {
+                    globalCancellationSource.Cancel();
+                }
+
                 return true;
             }
 
@@ -95,7 +99,11 @@ namespace Skyweaver.Services.ChatSession
                 return false;
             }
 
-            cancellationSource.Cancel();
+            if (!ActiveChatSessionExecutionRegistry.Instance.Cancel(_activeSessionId))
+            {
+                cancellationSource.Cancel();
+            }
+
             return true;
         }
 
@@ -136,6 +144,7 @@ namespace Skyweaver.Services.ChatSession
                 CancellationToken token)
             {
                 _transcriptWriter.ApplyRuntimeEvent(request.Session, runtimeEvent);
+                ActiveChatSessionExecutionRegistry.Instance.ApplyRuntimeEvent(runtimeEvent);
                 PersistSessionIfNeeded(request.Session, runtimeEvent);
                 await PublishAsync(onEventAsync, runtimeEvent, token).ConfigureAwait(false);
             }
@@ -151,6 +160,10 @@ namespace Skyweaver.Services.ChatSession
                 _activeExecutionCancellationSource = linkedCancellationSource;
                 _activeSessionId = sessionId;
                 _isExecutionActive = true;
+                ActiveChatSessionExecutionRegistry.Instance.Register(
+                    request.Session,
+                    linkedCancellationSource,
+                    trimmedUserText);
 
                 // 确保后续的所有重型 I/O 及计算操作都在后台线程上执行，释放 UI 线程
                 await Task.Run(() => { }).ConfigureAwait(false);
@@ -163,6 +176,16 @@ namespace Skyweaver.Services.ChatSession
                         ContentBlocks = userContentBlocks
                     });
                 SchedulePersistSession(request.Session);
+
+                await PublishRuntimeEventAsync(
+                    new ChatSessionRuntimeEvent
+                    {
+                        Kind = ChatSessionRuntimeEventKind.ExecutionStarted,
+                        SessionId = sessionId,
+                        SessionTitle = request.Session.Name,
+                        FlowName = request.Session.BoundFlowDisplayName
+                    },
+                    linkedCancellationSource.Token).ConfigureAwait(false);
 
                 await PublishRuntimeEventAsync(
                     new ChatSessionRuntimeEvent
@@ -337,6 +360,7 @@ namespace Skyweaver.Services.ChatSession
                 _isExecutionActive = false;
                 _activeSessionId = null;
                 _activeExecutionCancellationSource = null;
+                ActiveChatSessionExecutionRegistry.Instance.Unregister(sessionId);
                 _executionGate.Release();
             }
         }

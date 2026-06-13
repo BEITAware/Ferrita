@@ -21,10 +21,10 @@
                     BorderThickness="0"
                     Padding="8,5">
                 <TextBlock Text="{DynamicResource SessionList.Title}"
-                           FontWeight="Bold"
-                           Foreground="{DynamicResource LightTextBrush}"
-                           FontFamily="{DynamicResource AeroFontFamily}"
-                           FontSize="{DynamicResource AeroFontSize}"/>
+                            FontWeight="Bold"
+                            Foreground="{DynamicResource LightTextBrush}"
+                            FontFamily="{DynamicResource AeroFontFamily}"
+                            FontSize="{DynamicResource AeroFontSize}"/>
             </Border>
 
             <Border Grid.Row="1"
@@ -98,12 +98,12 @@
                     </Button>
 
                     <Button Grid.Column="2"
-                            ToolTip="{DynamicResource SessionList.Search.ToolTip}"
+                            ToolTip="{DynamicResource SessionList.Refresh.ToolTip}"
                             Style="{StaticResource ResourceToolbarButtonStyle}"
                             Height="32"
                             Margin="6,0,0,0"
                             HorizontalContentAlignment="Stretch"
-                            Command="{Binding SearchSessionCommand}">
+                            Command="{Binding RefreshSessionCommand}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -115,7 +115,7 @@
                                    Margin="0,0,4,0"
                                    VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1"
-                                       Text="{DynamicResource SessionList.Search}"
+                                       Text="{DynamicResource SessionList.Refresh}"
                                        VerticalAlignment="Center"
                                        TextAlignment="Center"
                                        TextTrimming="CharacterEllipsis"
@@ -174,13 +174,13 @@
                 </Border.Background>
 
                 <ListBox Margin="4"
-                         Background="Transparent"
-                         BorderThickness="0"
-                         ItemsSource="{Binding Sessions}"
-                         SelectedItem="{Binding SelectedSession, Mode=TwoWay}"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         ItemContainerStyle="{DynamicResource SessionHistoryItemStyle}">
+                          Background="Transparent"
+                          BorderThickness="0"
+                          ItemsSource="{Binding Sessions}"
+                          SelectedItem="{Binding SelectedSession, Mode=TwoWay}"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ItemContainerStyle="{DynamicResource SessionHistoryItemStyle}">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Grid Background="Transparent">

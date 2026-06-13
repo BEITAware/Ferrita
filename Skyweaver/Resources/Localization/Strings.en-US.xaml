@@ -665,8 +665,8 @@
     <system:String x:Key="SessionList.Create.ToolTip">Create a new session</system:String>
     <system:String x:Key="SessionList.Delete">Delete Session...</system:String>
     <system:String x:Key="SessionList.Delete.ToolTip">Delete the selected session</system:String>
-    <system:String x:Key="SessionList.Search">Search Sessions...</system:String>
-    <system:String x:Key="SessionList.Search.ToolTip">Search sessions by title keywords</system:String>
+    <system:String x:Key="SessionList.Refresh">Refresh Sessions</system:String>
+    <system:String x:Key="SessionList.Refresh.ToolTip">Refresh session list from repository</system:String>
     <system:String x:Key="SessionList.SearchPlaceholder">Search title</system:String>
     <system:String x:Key="SessionList.DefaultSessionName">New Session</system:String>
     <system:String x:Key="SessionList.TimeFormat">h:mm tt</system:String>

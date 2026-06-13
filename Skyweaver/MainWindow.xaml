@@ -5,7 +5,7 @@ xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 xmlns:local="clr-namespace:Skyweaver"
 xmlns:documentWorkspace="clr-namespace:Skyweaver.Panels.DocumentWorkspace.Views"
-xmlns:fileExplorer="clr-namespace:Skyweaver.Panels.FileExplorer.Views"
+xmlns:liveTasks="clr-namespace:Skyweaver.Panels.LiveTasks.Views"
 xmlns:multiFunctionArea="clr-namespace:Skyweaver.Panels.MultiFunctionArea.Views"
 xmlns:sessionList="clr-namespace:Skyweaver.Panels.SessionList.Views"
 xmlns:notifications="clr-namespace:Skyweaver.Services.Notifications"
@@ -343,8 +343,8 @@ mc:Ignorable="d"
                 <sessionList:SessionListPanelView Grid.Row="0"
                                                   DataContext="{Binding SessionListPanel}"/>
                 <GridSplitter Grid.Row="1" Style="{DynamicResource AeroHorizontalSplitterStyle}"/>
-                <fileExplorer:FileExplorerPanelView Grid.Row="2"
-                                                   DataContext="{Binding FileExplorerPanel}"/>
+                <liveTasks:LiveTasksPanelView Grid.Row="2"
+                                              DataContext="{Binding LiveTasksPanel}"/>
             </Grid>
 
             <GridSplitter Grid.Column="1" Style="{DynamicResource AeroVerticalSplitterStyle}"
