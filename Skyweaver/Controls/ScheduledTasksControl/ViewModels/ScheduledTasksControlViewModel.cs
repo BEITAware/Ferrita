@@ -18,6 +18,7 @@ namespace Skyweaver.Controls.ScheduledTasksControl.ViewModels
         private int _currentMonth;
         private DateTime _selectedDate;
         private ObservableCollection<ScheduledTask> _selectedDateTasks;
+        private bool _loadFailed;
 
         public ScheduledTasksControlViewModel()
         {
@@ -116,8 +117,18 @@ namespace Skyweaver.Controls.ScheduledTasksControl.ViewModels
 
         public void LoadTasks()
         {
-            var loaded = _repository.LoadAll();
-            Tasks = new ObservableCollection<ScheduledTask>(loaded);
+            try
+            {
+                var loaded = _repository.LoadAll();
+                Tasks = new ObservableCollection<ScheduledTask>(loaded);
+                _loadFailed = false;
+            }
+            catch (Exception ex)
+            {
+                _loadFailed = true;
+                MessageBox.Show($"加载计划任务失败: {ex.Message}。为了防止覆写或损坏现有任务，保存与编辑功能已被禁用。请重启程序或刷新重试。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                Tasks = new ObservableCollection<ScheduledTask>();
+            }
             
             RaiseCalendarRefreshRequired();
             RefreshSelectedDateTasks();
@@ -125,6 +136,11 @@ namespace Skyweaver.Controls.ScheduledTasksControl.ViewModels
 
         public void SaveTasks()
         {
+            if (_loadFailed)
+            {
+                MessageBox.Show("由于加载计划任务失败，保存操作已被阻止，防止丢失数据。", "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
             _repository.SaveAll(Tasks);
             RaiseCalendarRefreshRequired();
             RefreshSelectedDateTasks();
@@ -132,6 +148,12 @@ namespace Skyweaver.Controls.ScheduledTasksControl.ViewModels
 
         public void AddNewTask(Window owner)
         {
+            if (_loadFailed)
+            {
+                MessageBox.Show("由于之前加载计划任务失败，已禁用添加操作以防止数据丢失。", "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             var dialog = new CreateScheduledTaskDialog
             {
                 Owner = owner
@@ -147,6 +169,12 @@ namespace Skyweaver.Controls.ScheduledTasksControl.ViewModels
 
         public void EditSelectedTask(Window owner)
         {
+            if (_loadFailed)
+            {
+                MessageBox.Show("由于之前加载计划任务失败，已禁用编辑操作以防止数据丢失。", "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             if (SelectedTask == null) return;
 
             var dialog = new CreateScheduledTaskDialog(SelectedTask)
@@ -168,6 +196,12 @@ namespace Skyweaver.Controls.ScheduledTasksControl.ViewModels
 
         public void DeleteSelectedTask()
         {
+            if (_loadFailed)
+            {
+                MessageBox.Show("由于之前加载计划任务失败，已禁用删除操作以防止数据丢失。", "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             if (SelectedTask == null) return;
 
             var res = MessageBox.Show(

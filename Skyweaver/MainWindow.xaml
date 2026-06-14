@@ -234,6 +234,20 @@
                         <Grid>
                             <Border Style="{DynamicResource TabContentBorderStyle}"/>
                             <Border Background="{DynamicResource RibbonContentCoverMaskBrush}" Padding="0"/>
+                            <StackPanel Orientation="Horizontal" Margin="8,4">
+                                <GroupBox Header="磁贴操作" Style="{DynamicResource RibbonGroupStyle}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Style="{DynamicResource RibbonLargeButtonStyle}"
+                                                Command="{Binding TilesPage.AddTileCommand}">
+                                            <StackPanel>
+                                                <Image Source="pack://application:,,,/Resources/add_node.png" Width="32" Height="32" Margin="0,2,0,2"
+                                                       RenderOptions.BitmapScalingMode="HighQuality" UseLayoutRounding="True"/>
+                                                <TextBlock Text="添加磁贴" HorizontalAlignment="Center" FontSize="10"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </GroupBox>
+                            </StackPanel>
                         </Grid>
                     </TabItem>
 

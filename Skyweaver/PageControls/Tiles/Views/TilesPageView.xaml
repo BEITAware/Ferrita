@@ -234,6 +234,7 @@
                                                                 <ContextMenu>
                                                                     <MenuItem Header="Run" Command="{Binding RunCommand}"/>
                                                                     <MenuItem Header="Remove tile" Command="{Binding RemoveCommand}"/>
+                                                                    <MenuItem Header="Lock/Unlock" Command="{Binding ToggleLockCommand}"/>
                                                                     <Separator Background="#33FFFFFF"/>
                                                                     <MenuItem Header="Size">
                                                                         <MenuItem Header="Small (1x1)" Command="{Binding SetSizeCommand}" CommandParameter="1x1" IsCheckable="True" IsChecked="{Binding Size, Converter={StaticResource SizeToBoolConverter}, ConverterParameter=1x1}"/>
@@ -241,6 +242,12 @@
                                                                         <MenuItem Header="Large (2x2)" Command="{Binding SetSizeCommand}" CommandParameter="2x2" IsCheckable="True" IsChecked="{Binding Size, Converter={StaticResource SizeToBoolConverter}, ConverterParameter=2x2}"/>
                                                                     </MenuItem>
                                                                     <MenuItem Header="Custom image..." Command="{Binding CustomImageCommand}" Visibility="{Binding IsLarge, Converter={StaticResource BoolToVisConverter}}"/>
+                                                                    <MenuItem Header="Custom Icon..." Visibility="{Binding IsNon2x2, Converter={StaticResource BoolToVisConverter}}">
+                                                                        <MenuItem Header="Create" Command="{Binding SetIconCommand}" CommandParameter="pack://application:,,,/Resources/Create.png"/>
+                                                                        <MenuItem Header="Chores" Command="{Binding SetIconCommand}" CommandParameter="pack://application:,,,/Resources/Chores.png"/>
+                                                                        <MenuItem Header="Investigate" Command="{Binding SetIconCommand}" CommandParameter="pack://application:,,,/Resources/Investigate.png"/>
+                                                                        <MenuItem Header="Default" Command="{Binding SetIconCommand}" CommandParameter="pack://application:,,,/Resources/Default.png"/>
+                                                                    </MenuItem>
                                                                 </ContextMenu>
                                                             </Button.ContextMenu>
                                                             <Button.Template>
@@ -252,7 +259,7 @@
                                                                             <ScaleTransform ScaleX="1" ScaleY="1"/>
                                                                         </Grid.RenderTransform>
 
-                                                                        <Border CornerRadius="4" BorderThickness="1">
+                                                                        <Border x:Name="BaseBorder" CornerRadius="4" BorderThickness="1">
                                                                             <Border.BorderBrush>
                                                                                 <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
                                                                                     <GradientStop Color="#55FFFFFF" Offset="0"/>
@@ -267,7 +274,7 @@
                                                                             </Border.Background>
                                                                         </Border>
 
-                                                                        <Border CornerRadius="4" Opacity="0.75">
+                                                                        <Border x:Name="BaseRadialBorder" CornerRadius="4" Opacity="0.75">
                                                                             <Border.Background>
                                                                                 <RadialGradientBrush RadiusX="1.27972"
                                                                                                      RadiusY="0.744935"
@@ -282,6 +289,57 @@
                                                                                         <TransformGroup>
                                                                                             <SkewTransform CenterX="0.819209" CenterY="0.896333" AngleX="-6.516" AngleY="0"/>
                                                                                             <RotateTransform CenterX="0.819209" CenterY="0.896333" Angle="-33.36"/>
+                                                                                        </TransformGroup>
+                                                                                    </RadialGradientBrush.RelativeTransform>
+                                                                                </RadialGradientBrush>
+                                                                            </Border.Background>
+                                                                        </Border>
+
+                                                                        <Border x:Name="DimLayer" CornerRadius="4" BorderThickness="1" Opacity="0" IsHitTestVisible="False">
+                                                                            <Border.BorderBrush>
+                                                                                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                                                                    <GradientStop Color="#866B99D0" Offset="0"/>
+                                                                                    <GradientStop Color="#981C4675" Offset="1"/>
+                                                                                </LinearGradientBrush>
+                                                                            </Border.BorderBrush>
+                                                                            <Border.Background>
+                                                                                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                                                                    <GradientStop Color="#04171718" Offset="0"/>
+                                                                                    <GradientStop Color="#05FFFFFF" Offset="1"/>
+                                                                                </LinearGradientBrush>
+                                                                            </Border.Background>
+                                                                        </Border>
+
+                                                                        <Border x:Name="DimRadialLayer" CornerRadius="4" Opacity="0" IsHitTestVisible="False">
+                                                                            <Border.Background>
+                                                                                <RadialGradientBrush RadiusX="1.27972" RadiusY="0.744936" Center="0.81921,0.896333" GradientOrigin="0.81921,0.896333">
+                                                                                    <RadialGradientBrush.GradientStops>
+                                                                                        <GradientStop Color="#04171718" Offset="0.00899281"/>
+                                                                                        <GradientStop Color="#00BBBBBB" Offset="0.888489"/>
+                                                                                        <GradientStop Color="#08FFFFFF" Offset="1"/>
+                                                                                    </RadialGradientBrush.GradientStops>
+                                                                                    <RadialGradientBrush.RelativeTransform>
+                                                                                        <TransformGroup>
+                                                                                            <SkewTransform CenterX="0.81921" CenterY="0.896333" AngleX="-6.51607" AngleY="0"/>
+                                                                                            <RotateTransform CenterX="0.81921" CenterY="0.896333" Angle="-33.3648"/>
+                                                                                        </TransformGroup>
+                                                                                    </RadialGradientBrush.RelativeTransform>
+                                                                                </RadialGradientBrush>
+                                                                            </Border.Background>
+                                                                        </Border>
+
+                                                                        <Border x:Name="BrightLayer" CornerRadius="4" BorderThickness="1" BorderBrush="#FFFFFFFF" Opacity="0" IsHitTestVisible="False">
+                                                                            <Border.Background>
+                                                                                <RadialGradientBrush RadiusX="1.27972" RadiusY="0.744937" Center="0.819209,0.896334" GradientOrigin="0.819209,0.896334">
+                                                                                    <RadialGradientBrush.GradientStops>
+                                                                                        <GradientStop Color="#04171718" Offset="0"/>
+                                                                                        <GradientStop Color="#00BBBBBB" Offset="0.901079"/>
+                                                                                        <GradientStop Color="#22FFFFFF" Offset="1"/>
+                                                                                    </RadialGradientBrush.GradientStops>
+                                                                                    <RadialGradientBrush.RelativeTransform>
+                                                                                        <TransformGroup>
+                                                                                            <SkewTransform CenterX="0.819209" CenterY="0.896334" AngleX="-6.51622" AngleY="0"/>
+                                                                                            <RotateTransform CenterX="0.819209" CenterY="0.896334" Angle="-33.3648"/>
                                                                                         </TransformGroup>
                                                                                     </RadialGradientBrush.RelativeTransform>
                                                                                 </RadialGradientBrush>
@@ -314,6 +372,48 @@
                                                                             </Border.Background>
                                                                         </Border>
 
+                                                                        <Border x:Name="LockVisual" CornerRadius="4" Opacity="0" IsHitTestVisible="False">
+                                                                            <Viewbox Width="388.195" Height="324.089" Canvas.Left="0" Canvas.Top="0">
+                                                                                <Canvas Width="388.195" Height="324.089">
+                                                                                    <Path Width="388.195" Height="324.089" Canvas.Left="-0.000244141" Canvas.Top="0" Stretch="Fill" Data="F1 M 4.99976,1L 383.195,1C 385.404,1 387.195,2.79102 387.195,5L 387.195,319.089C 387.195,321.299 385.404,323.089 383.195,323.089L 4.99976,323.089C 2.79053,323.089 0.999756,321.299 0.999756,319.089L 0.999756,5C 0.999756,2.79102 2.79053,1 4.99976,1 Z " StrokeThickness="2" StrokeLineJoin="Round">
+                                                                                        <Path.Stroke>
+                                                                                            <LinearGradientBrush StartPoint="0.5,-0.0677364" EndPoint="0.5,1.06773">
+                                                                                                <LinearGradientBrush.GradientStops>
+                                                                                                    <GradientStop Color="#FF1E518E" Offset="0"/>
+                                                                                                    <GradientStop Color="#FF061F3C" Offset="1"/>
+                                                                                                </LinearGradientBrush.GradientStops>
+                                                                                            </LinearGradientBrush>
+                                                                                        </Path.Stroke>
+                                                                                        <Path.Fill>
+                                                                                            <LinearGradientBrush StartPoint="0.5,-0.0712617" EndPoint="0.5,1.07126">
+                                                                                                <LinearGradientBrush.GradientStops>
+                                                                                                    <GradientStop Color="#04171718" Offset="0"/>
+                                                                                                    <GradientStop Color="#05FFFFFF" Offset="1"/>
+                                                                                                </LinearGradientBrush.GradientStops>
+                                                                                            </LinearGradientBrush>
+                                                                                        </Path.Fill>
+                                                                                    </Path>
+                                                                                    <Path Width="386.195" Height="322.089" Canvas.Left="0.999756" Canvas.Top="1" Stretch="Fill" Data="F1 M 4.99976,1L 383.195,1C 385.404,1 387.195,2.79102 387.195,5L 387.195,319.089C 387.195,321.299 385.404,323.089 383.195,323.089L 4.99976,323.089C 2.79053,323.089 0.999756,321.299 0.999756,319.089L 0.999756,5C 0.999756,2.79102 2.79053,1 4.99976,1 Z ">
+                                                                                        <Path.Fill>
+                                                                                            <RadialGradientBrush RadiusX="1.27972" RadiusY="0.744936" Center="0.81921,0.896333" GradientOrigin="0.81921,0.896333">
+                                                                                                <RadialGradientBrush.GradientStops>
+                                                                                                    <GradientStop Color="#490D0D1C" Offset="0"/>
+                                                                                                    <GradientStop Color="#145754AE" Offset="0.944245"/>
+                                                                                                    <GradientStop Color="#237F7BFF" Offset="1"/>
+                                                                                                </RadialGradientBrush.GradientStops>
+                                                                                                <RadialGradientBrush.RelativeTransform>
+                                                                                                    <TransformGroup>
+                                                                                                        <SkewTransform CenterX="0.81921" CenterY="0.896333" AngleX="-6.51601" AngleY="0"/>
+                                                                                                        <RotateTransform CenterX="0.81921" CenterY="0.896333" Angle="-33.3647"/>
+                                                                                                    </TransformGroup>
+                                                                                                </RadialGradientBrush.RelativeTransform>
+                                                                                            </RadialGradientBrush>
+                                                                                        </Path.Fill>
+                                                                                    </Path>
+                                                                                </Canvas>
+                                                                            </Viewbox>
+                                                                        </Border>
+
                                                                         <Grid Margin="15" IsHitTestVisible="False">
                                                                             <Grid.RowDefinitions>
                                                                                 <RowDefinition Height="Auto"/>
@@ -321,18 +421,34 @@
                                                                                 <RowDefinition Height="Auto"/>
                                                                             </Grid.RowDefinitions>
 
-                                                                            <ContentControl Content="{Binding Icon}"
+                                                                            <ContentControl Content="{Binding}"
                                                                                             Width="32"
                                                                                             Height="32"
                                                                                             HorizontalAlignment="Left"
                                                                                             VerticalAlignment="Top">
                                                                                 <ContentControl.ContentTemplate>
                                                                                     <DataTemplate>
-                                                                                        <Path Data="{Binding}"
-                                                                                              Fill="#E8F4FF"
-                                                                                              Stretch="Uniform"
-                                                                                              HorizontalAlignment="Center"
-                                                                                              VerticalAlignment="Center"/>
+                                                                                        <Grid>
+                                                                                            <Path x:Name="SvgPath"
+                                                                                                  Data="{Binding Icon}"
+                                                                                                  Fill="#E8F4FF"
+                                                                                                  Stretch="Uniform"
+                                                                                                  HorizontalAlignment="Center"
+                                                                                                  VerticalAlignment="Center"
+                                                                                                  Visibility="Visible"/>
+                                                                                            <Image x:Name="PngImage"
+                                                                                                   Source="{Binding Icon}"
+                                                                                                   Stretch="Uniform"
+                                                                                                   HorizontalAlignment="Center"
+                                                                                                   VerticalAlignment="Center"
+                                                                                                   Visibility="Collapsed"/>
+                                                                                        </Grid>
+                                                                                        <DataTemplate.Triggers>
+                                                                                            <DataTrigger Binding="{Binding IsImageIcon}" Value="True">
+                                                                                                <Setter TargetName="SvgPath" Property="Visibility" Value="Collapsed"/>
+                                                                                                <Setter TargetName="PngImage" Property="Visibility" Value="Visible"/>
+                                                                                            </DataTrigger>
+                                                                                        </DataTemplate.Triggers>
                                                                                     </DataTemplate>
                                                                                 </ContentControl.ContentTemplate>
                                                                             </ContentControl>
@@ -410,12 +526,27 @@
                                                                             <DataTrigger.EnterActions>
                                                                                 <BeginStoryboard>
                                                                                     <Storyboard>
-                                                                                        <DoubleAnimation Storyboard.TargetName="TileRoot" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="0.94" Duration="0:0:0.16">
+                                                                                        <DoubleAnimation Storyboard.TargetName="TileRoot" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="0.9" Duration="0:0:0.16">
                                                                                             <DoubleAnimation.EasingFunction>
                                                                                                 <QuinticEase EasingMode="EaseOut"/>
                                                                                             </DoubleAnimation.EasingFunction>
                                                                                         </DoubleAnimation>
-                                                                                        <DoubleAnimation Storyboard.TargetName="TileRoot" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="0.94" Duration="0:0:0.16">
+                                                                                        <DoubleAnimation Storyboard.TargetName="TileRoot" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="0.9" Duration="0:0:0.16">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <QuinticEase EasingMode="EaseOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                        <DoubleAnimation Storyboard.TargetName="BaseBorder" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.16">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <QuinticEase EasingMode="EaseOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                        <DoubleAnimation Storyboard.TargetName="BaseRadialBorder" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.16">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <QuinticEase EasingMode="EaseOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                        <DoubleAnimation Storyboard.TargetName="BrightLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.16">
                                                                                             <DoubleAnimation.EasingFunction>
                                                                                                 <QuinticEase EasingMode="EaseOut"/>
                                                                                             </DoubleAnimation.EasingFunction>
@@ -436,16 +567,89 @@
                                                                                                 <BackEase EasingMode="EaseOut" Amplitude="0.12"/>
                                                                                             </DoubleAnimation.EasingFunction>
                                                                                         </DoubleAnimation>
+                                                                                        <DoubleAnimation Storyboard.TargetName="BaseBorder" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.26">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <BackEase EasingMode="EaseOut" Amplitude="0.12"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                        <DoubleAnimation Storyboard.TargetName="BaseRadialBorder" Storyboard.TargetProperty="Opacity" To="0.75" Duration="0:0:0.26">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <BackEase EasingMode="EaseOut" Amplitude="0.12"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                        <DoubleAnimation Storyboard.TargetName="BrightLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.26">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <BackEase EasingMode="EaseOut" Amplitude="0.12"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
                                                                                     </Storyboard>
                                                                                 </BeginStoryboard>
                                                                             </DataTrigger.ExitActions>
-                                                                            <Setter TargetName="TileRoot" Property="Opacity" Value="0.68"/>
+                                                                            <Setter TargetName="TileRoot" Property="Opacity" Value="0.95"/>
                                                                             <Setter TargetName="TileRoot" Property="Effect">
                                                                                 <Setter.Value>
                                                                                     <DropShadowEffect Color="#FF00B0FF" BlurRadius="10" Opacity="0.7" ShadowDepth="2"/>
                                                                                 </Setter.Value>
                                                                             </Setter>
                                                                         </DataTrigger>
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding DataContext.IsAnyTileDragging, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True"/>
+                                                                                <Condition Binding="{Binding IsDragging}" Value="False"/>
+                                                                            </MultiDataTrigger.Conditions>
+                                                                            <MultiDataTrigger.EnterActions>
+                                                                                <BeginStoryboard>
+                                                                                    <Storyboard>
+                                                                                        <DoubleAnimation Storyboard.TargetName="BaseBorder" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <CubicEase EasingMode="EaseOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                        <DoubleAnimation Storyboard.TargetName="BaseRadialBorder" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <CubicEase EasingMode="EaseOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                        <DoubleAnimation Storyboard.TargetName="DimLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.15">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <CubicEase EasingMode="EaseOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                        <DoubleAnimation Storyboard.TargetName="DimRadialLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.15">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <CubicEase EasingMode="EaseOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                    </Storyboard>
+                                                                                </BeginStoryboard>
+                                                                            </MultiDataTrigger.EnterActions>
+                                                                            <MultiDataTrigger.ExitActions>
+                                                                                <BeginStoryboard>
+                                                                                    <Storyboard>
+                                                                                        <DoubleAnimation Storyboard.TargetName="BaseBorder" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.25">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <CubicEase EasingMode="EaseOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                        <DoubleAnimation Storyboard.TargetName="BaseRadialBorder" Storyboard.TargetProperty="Opacity" To="0.75" Duration="0:0:0.25">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <CubicEase EasingMode="EaseOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                        <DoubleAnimation Storyboard.TargetName="DimLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.25">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <CubicEase EasingMode="EaseOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                        <DoubleAnimation Storyboard.TargetName="DimRadialLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.25">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <CubicEase EasingMode="EaseOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                    </Storyboard>
+                                                                                </BeginStoryboard>
+                                                                            </MultiDataTrigger.ExitActions>
+                                                                        </MultiDataTrigger>
                                                                     </ControlTemplate.Triggers>
                                                                 </ControlTemplate>
                                                             </Button.Template>

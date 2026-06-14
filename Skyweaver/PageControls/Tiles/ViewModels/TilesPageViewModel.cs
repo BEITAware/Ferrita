@@ -2,11 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
+using System.Xml.Linq;
 using Skyweaver.Commands;
 using Skyweaver.Infrastructure.Mvvm;
+using Skyweaver.Services.Directories;
+using Skyweaver.Windows;
 
 namespace Skyweaver.PageControls.Tiles.ViewModels
 {
@@ -21,6 +25,8 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
         private int _columnSpan = 1;
         private int _rowSpan = 1;
         private bool _isDragging;
+        private int _groupIndex = -1;
+        private bool _isLocked;
 
         public TileItemViewModel()
         {
@@ -39,7 +45,6 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
                 if (!string.IsNullOrWhiteSpace(size))
                 {
                     Size = size;
-                    RequestLayoutUpdate?.Invoke(this, EventArgs.Empty);
                 }
             });
 
@@ -56,18 +61,44 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
                     CustomImageSource = openFileDialog.FileName;
                 }
             });
+
+            ToggleLockCommand = new RelayCommand(() =>
+            {
+                IsLocked = !IsLocked;
+            });
+
+            SetIconCommand = new RelayCommand<string>(iconPath =>
+            {
+                if (!string.IsNullOrWhiteSpace(iconPath))
+                {
+                    Icon = iconPath;
+                }
+            });
         }
 
         public string Name
         {
             get => _name;
-            set => SetProperty(ref _name, value);
+            set
+            {
+                if (SetProperty(ref _name, value))
+                {
+                    RequestLayoutUpdate?.Invoke(this, EventArgs.Empty);
+                }
+            }
         }
 
         public string Icon
         {
             get => _icon;
-            set => SetProperty(ref _icon, value);
+            set
+            {
+                if (SetProperty(ref _icon, value))
+                {
+                    OnPropertyChanged(nameof(IsImageIcon));
+                    RequestLayoutUpdate?.Invoke(this, EventArgs.Empty);
+                }
+            }
         }
 
         public string Size
@@ -75,9 +106,30 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
             get => _size;
             set
             {
-                if (SetProperty(ref _size, NormalizeSize(value)))
+                string normalizedSize = NormalizeSize(value);
+                int newColSpan = 1, newRowSpan = 1;
+                switch (normalizedSize)
+                {
+                    case "1x2":
+                        newColSpan = 2;
+                        newRowSpan = 1;
+                        break;
+                    case "2x2":
+                        newColSpan = 2;
+                        newRowSpan = 2;
+                        break;
+                }
+
+                if (Column + newColSpan > TilesPageViewModel.GroupColumns ||
+                    Row + newRowSpan > TilesPageViewModel.GroupRows)
+                {
+                    return;
+                }
+
+                if (SetProperty(ref _size, normalizedSize))
                 {
                     ApplySize();
+                    RequestLayoutUpdate?.Invoke(this, EventArgs.Empty);
                 }
             }
         }
@@ -90,6 +142,7 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
                 if (SetProperty(ref _customImageSource, value))
                 {
                     OnPropertyChanged(nameof(HasCustomImage));
+                    RequestLayoutUpdate?.Invoke(this, EventArgs.Empty);
                 }
             }
         }
@@ -124,9 +177,42 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
             set => SetProperty(ref _isDragging, value);
         }
 
+        public int GroupIndex
+        {
+            get => _groupIndex;
+            set => SetProperty(ref _groupIndex, value);
+        }
+
+        public bool IsLocked
+        {
+            get => _isLocked;
+            set
+            {
+                if (SetProperty(ref _isLocked, value))
+                {
+                    RequestLayoutUpdate?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+
         public bool IsLarge => Size == "2x2";
 
+        public bool IsNon2x2 => Size != "2x2";
+
         public bool HasCustomImage => IsLarge && !string.IsNullOrEmpty(CustomImageSource);
+
+        public bool IsImageIcon
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(Icon)) return false;
+                return Icon.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                       Icon.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                       Icon.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                       Icon.StartsWith("pack://", StringComparison.OrdinalIgnoreCase) ||
+                       Icon.Contains("/") || Icon.Contains("\\");
+            }
+        }
 
         public ICommand RunCommand { get; }
 
@@ -135,6 +221,10 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
         public ICommand SetSizeCommand { get; }
 
         public ICommand CustomImageCommand { get; }
+
+        public ICommand ToggleLockCommand { get; }
+
+        public ICommand SetIconCommand { get; }
 
         public event EventHandler? RequestLayoutUpdate;
 
@@ -164,6 +254,7 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
             }
 
             OnPropertyChanged(nameof(IsLarge));
+            OnPropertyChanged(nameof(IsNon2x2));
             OnPropertyChanged(nameof(HasCustomImage));
         }
     }
@@ -251,6 +342,7 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
 
         private readonly List<string> _rememberedGroupNames = new();
         private bool _isPacking;
+        private bool _isAnyTileDragging;
 
         public TilesPageViewModel()
         {
@@ -265,6 +357,12 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
 
         public event EventHandler<TileLayoutTransitionEventArgs>? TileLayoutChanged;
 
+        public bool IsAnyTileDragging
+        {
+            get => _isAnyTileDragging;
+            set => SetProperty(ref _isAnyTileDragging, value);
+        }
+
         public void MoveTileToCell(TileItemViewModel tile, int targetGroupIndex, int targetColumn, int targetRow)
         {
             if (!Tiles.Contains(tile))
@@ -272,29 +370,18 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
                 return;
             }
 
-            targetGroupIndex = Math.Max(0, targetGroupIndex);
-            targetColumn = Math.Clamp(targetColumn, 0, GroupColumns - tile.ColumnSpan);
-            targetRow = Math.Clamp(targetRow, 0, GroupRows - tile.RowSpan);
+            Tiles.Remove(tile);
+            Tiles.Add(tile);
 
-            var orderedWithoutTile = Tiles.Where(candidate => !ReferenceEquals(candidate, tile)).ToList();
-            var placementsWithoutTile = ComputeLayout(orderedWithoutTile);
-            int targetSlot = targetRow * GroupColumns + targetColumn;
-            int insertIndex = orderedWithoutTile.Count;
-
-            for (int i = 0; i < placementsWithoutTile.Count; i++)
+            if (targetGroupIndex < 0 || targetGroupIndex >= TileGroups.Count)
             {
-                var placement = placementsWithoutTile[i];
-                int placementSlot = placement.Row * GroupColumns + placement.Column;
-                if (placement.GroupIndex > targetGroupIndex ||
-                    placement.GroupIndex == targetGroupIndex && placementSlot >= targetSlot)
-                {
-                    insertIndex = i;
-                    break;
-                }
+                targetGroupIndex = TileGroups.Count;
             }
 
-            Tiles.Remove(tile);
-            Tiles.Insert(Math.Clamp(insertIndex, 0, Tiles.Count), tile);
+            tile.GroupIndex = targetGroupIndex;
+            tile.Column = Math.Clamp(targetColumn, 0, GroupColumns - tile.ColumnSpan);
+            tile.Row = Math.Clamp(targetRow, 0, GroupRows - tile.RowSpan);
+
             PackTiles();
         }
 
@@ -353,23 +440,106 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
                     return;
                 }
 
-                var placements = ComputeLayout(Tiles);
-                int requiredGroupCount = placements.Count == 0
-                    ? 0
-                    : placements.Max(placement => placement.GroupIndex) + 1;
+                var occupied = new Dictionary<int, bool[,]>();
+                var unresolved = new List<TileItemViewModel>();
+                var resolved = new List<TileItemViewModel>();
+
+                // 第一遍遍历：处理已锁定的磁贴，确保它们保持当前位置
+                for (int i = 0; i < Tiles.Count; i++)
+                {
+                    var tile = Tiles[i];
+                    if (tile.IsLocked && tile.GroupIndex >= 0)
+                    {
+                        if (!occupied.ContainsKey(tile.GroupIndex))
+                            occupied[tile.GroupIndex] = new bool[GroupColumns, GroupRows];
+
+                        if (IsFree(occupied[tile.GroupIndex], tile.Column, tile.Row, tile.ColumnSpan, tile.RowSpan))
+                        {
+                            MarkOccupied(occupied[tile.GroupIndex], tile.Column, tile.Row, tile.ColumnSpan, tile.RowSpan);
+                            resolved.Add(tile);
+                        }
+                        else
+                        {
+                            // 如果锁定的磁贴重叠，这在正常情况下不应发生。
+                            // 但如果发生了，为了避免崩溃，我们将其视为未解决状态。
+                            // 理想情况下，它应该保持有效的原始位置。
+                            unresolved.Add(tile);
+                        }
+                    }
+                }
+
+                // 第二遍遍历：处理未锁定的磁贴
+                for (int i = Tiles.Count - 1; i >= 0; i--)
+                {
+                    var tile = Tiles[i];
+                    if (tile.IsLocked && resolved.Contains(tile))
+                    {
+                        continue;
+                    }
+
+                    if (tile.GroupIndex >= 0 && !tile.IsLocked)
+                    {
+                        if (!occupied.ContainsKey(tile.GroupIndex))
+                            occupied[tile.GroupIndex] = new bool[GroupColumns, GroupRows];
+
+                        if (IsFree(occupied[tile.GroupIndex], tile.Column, tile.Row, tile.ColumnSpan, tile.RowSpan))
+                        {
+                            MarkOccupied(occupied[tile.GroupIndex], tile.Column, tile.Row, tile.ColumnSpan, tile.RowSpan);
+                            resolved.Add(tile);
+                            continue;
+                        }
+                    }
+                    if (!tile.IsLocked)
+                    {
+                        unresolved.Add(tile);
+                    }
+                }
+
+                unresolved.Reverse();
+
+                foreach (var tile in unresolved)
+                {
+                    int gIndex = Math.Max(0, tile.GroupIndex);
+                    while (true)
+                    {
+                        if (!occupied.ContainsKey(gIndex))
+                            occupied[gIndex] = new bool[GroupColumns, GroupRows];
+
+                        if (TryFindSlot(occupied[gIndex], tile.ColumnSpan, tile.RowSpan, out int col, out int row))
+                        {
+                            tile.GroupIndex = gIndex;
+                            tile.Column = col;
+                            tile.Row = row;
+                            MarkOccupied(occupied[gIndex], col, row, tile.ColumnSpan, tile.RowSpan);
+                            break;
+                        }
+                        gIndex++;
+                    }
+                }
+
+                int requiredGroupCount = 0;
+                foreach (var tile in Tiles)
+                {
+                    if (tile.GroupIndex >= requiredGroupCount)
+                    {
+                        requiredGroupCount = tile.GroupIndex + 1;
+                    }
+                }
 
                 EnsureGroupCount(requiredGroupCount);
+                
                 var groupedTiles = new List<TileItemViewModel>[requiredGroupCount];
                 for (int i = 0; i < groupedTiles.Length; i++)
                 {
                     groupedTiles[i] = new List<TileItemViewModel>();
                 }
 
-                foreach (var placement in placements)
+                foreach (var tile in Tiles)
                 {
-                    placement.Tile.Column = placement.Column;
-                    placement.Tile.Row = placement.Row;
-                    groupedTiles[placement.GroupIndex].Add(placement.Tile);
+                    if (tile.GroupIndex >= 0 && tile.GroupIndex < requiredGroupCount)
+                    {
+                        groupedTiles[tile.GroupIndex].Add(tile);
+                    }
                 }
 
                 for (int i = 0; i < requiredGroupCount; i++)
@@ -382,34 +552,13 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
             finally
             {
                 _isPacking = false;
+                SaveTiles();
             }
         }
 
         private void InitializeDefaultTiles()
         {
-            var defaultTiles = new[]
-            {
-                new TileItemViewModel { Name = "Mail", Size = "1x2", Icon = "M2,4h20v16H2V4z M4,6v1.5l8,4.5l8,-4.5V6H4z M4,9.5V18h16V9.5l-8,4.5L4,9.5z" },
-                new TileItemViewModel { Name = "Calendar", Size = "1x1", Icon = "M19,4h-1V2h-2v2H8V2H6v2H5C3.89,4,3.01,4.9,3.01,6L3,20c0,1.1,0.89,2,2,2h14c1.1,0,2,-0.9,2,-2V6C21,4.9,20.1,4,19,4z M19,20H5V10h14V20z M19,8H5V6h14V8z" },
-                new TileItemViewModel { Name = "Feeds", Size = "1x2", Icon = "M6.18,2.69C3.56,3.85,1.94,6.05,1,8.5h4c0.5-0.9,1.1-1.6,2-2.1L6.18,2.69z M2,17c0,1.66,1.34,3,3,3s3,-1.34,3,-3s-1.34,-3,-3,-3S2,15.34,2,17z M2,10v2c4.42,0,8,3.58,8,8h2C12,14.48,7.52,10,2,10z M2,5v2c7.18,0,13,5.82,13,13h2C17,11.72,10.28,5,2,5z" },
-                new TileItemViewModel { Name = "IE Browser", Size = "1x1", Icon = "M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10,-4.48,10,-10S17.52,2,12,2z M11,19.93C7.05,19.44,4,16.08,4,12c0,-0.62,0.08,-1.21,0.21,-1.79L9,15v1c0,1.1,0.9,2,2,2V19.93z M17.9,17.39c-0.26,-0.81,-1,-1.39,-1.9,-1.39h-1v-3c0,-0.55,-0.45,-1,-1,-1H8v-2h2c0.55,0,1,-0.45,1,-1V7h2c1.1,0,2,-0.9,2,-2v-0.41c2.93,1.19,5,4.06,5,7.41C20,14.08,19.2,15.97,17.9,17.39z" },
-                new TileItemViewModel { Name = "Get Started", Size = "1x1", Icon = "M5,13.18V20h6.82L19,12.18L12.18,5.36L5,13.18z M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10,-4.48,10,-10S17.52,2,12,2z M12,20c-4.41,0,-8,-3.59,-8,-8s3.59,-8,8,-8s8,3.59,8,8S16.41,20,12,20z" },
-                new TileItemViewModel { Name = "Media Center", Size = "1x1", Icon = "M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10,-4.48,10,-10S17.52,2,12,2z M10,16.5v-9l6,4.5L10,16.5z" },
-                new TileItemViewModel { Name = "Gallery", Size = "1x1", Icon = "M21,19V5c0,-1.1,-0.9,-2,-2,-2H5C3.9,3,3,3.9,3,5v14c0,1.1,0.9,2,2,2h14C20.1,21,21,20.1,21,19z M8.5,13.5l2.5,3.01L14.5,12l4.5,6H5L8.5,13.5z" },
-                new TileItemViewModel { Name = "Marketplace", Size = "1x1", Icon = "M20,6h-4V4c0,-1.11,-0.89,-2,-2,-2h-4C8.89,2,8,2.89,8,4v2H4C2.89,6,2,6.89,2,8v12c0,1.11,0.89,2,2,2h16c1.11,0,2,-0.89,2,-2V8C22,6.89,21.11,6,20,6z M10,4h4v2h-4V4z M20,20H4V8h16V20z M12,12c-1.66,0,-3,-1.34,-3,-3h2c0,0.55,0.45,1,1,1s1,-0.45,1,-1h2C15,10.66,13.66,12,12,12z" },
-                new TileItemViewModel { Name = "Messenger", Size = "1x1", Icon = "M20,2H4C2.9,2,2,2.9,2,4v18l4,-4h14c1.1,0,2,-0.9,2,-2V4C22,2.9,21.1,2,20,2z M20,16H5.17L4,17.17V4h16V16z M6,12h12v2H6V12z M6,9h12v2H6V9z M6,6h12v2H6V6z" },
-                new TileItemViewModel { Name = "Weather", Size = "2x2", Icon = "M6.05,8.05c-2.73,2.73,-2.73,7.15,0,9.88s7.15,2.73,9.88,0c2.43,-2.43,2.69,-6.2,0.77,-8.93l1.43,-1.43c2.72,3.48,2.35,8.6,-1.1,12.05s-8.58,3.82,-12.05,1.1l1.43,-1.43c1.92,1.92,4.92,2.18,7.12,0.77l-9.88,-9.88z M12,3c-0.55,0,-1,0.45,-1,1v2c0,0.55,0.45,1,1,1s1,-0.45,1,-1V4C13,3.45,12.55,3,12,3z M12,17c-0.55,0,-1,0.45,-1,1v2c0,0.55,0.45,1,1,1s1,-0.45,1,-1v-2C13,17.45,12.55,17,12,17z M20,11h-2c-0.55,0,-1,0.45,-1,1s0.45,1,1,1h2c0.55,0,1,-0.45,1,-1S20.55,11,20,11z M6,11H4c-0.55,0,-1,0.45,-1,1s0.45,1,1,1h2c0.55,0,1,-0.45,1,-1S6.55,11,6,11z M17.66,6.34L16.24,7.76c-0.39,0.39,-0.39,1.02,0,1.41s1.02,0.39,1.41,0l1.42,-1.42c0.39,-0.39,0.39,-1.02,0,-1.41S18.05,5.95,17.66,6.34z M6.34,17.66l1.42,-1.42c0.39,-0.39,0.39,-1.02,0,-1.41s-1.02,-0.39,-1.41,0l-1.42,1.42c-0.39,0.39,-0.39,1.02,0,1.41S5.95,18.05,6.34,17.66z M17.66,17.66l-1.42,-1.42c-0.39,-0.39,-1.02,-0.39,-1.41,0c-0.39,0.39,-0.39,1.02,0,1.41l1.42,1.42c0.39,0.39,1.02,0.39,1.41,0C18.05,18.68,18.05,18.05,17.66,17.66z M6.34,6.34c-0.39,0.39,-0.39,1.02,0,1.41l1.42,1.42c0.39,0.39,1.02,0.39,1.41,0s0.39,-1.02,0,-1.41L7.76,6.34C7.36,5.95,6.73,5.95,6.34,6.34z" },
-                new TileItemViewModel { Name = "Desktop", Size = "1x2", Icon = "M21,2H3C1.9,2,1,2.9,1,4v12c0,1.1,0.9,2,2,2h7v2H8v2h8v-2h-2v-2h7c1.1,0,2,-0.9,2,-2V4C23,2.9,22.1,2,21,2z M21,14H3V4h18V14z" },
-                new TileItemViewModel { Name = "Control Panel", Size = "1x1", Icon = "M19.14,12.94c0.04,-0.3,0.06,-0.61,0.06,-0.94c0,-0.32,-0.02,-0.64,-0.07,-0.94l2.03,-1.58c0.18,-0.14,0.23,-0.41,0.12,-0.61l-1.92,-3.32c-0.12,-0.22,-0.37,-0.29,-0.59,-0.22l-2.39,0.96c-0.5,-0.38,-1.03,-0.7,-1.62,-0.94L14.4,2.81c-0.04,-0.24,-0.24,-0.41,-0.48,-0.41h-3.84c-0.24,0,-0.43,0.17,-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22,-0.08,-0.47,0,-0.59,0.22L2.74,8.87C2.62,9.08,2.68,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12c0,0.31,0.04,0.64,0.07,0.94l-2.03,1.58c-0.18,0.14,-0.23,0.41,-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39,-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44,-0.17,0.47,-0.41l0.36,-2.54c0.59,-0.24,1.13,-0.56,1.62,-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59,-0.22l1.92,-3.32c0.12,-0.22,0.07,-0.47,-0.12,-0.61L19.14,12.94z M12,15.6c-1.98,0,-3.6,-1.62,-3.6,-3.6s1.62,-3.6,3.6,-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" },
-                new TileItemViewModel { Name = "Clock", Size = "1x1", Icon = "M11.99,2C6.47,2,2,6.48,2,12s4.47,10,9.99,10C17.52,22,22,17.52,22,12S17.52,2,11.99,2z M12,20c-4.42,0,-8,-3.58,-8,-8s3.58,-8,8,-8s8,3.58,8,8S16.42,20,12,20z M12.5,7H11v6l5.25,3.15l0.75,-1.23L12.5,12.19V7z" }
-            };
-
-            foreach (var tile in defaultTiles)
-            {
-                AddTile(tile);
-            }
-
-            PackTiles();
+            LoadTiles();
         }
 
         private void AddTile(TileItemViewModel tile)
@@ -424,6 +573,13 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
             if (sender is TileItemViewModel tile)
             {
                 TileLayoutChanging?.Invoke(this, new TileLayoutTransitionEventArgs(tile));
+                
+                if (Tiles.Contains(tile))
+                {
+                    Tiles.Remove(tile);
+                    Tiles.Add(tile);
+                }
+                
                 PackTiles();
                 TileLayoutChanged?.Invoke(this, new TileLayoutTransitionEventArgs(tile));
                 return;
@@ -445,30 +601,195 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
             PackTiles();
         }
 
-        private static List<TilePlacement> ComputeLayout(IReadOnlyList<TileItemViewModel> orderedTiles)
+        private string GetTilesXmlPath()
         {
-            var placements = new List<TilePlacement>(orderedTiles.Count);
-            var occupied = new bool[GroupColumns, GroupRows];
-            int currentGroupIndex = 0;
+            var tilesDir = Path.Combine(SkyweaverDirectoryRuntime.Instance.ConfigurationDirectoryPath, "Tiles");
+            return Path.Combine(tilesDir, "Tile.xml");
+        }
 
-            foreach (var tile in orderedTiles)
+        public void LoadTiles()
+        {
+            try
             {
-                int width = Math.Clamp(tile.ColumnSpan, 1, GroupColumns);
-                int height = Math.Clamp(tile.RowSpan, 1, GroupRows);
-
-                if (!TryFindSlot(occupied, width, height, out int column, out int row))
+                var filePath = GetTilesXmlPath();
+                if (!File.Exists(filePath))
                 {
-                    currentGroupIndex++;
-                    occupied = new bool[GroupColumns, GroupRows];
-                    TryFindSlot(occupied, width, height, out column, out row);
+                    Tiles.Clear();
+                    PackTiles();
+                    return;
                 }
 
-                MarkOccupied(occupied, column, row, width, height);
-                placements.Add(new TilePlacement(tile, currentGroupIndex, column, row));
+                var doc = XDocument.Load(filePath);
+                var root = doc.Root;
+                if (root == null) return;
+
+                Tiles.Clear();
+                foreach (var tileEl in root.Elements("Tile"))
+                {
+                    var name = (string?)tileEl.Attribute("Name") ?? string.Empty;
+                    var icon = (string?)tileEl.Attribute("Icon") ?? string.Empty;
+                    var size = (string?)tileEl.Attribute("Size") ?? "1x1";
+                    var col = int.Parse((string?)tileEl.Attribute("Column") ?? "0");
+                    var row = int.Parse((string?)tileEl.Attribute("Row") ?? "0");
+                    var groupIndex = int.Parse((string?)tileEl.Attribute("GroupIndex") ?? "-1");
+                    var isLocked = bool.Parse((string?)tileEl.Attribute("IsLocked") ?? "false");
+                    var customImageSource = (string?)tileEl.Attribute("CustomImageSource");
+
+                    var tile = new TileItemViewModel
+                    {
+                        Name = name,
+                        Icon = icon,
+                        Size = size,
+                        Column = col,
+                        Row = row,
+                        GroupIndex = groupIndex,
+                        IsLocked = isLocked,
+                        CustomImageSource = customImageSource
+                    };
+
+                    AddTile(tile);
+                }
+
+                PackTiles();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading tiles: {ex.Message}");
+            }
+        }
+
+        private bool _isSaving;
+
+        public void SaveTiles()
+        {
+            if (_isSaving) return;
+            try
+            {
+                _isSaving = true;
+                var filePath = GetTilesXmlPath();
+                var tilesDir = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(tilesDir))
+                {
+                    Directory.CreateDirectory(tilesDir);
+                }
+
+                // 在持久化之前，如果自定义的图片不在Tiles文件夹，将其复制过去并更新路径
+                if (!string.IsNullOrEmpty(tilesDir))
+                {
+                    foreach (var tile in Tiles)
+                    {
+                        if (!string.IsNullOrEmpty(tile.CustomImageSource))
+                        {
+                            try
+                            {
+                                var fileFullPath = Path.GetFullPath(tile.CustomImageSource);
+                                var destFullPath = Path.GetFullPath(Path.Combine(tilesDir, Path.GetFileName(tile.CustomImageSource)));
+
+                                if (!(Path.GetDirectoryName(fileFullPath)?.Equals(tilesDir, StringComparison.OrdinalIgnoreCase) ?? false))
+                                {
+                                    var baseName = Path.GetFileNameWithoutExtension(tile.CustomImageSource);
+                                    var ext = Path.GetExtension(tile.CustomImageSource);
+                                    var finalDest = destFullPath;
+                                    int counter = 1;
+                                    while (File.Exists(finalDest))
+                                    {
+                                        finalDest = Path.Combine(tilesDir, $"{baseName}_{counter}{ext}");
+                                        counter++;
+                                    }
+
+                                    File.Copy(tile.CustomImageSource, finalDest, true);
+                                    tile.CustomImageSource = finalDest;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Error copying image: {ex.Message}");
+                            }
+                        }
+                    }
+                }
+
+                var doc = new XDocument(
+                    new XElement("Tiles",
+                        Tiles.Select(t => new XElement("Tile",
+                            new XAttribute("Name", t.Name),
+                            new XAttribute("Icon", t.Icon ?? string.Empty),
+                            new XAttribute("Size", t.Size ?? "1x1"),
+                            new XAttribute("Column", t.Column),
+                            new XAttribute("Row", t.Row),
+                            new XAttribute("GroupIndex", t.GroupIndex),
+                            new XAttribute("IsLocked", t.IsLocked),
+                            t.CustomImageSource != null ? new XAttribute("CustomImageSource", t.CustomImageSource) : null
+                        ))
+                    )
+                );
+
+                doc.Save(filePath);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error saving tiles: {ex.Message}");
+            }
+            finally
+            {
+                _isSaving = false;
+            }
+        }
+
+        private ICommand? _addTileCommand;
+        public ICommand AddTileCommand => _addTileCommand ??= new RelayCommand(() =>
+        {
+            var owner = Application.Current?.MainWindow;
+            IReadOnlyList<Skyweaver.Controls.ScheduledTasksControl.Models.ScheduledTask> allTasks;
+            try
+            {
+                allTasks = new Skyweaver.Controls.ScheduledTasksControl.Services.ScheduledTasksRepository().LoadAll();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to load scheduled tasks for tiles view: {ex.Message}");
+                allTasks = Array.Empty<Skyweaver.Controls.ScheduledTasksControl.Models.ScheduledTask>();
+            }
+            var dialog = new AddTileUniversalDialog(allTasks);
+
+            if (owner != null && owner != dialog)
+            {
+                dialog.Owner = owner;
             }
 
-            return placements;
-        }
+            if (dialog.ShowDialog() == true)
+            {
+                TileItemViewModel? newTile = null;
+                if (dialog.IsLiveSessionSelected)
+                {
+                    newTile = new TileItemViewModel
+                    {
+                        Name = "Live Session",
+                        Size = "1x2",
+                        Icon = "pack://application:,,,/Resources/NewNodeGraphAlt.png",
+                        GroupIndex = -1
+                    };
+                }
+                else if (dialog.SelectedTask != null)
+                {
+                    newTile = new TileItemViewModel
+                    {
+                        Name = dialog.SelectedTask.Name,
+                        Size = "1x1",
+                        Icon = "pack://application:,,,/Resources/Default.png",
+                        GroupIndex = -1
+                    };
+                }
+
+                if (newTile != null)
+                {
+                    AddTile(newTile);
+                    PackTiles();
+                }
+            }
+        });
+
+
 
         private static bool TryFindSlot(bool[,] occupied, int width, int height, out int column, out int row)
         {
@@ -492,6 +813,11 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
 
         private static bool IsFree(bool[,] occupied, int column, int row, int width, int height)
         {
+            if (column < 0 || row < 0 || column + width > GroupColumns || row + height > GroupRows)
+            {
+                return false;
+            }
+
             for (int r = row; r < row + height; r++)
             {
                 for (int c = column; c < column + width; c++)
@@ -508,6 +834,11 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
 
         private static void MarkOccupied(bool[,] occupied, int column, int row, int width, int height)
         {
+            if (column < 0 || row < 0 || column + width > GroupColumns || row + height > GroupRows)
+            {
+                return;
+            }
+
             for (int r = row; r < row + height; r++)
             {
                 for (int c = column; c < column + width; c++)
@@ -625,7 +956,6 @@ namespace Skyweaver.PageControls.Tiles.ViewModels
             }
         }
 
-        private readonly record struct TilePlacement(TileItemViewModel Tile, int GroupIndex, int Column, int Row);
     }
 
     public sealed class TileLayoutTransitionEventArgs : EventArgs

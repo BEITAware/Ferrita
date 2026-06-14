@@ -35,8 +35,8 @@ namespace Skyweaver.PageControls.Tiles.Views
         private const double DropPadding = 40.0;
         private const double DragAutoScrollEdge = 54.0;
         private const double DragAutoScrollStep = 28.0;
-        private const double DragAvoidanceRadius = 218.0;
-        private const double DragAvoidanceMaxOffset = 30.0;
+        private const double DragAvoidanceRadius = 600.0;
+        private const double DragAvoidanceMaxOffset = 45.0;
         private const double ResizeAvoidanceRadius = 240.0;
         private const double ResizeAvoidanceMaxOffset = 26.0;
 
@@ -415,6 +415,10 @@ namespace Skyweaver.PageControls.Tiles.Views
             ResetPresenterTransform(_draggedPresenter);
             CaptureMouse();
             _draggedTile.IsDragging = true;
+            if (DataContext is TilesPageViewModel vm)
+            {
+                vm.IsAnyTileDragging = true;
+            }
             UpdateDragAvoidance();
             ClearPendingDrag();
         }
@@ -527,6 +531,10 @@ namespace Skyweaver.PageControls.Tiles.Views
             _draggedTile = null;
             _draggedPresenter = null;
             _isDraggingActive = false;
+            if (DataContext is TilesPageViewModel vm)
+            {
+                vm.IsAnyTileDragging = false;
+            }
             _hoverGroupIndex = -1;
             _hoverColumn = -1;
             _hoverRow = -1;
@@ -780,6 +788,9 @@ namespace Skyweaver.PageControls.Tiles.Views
             transform.BeginAnimation(TranslateTransform.YProperty, null);
             transform.X = x;
             transform.Y = y;
+
+            bool isAvoiding = Math.Abs(x) > 0.01 || Math.Abs(y) > 0.01;
+            UpdateLockVisualState(presenter, isAvoiding);
         }
 
         private static void AnimatePresenterOffset(ContentPresenter presenter, double targetX, double targetY, TimeSpan duration)
@@ -825,10 +836,32 @@ namespace Skyweaver.PageControls.Tiles.Views
                 {
                     From = fromY,
                     To = targetY,
-                    Duration = duration,
                     EasingFunction = createEasingFunction(),
                     FillBehavior = FillBehavior.Stop
                 });
+
+            bool isAvoiding = Math.Abs(targetX) > 0.01 || Math.Abs(targetY) > 0.01;
+            UpdateLockVisualState(presenter, isAvoiding);
+        }
+
+        private static void UpdateLockVisualState(ContentPresenter presenter, bool isAvoiding)
+        {
+            if (presenter.DataContext is TileItemViewModel tile)
+            {
+                var lockVisual = FindVisualChildByName<FrameworkElement>(presenter, "LockVisual");
+                if (lockVisual != null)
+                {
+                    double targetOpacity = (tile.IsLocked && isAvoiding) ? 1.0 : 0.0;
+                    if (Math.Abs(targetOpacity - lockVisual.Opacity) > 0.01 || lockVisual.HasAnimatedProperties)
+                    {
+                        lockVisual.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation
+                        {
+                            To = targetOpacity,
+                            Duration = TimeSpan.FromMilliseconds(isAvoiding ? 150 : 250)
+                        });
+                    }
+                }
+            }
         }
 
         private static Vector CalculateAvoidanceOffset(Rect sourceRect, Rect targetRect, double radius, double maxOffset)
@@ -892,6 +925,14 @@ namespace Skyweaver.PageControls.Tiles.Views
             var groupGrid = FindHoveredGroupGrid(mouseInViewer, out groupIndex);
             if (groupGrid == null)
             {
+                if (DataContext is TilesPageViewModel vm)
+                {
+                    groupIndex = vm.TileGroups.Count;
+                    column = 0;
+                    row = 0;
+                    return true;
+                }
+                
                 column = -1;
                 row = -1;
                 return false;

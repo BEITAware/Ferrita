@@ -11,9 +11,9 @@ namespace Skyweaver.Controls.ScheduledTasksControl.Services
 {
     public sealed class ScheduledTasksRepository
     {
-        private readonly object _syncRoot = new();
+        private static readonly object _syncRoot = new();
 
-        public string ConfigurationDirectoryPath => SkyweaverDirectoryDefaults.DefaultConfigurationDirectoryPath;
+        public string ConfigurationDirectoryPath => SkyweaverDirectoryRuntime.Instance.ConfigurationDirectoryPath;
 
         public string ConfigurationFilePath => Path.Combine(ConfigurationDirectoryPath, "ScheduledTasks.xml");
 
@@ -28,34 +28,44 @@ namespace Skyweaver.Controls.ScheduledTasksControl.Services
                     return Array.Empty<ScheduledTask>();
                 }
 
-                try
+                const int maxRetries = 5;
+                for (int i = 0; i < maxRetries; i++)
                 {
-                    var document = XDocument.Load(ConfigurationFilePath);
-                    var root = document.Root;
-                    if (root == null)
+                    try
                     {
-                        return Array.Empty<ScheduledTask>();
-                    }
+                        var document = XDocument.Load(ConfigurationFilePath);
+                        var root = document.Root;
+                        if (root == null)
+                        {
+                            return Array.Empty<ScheduledTask>();
+                        }
 
-                    var tasks = new List<ScheduledTask>();
-                    foreach (var taskElement in root.Elements("Task"))
+                        var tasks = new List<ScheduledTask>();
+                        foreach (var taskElement in root.Elements("Task"))
+                        {
+                            try
+                            {
+                                tasks.Add(ParseTask(taskElement));
+                            }
+                            catch
+                            {
+                                // 忽略单个损坏的任务项
+                            }
+                        }
+
+                        return tasks.OrderByDescending(t => t.CreatedAt).ToList();
+                    }
+                    catch (Exception ex) when (ex is IOException || ex is System.Xml.XmlException)
                     {
-                        try
+                        if (i == maxRetries - 1)
                         {
-                            tasks.Add(ParseTask(taskElement));
+                            throw; // 达到最大重试次数，将异常抛出，防止默默返回空数据导致文件被清空
                         }
-                        catch
-                        {
-                            // 忽略单个损坏的任务项
-                        }
+                        System.Threading.Thread.Sleep(50);
                     }
+                }
 
-                    return tasks.OrderByDescending(t => t.CreatedAt).ToList();
-                }
-                catch
-                {
-                    return Array.Empty<ScheduledTask>();
-                }
+                return Array.Empty<ScheduledTask>();
             }
         }
 
@@ -71,7 +81,35 @@ namespace Skyweaver.Controls.ScheduledTasksControl.Services
                     new XElement("ScheduledTasks",
                         tasks.Select(CreateTaskElement)));
 
-                document.Save(ConfigurationFilePath);
+                string tempFilePath = ConfigurationFilePath + ".tmp";
+                try
+                {
+                    document.Save(tempFilePath);
+                    
+                    if (File.Exists(ConfigurationFilePath))
+                    {
+                        File.Replace(tempFilePath, ConfigurationFilePath, null, true);
+                    }
+                    else
+                    {
+                        File.Move(tempFilePath, ConfigurationFilePath);
+                    }
+                }
+                catch
+                {
+                    try
+                    {
+                        if (File.Exists(tempFilePath))
+                        {
+                            File.Delete(tempFilePath);
+                        }
+                    }
+                    catch
+                    {
+                        // 吞掉清理临时文件失败的异常
+                    }
+                    throw;
+                }
             }
         }
 
