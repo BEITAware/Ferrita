@@ -53,42 +53,7 @@ namespace Ferrita.Services.AgentLoop
             return new AgentLoopTokenCountResult(tokenCount, modelKey, hash, "LLM API");
         }
 
-        public static int EstimateMessages(IReadOnlyList<LanguageModelChatMessage> messages)
-        {
-            ArgumentNullException.ThrowIfNull(messages);
 
-            if (messages.Count == 0)
-            {
-                return 0;
-            }
-
-            var total = 0;
-            foreach (var message in messages)
-            {
-                total += 4;
-                total += EstimateText(message.Role.ToString());
-                total += EstimateText(message.AuthorName);
-                foreach (var block in message.ContentBlocks)
-                {
-                    total += EstimateText(block.Content);
-                    total += EstimateText(block.ResourcePath);
-                    total += EstimateText(block.MediaType);
-                    if (block.Data?.Length > 0)
-                    {
-                        total += Math.Max(1, block.Data.Length / 1024);
-                    }
-                }
-            }
-
-            return Math.Max(1, total);
-        }
-
-        public static int EstimateText(string? content)
-        {
-            return string.IsNullOrWhiteSpace(content)
-                ? 0
-                : Math.Max(1, (int)Math.Ceiling(content.Length / 4.0d));
-        }
 
         private static string BuildModelKey(LanguageModelDefinition model)
         {

@@ -44,7 +44,8 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
                         EnableImageInput = ParseBool((string?)element.Element("EnableImageInput"), true),
                         EnableAudioInput = ParseBool((string?)element.Element("EnableAudioInput"), true),
                         EnableVideoInput = ParseBool((string?)element.Element("EnableVideoInput"), true),
-                        EnableDocumentInput = ParseBool((string?)element.Element("EnableDocumentInput"), true)
+                        EnableDocumentInput = ParseBool((string?)element.Element("EnableDocumentInput"), true),
+                        EnableUniversalToolCalling = ParseBool((string?)element.Element("EnableUniversalToolCalling"), false)
                     })
                     .Select(definition =>
                     {
@@ -76,6 +77,7 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
                             new XElement("EnableAudioInput", definition.EnableAudioInput),
                             new XElement("EnableVideoInput", definition.EnableVideoInput),
                             new XElement("EnableDocumentInput", definition.EnableDocumentInput),
+                            new XElement("EnableUniversalToolCalling", definition.EnableUniversalToolCalling),
                             SaveInterfaceSettings(definition.InterfaceSettings)))));
 
                 document.Save(ConfigurationFilePath);
@@ -114,7 +116,8 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
             return interfaceType.Trim().ToUpperInvariant() switch
             {
                 "GOOGLE" => LoadGoogleSettings(element, settingsElement),
-                "MEAI" => LoadMeaiSettings(element, settingsElement),
+                "OPENAI" or "OPENAI CHAT COMPLETIONS API" => LoadOpenAiSettings(element, settingsElement, isResponsesApi: false),
+                "OPENAI RESPONSES API" => LoadOpenAiSettings(element, settingsElement, isResponsesApi: true),
                 _ => throw new InvalidDataException($"Unsupported interface type configuration: {interfaceType}")
             };
         }
@@ -142,32 +145,33 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
             };
         }
 
-        private static MeaiLanguageModelSettings LoadMeaiSettings(XElement legacyElement, XElement? settingsElement)
+        private static OpenAiLanguageModelSettings LoadOpenAiSettings(XElement legacyElement, XElement? settingsElement, bool isResponsesApi = false)
         {
             XElement ValueSource(string name) => settingsElement?.Element(name) ?? legacyElement.Element(name) ?? new XElement(name);
 
-            return new MeaiLanguageModelSettings
-            {
-                ModelId = ((string?)ValueSource("ModelId") ?? string.Empty).Trim(),
-                ApiKey = ((string?)ValueSource("ApiKey") ?? string.Empty).Trim(),
-                BaseUrl = ((string?)ValueSource("BaseUrl") ?? string.Empty).Trim(),
-                UseTemperature = ParseBool((string?)ValueSource("UseTemperature")),
-                Temperature = ParseDecimal((string?)ValueSource("Temperature"), 1.0m),
-                UseTopP = ParseBool((string?)ValueSource("UseTopP")),
-                TopP = ParseDecimal((string?)ValueSource("TopP"), 1.0m),
-                UseMaxOutputTokens = ParseBool((string?)ValueSource("UseMaxOutputTokens")),
-                MaxOutputTokens = ParseInt((string?)ValueSource("MaxOutputTokens"), 2048),
-                UsePresencePenalty = ParseBool((string?)ValueSource("UsePresencePenalty")),
-                PresencePenalty = ParseDecimal((string?)ValueSource("PresencePenalty"), 0m),
-                UseFrequencyPenalty = ParseBool((string?)ValueSource("UseFrequencyPenalty")),
-                FrequencyPenalty = ParseDecimal((string?)ValueSource("FrequencyPenalty"), 0m),
-                UseSeed = ParseBool((string?)ValueSource("UseSeed")),
-                Seed = ParseLong((string?)ValueSource("Seed"), 0L),
-                UseReasoningEffort = ParseBool((string?)ValueSource("UseReasoningEffort")),
-                ReasoningEffort = ((string?)ValueSource("ReasoningEffort") ?? "Medium").Trim(),
-                UseReasoningOutput = ParseBool((string?)ValueSource("UseReasoningOutput")),
-                ReasoningOutput = ((string?)ValueSource("ReasoningOutput") ?? "Full").Trim()
-            };
+            OpenAiLanguageModelSettings settings = isResponsesApi ? new OpenAiResponsesLanguageModelSettings() : new OpenAiLanguageModelSettings();
+
+            settings.ModelId = ((string?)ValueSource("ModelId") ?? string.Empty).Trim();
+            settings.ApiKey = ((string?)ValueSource("ApiKey") ?? string.Empty).Trim();
+            settings.BaseUrl = ((string?)ValueSource("BaseUrl") ?? string.Empty).Trim();
+            settings.UseTemperature = ParseBool((string?)ValueSource("UseTemperature"));
+            settings.Temperature = ParseDecimal((string?)ValueSource("Temperature"), 1.0m);
+            settings.UseTopP = ParseBool((string?)ValueSource("UseTopP"));
+            settings.TopP = ParseDecimal((string?)ValueSource("TopP"), 1.0m);
+            settings.UseMaxOutputTokens = ParseBool((string?)ValueSource("UseMaxOutputTokens"));
+            settings.MaxOutputTokens = ParseInt((string?)ValueSource("MaxOutputTokens"), 2048);
+            settings.UsePresencePenalty = ParseBool((string?)ValueSource("UsePresencePenalty"));
+            settings.PresencePenalty = ParseDecimal((string?)ValueSource("PresencePenalty"), 0m);
+            settings.UseFrequencyPenalty = ParseBool((string?)ValueSource("UseFrequencyPenalty"));
+            settings.FrequencyPenalty = ParseDecimal((string?)ValueSource("FrequencyPenalty"), 0m);
+            settings.UseSeed = ParseBool((string?)ValueSource("UseSeed"));
+            settings.Seed = ParseLong((string?)ValueSource("Seed"), 0L);
+            settings.UseReasoningEffort = ParseBool((string?)ValueSource("UseReasoningEffort"));
+            settings.ReasoningEffort = ((string?)ValueSource("ReasoningEffort") ?? "Medium").Trim();
+            settings.UseReasoningOutput = ParseBool((string?)ValueSource("UseReasoningOutput"));
+            settings.ReasoningOutput = ((string?)ValueSource("ReasoningOutput") ?? "Full").Trim();
+
+            return settings;
         }
 
         private static XElement SaveInterfaceSettings(LanguageModelInterfaceSettings settings)
@@ -190,27 +194,27 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
                     new XElement("UseThinkingBudget", google.UseThinkingBudget),
                     new XElement("ThinkingBudget", google.ThinkingBudget),
                     new XElement("IncludeThoughts", google.IncludeThoughts)),
-                MeaiLanguageModelSettings meai => new XElement("InterfaceSettings",
-                    new XAttribute("Type", meai.InterfaceType),
-                    new XElement("ModelId", meai.ModelId),
-                    new XElement("ApiKey", meai.ApiKey),
-                    new XElement("BaseUrl", meai.BaseUrl),
-                    new XElement("UseTemperature", meai.UseTemperature),
-                    new XElement("Temperature", meai.Temperature),
-                    new XElement("UseTopP", meai.UseTopP),
-                    new XElement("TopP", meai.TopP),
-                    new XElement("UseMaxOutputTokens", meai.UseMaxOutputTokens),
-                    new XElement("MaxOutputTokens", meai.MaxOutputTokens),
-                    new XElement("UsePresencePenalty", meai.UsePresencePenalty),
-                    new XElement("PresencePenalty", meai.PresencePenalty),
-                    new XElement("UseFrequencyPenalty", meai.UseFrequencyPenalty),
-                    new XElement("FrequencyPenalty", meai.FrequencyPenalty),
-                    new XElement("UseSeed", meai.UseSeed),
-                    new XElement("Seed", meai.Seed),
-                    new XElement("UseReasoningEffort", meai.UseReasoningEffort),
-                    new XElement("ReasoningEffort", meai.ReasoningEffort),
-                    new XElement("UseReasoningOutput", meai.UseReasoningOutput),
-                    new XElement("ReasoningOutput", meai.ReasoningOutput)),
+                OpenAiLanguageModelSettings openai => new XElement("InterfaceSettings",
+                    new XAttribute("Type", openai.InterfaceType),
+                    new XElement("ModelId", openai.ModelId),
+                    new XElement("ApiKey", openai.ApiKey),
+                    new XElement("BaseUrl", openai.BaseUrl),
+                    new XElement("UseTemperature", openai.UseTemperature),
+                    new XElement("Temperature", openai.Temperature),
+                    new XElement("UseTopP", openai.UseTopP),
+                    new XElement("TopP", openai.TopP),
+                    new XElement("UseMaxOutputTokens", openai.UseMaxOutputTokens),
+                    new XElement("MaxOutputTokens", openai.MaxOutputTokens),
+                    new XElement("UsePresencePenalty", openai.UsePresencePenalty),
+                    new XElement("PresencePenalty", openai.PresencePenalty),
+                    new XElement("UseFrequencyPenalty", openai.UseFrequencyPenalty),
+                    new XElement("FrequencyPenalty", openai.FrequencyPenalty),
+                    new XElement("UseSeed", openai.UseSeed),
+                    new XElement("Seed", openai.Seed),
+                    new XElement("UseReasoningEffort", openai.UseReasoningEffort),
+                    new XElement("ReasoningEffort", openai.ReasoningEffort),
+                    new XElement("UseReasoningOutput", openai.UseReasoningOutput),
+                    new XElement("ReasoningOutput", openai.ReasoningOutput)),
                 _ => throw new InvalidDataException($"不支持的接口类型配置：{settings.InterfaceType}")
             };
         }

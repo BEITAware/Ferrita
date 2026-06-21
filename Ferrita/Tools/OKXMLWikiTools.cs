@@ -33,7 +33,17 @@ namespace Ferrita.Tools
                     "WikiName",
                     "要创建的 Wiki 的名称（如 'tech_wiki'）。",
                     FerritaToolParameterType.String,
-                    isRequired: true)
+                    isRequired: true),
+                new FerritaToolParameterDefinition(
+                    "Description",
+                    "Wiki 的简介描述（可选）。",
+                    FerritaToolParameterType.String,
+                    isRequired: false),
+                new FerritaToolParameterDefinition(
+                    "Author",
+                    "Wiki 的作者（可选）。",
+                    FerritaToolParameterType.String,
+                    isRequired: false)
             ],
             defaultAgentPermission: FerritaToolDefaultAgentPermission.Allow);
 
@@ -57,10 +67,13 @@ namespace Ferrita.Tools
                     return FerritaToolResult.Failure("WikiName 参数缺失或为空。");
                 }
 
+                string? description = arguments.GetString("Description")?.Trim();
+                string? author = arguments.GetString("Author")?.Trim();
+
                 string knowledgeDirPath = OKXMLWikiToolHelpers.GetKnowledgeDirectoryPath();
                 string wikiRootPath = Path.Combine(knowledgeDirPath, wikiName);
 
-                await using var manager = new OKWikiManager(wikiRootPath, wikiName);
+                await using var manager = new OKWikiManager(wikiRootPath, wikiName, description: description, author: author);
                 await manager.InitializeAsync(cancellationToken);
 
                 return FerritaToolResult.Success($"Wiki '{wikiName}' 创建成功。目录路径: {wikiRootPath}");
@@ -1137,7 +1150,7 @@ namespace Ferrita.Tools
 
         public static (string WikiName, string? PageName, string? Version) ParseWikiUrl(string url)
         {
-            var match = Regex.Match(url, @"ok\.([a-zA-Z0-9_-]+)\.wiki(?:\/([a-zA-Z0-9_-]+))?(?:_([0-9]+(?:\.[0-9]+)*))?", RegexOptions.IgnoreCase);
+            var match = Regex.Match(url, @"^ok\.([\p{L}\p{N}_-]+)\.wiki(?:\/([\p{L}\p{N}_-]+?))?(?:_([0-9]+(?:\.[0-9]+)*))?$", RegexOptions.IgnoreCase);
             if (!match.Success)
             {
                 throw new ArgumentException($"无效的 Wiki URL 格式：'{url}'。应当符合 'ok.[wikiName].wiki' 或者是 'ok.[wikiName].wiki/[pageName]_[version]'。");
@@ -1205,7 +1218,7 @@ namespace Ferrita.Tools
 
         public static (string WikiName, string PageName, string? Version) ParsePageUrl(string url)
         {
-            var match = Regex.Match(url, @"ok\.([a-zA-Z0-9_-]+)\.wiki\/([a-zA-Z0-9_-]+)(?:_([0-9]+(?:\.[0-9]+)*))?", RegexOptions.IgnoreCase);
+            var match = Regex.Match(url, @"^ok\.([\p{L}\p{N}_-]+)\.wiki\/([\p{L}\p{N}_-]+?)(?:_([0-9]+(?:\.[0-9]+)*))?$", RegexOptions.IgnoreCase);
             if (!match.Success)
             {
                 throw new ArgumentException($"无效的页面 URL 格式：'{url}'。应当符合 'ok.[wikiName].wiki/[pageName]_[version]' 或者是 'ok.[wikiName].wiki/[pageName]'。");
@@ -1285,7 +1298,7 @@ namespace Ferrita.Tools
                 if (otherPageName.Equals(pageName, StringComparison.OrdinalIgnoreCase)) continue;
 
                 string mdText = await File.ReadAllTextAsync(filePath, ct);
-                string pattern = $@"ok\.[a-zA-Z0-9_-]+\.wiki\/{Regex.Escape(pageName)}_{Regex.Escape(oldVersion)}(?![0-9.])";
+                string pattern = $@"ok\.[\p{{L}}\p{{N}}_-]+\.wiki\/{Regex.Escape(pageName)}_{Regex.Escape(oldVersion)}(?![0-9.])";
 
                 if (Regex.IsMatch(mdText, pattern))
                 {

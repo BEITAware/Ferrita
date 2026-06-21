@@ -3227,4 +3227,6 @@
     <system:String x:Key="Tool.OverwriteLateralFS.Param.NodeName.Description">上書きマージするLateralFSノード名。</system:String>
     <system:String x:Key="Tool.OverwriteLateralFS.Param.NodeName.Label">ノード名</system:String>
     <system:String x:Key="Tool.OverwriteLateralFS.Param.NodeName.EmptyText">デフォルトで最新 of セッション所有ノード</system:String>
+    <system:String x:Key="Tabs.KnowledgeBrowser.Title">ナレッジブラウザ</system:String>
+    <system:String x:Key="Tabs.KnowledgeBrowser.Description">ナレッジベース内のナレッジファイルを閲覧および管理します。</system:String>
 </ResourceDictionary>

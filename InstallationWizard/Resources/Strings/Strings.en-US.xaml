@@ -89,17 +89,17 @@ To the greatest extent permitted by, but not in contravention of, applicable law
     <system:String x:Key="LM_Google_UseThinkingLevel">Use Thinking Level</system:String>
     <system:String x:Key="LM_Google_UseThinkingBudget">Use Thinking Budget</system:String>
     <system:String x:Key="LM_Google_IncludeThoughts">Include Thoughts</system:String>
-    <system:String x:Key="LM_Meai_ModelId">Model ID:</system:String>
-    <system:String x:Key="LM_Meai_ApiKey">API Key:</system:String>
-    <system:String x:Key="LM_Meai_BaseUrl">Base URL:</system:String>
-    <system:String x:Key="LM_Meai_UseTemp">Use Temperature</system:String>
-    <system:String x:Key="LM_Meai_UseTopP">Use Top P</system:String>
-    <system:String x:Key="LM_Meai_UseMaxTokens">Use Max Output Tokens</system:String>
-    <system:String x:Key="LM_Meai_UsePresence">Use Presence Penalty</system:String>
-    <system:String x:Key="LM_Meai_UseFrequency">Use Frequency Penalty</system:String>
-    <system:String x:Key="LM_Meai_UseSeed">Use Seed</system:String>
-    <system:String x:Key="LM_Meai_UseReasoningEffort">Use Reasoning Effort</system:String>
-    <system:String x:Key="LM_Meai_UseReasoningOutput">Use Reasoning Output</system:String>
+    <system:String x:Key="LM_OpenAi_ModelId">Model ID:</system:String>
+    <system:String x:Key="LM_OpenAi_ApiKey">API Key:</system:String>
+    <system:String x:Key="LM_OpenAi_BaseUrl">Base URL:</system:String>
+    <system:String x:Key="LM_OpenAi_UseTemp">Use Temperature</system:String>
+    <system:String x:Key="LM_OpenAi_UseTopP">Use Top P</system:String>
+    <system:String x:Key="LM_OpenAi_UseMaxTokens">Use Max Output Tokens</system:String>
+    <system:String x:Key="LM_OpenAi_UsePresence">Use Presence Penalty</system:String>
+    <system:String x:Key="LM_OpenAi_UseFrequency">Use Frequency Penalty</system:String>
+    <system:String x:Key="LM_OpenAi_UseSeed">Use Seed</system:String>
+    <system:String x:Key="LM_OpenAi_UseReasoningEffort">Use Reasoning Effort</system:String>
+    <system:String x:Key="LM_OpenAi_UseReasoningOutput">Use Reasoning Output</system:String>
 
     <!-- Capability Layers sub-page -->
     <system:String x:Key="Layer_SubStepTitle">Capability Layers</system:String>

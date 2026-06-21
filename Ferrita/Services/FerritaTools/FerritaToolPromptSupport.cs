@@ -32,10 +32,28 @@ namespace Ferrita.Services.FerritaTools
         string Name,
         string Description,
         IReadOnlyList<FerritaToolParameterDefinition> Parameters,
-        bool RequiresHostConfirmation);
+        bool RequiresHostConfirmation,
+        string? FewShots = null);
 
     public static class FerritaToolPromptSupport
     {
+        public static (string Description, string? FewShots) SplitFewShots(string description)
+        {
+            if (string.IsNullOrEmpty(description)) return (string.Empty, null);
+            
+            var markers = new[] { "\nFew-shots:", "\nFew-shot:", "\n调用示例：", "\n调用格式：", "\n示例：", "\n格式：" };
+            foreach (var marker in markers)
+            {
+                int index = description.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+                if (index >= 0)
+                {
+                    var cleanDesc = description.Substring(0, index).Trim();
+                    var fewShots = description.Substring(index).Trim();
+                    return (cleanDesc, fewShots);
+                }
+            }
+            return (description, null);
+        }
         public static string ResolvePromptDescription(
             FerritaToolRegistration registration,
             IReadOnlyList<FerritaToolKitDefinition> availableToolKits)

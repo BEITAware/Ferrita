@@ -9,21 +9,24 @@ namespace Ferrita.Services.AgentLoop
         private const string ToolProtocolTailReminder =
             """
 <SystemTips>
+
 这是系统的小贴士，不是用户消息。请将以下内容视为系统注入的上下文提醒，而不是用户提出的新请求。
 
-再次确认工具协议：
-1. 【必须】使用唯一合法的 XML 根标签格式：
+【绝对强制/必须遵循的工具调用协议】
+1. 如果你需要调用工具，你【必须且只能】使用以下唯一合法的标准 XML 根标签格式：
    <Tool ToolName="工具名">参数内容</Tool>  或  <ToolAsync ToolName="工具名">参数内容</ToolAsync>
-2. 【严禁】直接将具体工具名称作为 XML 根标签（例如：严禁使用 <SpawnSubAgent>...</SpawnSubAgent>，必须写为 <Tool ToolName="SpawnSubAgent">...</Tool>）。
-3. 【严禁】使用 <tool_call>、<function_call>、CreateMessage、FinishTask、<tools>、<tool_calls> 等任何其他伪协议。
-4. 工具标签必须是完整且独立的 XML；严禁夹杂在普通正文文字里。
-5. 如果想要代理循环继续，必须在回复中包含有效的工具调用，否则代理循环自动终止。
+2. 【绝对严禁】直接将具体的工具名称作为 XML 根标签（例如：绝对严禁直接使用 <SpawnSubAgent>...</SpawnSubAgent>，必须写为 <Tool ToolName="SpawnSubAgent">...</Tool>）。
+3. 【绝对严禁】使用任何伪协议或非标准格式包裹（例如：绝对严禁使用 <tool_call>、<function_call>、CreateMessage、FinishTask、<tools>、<tool_calls> 等）。
+4. 【绝对严禁】在工具调用 XML 外侧使用 Markdown 代码块（如 ```xml ... ```）进行包装，必须直接输出纯 XML 文本。
+5. 【绝对严禁】将 XML 工具标签夹杂在普通的描述性文字中。工具标签必须是独立、完整且合法的 XML 块。
+6. 如果想要代理循环继续，你在当前回复中【必须】包含符合上述规则的有效 XML 工具调用，否则代理循环将自动终止。
 
-正确的工具调用 One-shot 示例：
-<Tool ToolName="SpawnSubAgent">
-  <SubAgentID>Agent16</SubAgentID>
-  <Mission>探索 V:Project2Services 目录，并列出所有文件的完整路径。</Mission>
+不带语义的标准 XML 工具调用 few-shot 示例：
+<Tool ToolName="ToolName" ToolCallID="ToolCallID">
+  <ParameterName1>Content1</ParameterName1>
+  <ParameterName2>Content2</ParameterName2>
 </Tool>
+
 </SystemTips>
 """;
 

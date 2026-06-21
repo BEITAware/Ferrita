@@ -588,7 +588,7 @@ namespace Ferrita.Services.ChatSession
                 runtimeEvent,
                 ChatSessionTranscriptEntryKind.ContextCompression,
                 ChatSessionParticipantRole.Runtime,
-                TranscriptVisibility.DebugOnly,
+                TranscriptVisibility.Visible,
                 TranscriptLlmPolicy.Summarize,
                 TranscriptHandoffPolicy.Summary);
             entry.Blocks.Add(new ChatSessionTranscriptBlock

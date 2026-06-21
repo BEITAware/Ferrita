@@ -90,34 +90,67 @@ namespace Ferrita.Controls.AgentConfigurationControl.Services
             Exception? lastError = null;
             var failureMessages = new List<string>();
 
-            foreach (var candidate in plan.Candidates)
+            int errorCount = 0;
+            const int maxRetries = 10;
+
+            while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                failureMessages.Clear();
+                lastError = null;
+                bool shouldRetryWholeLevel = false;
 
-                if (!candidate.InterfaceSettings.IsFullyConfigured)
+                foreach (var candidate in plan.Candidates)
                 {
-                    failureMessages.Add(LF("AgentLanguageModelResolver.Failure.InterfaceIncompleteFormat", "{0}：接口配置不完整", GetLanguageModelDisplayName(candidate)));
-                    continue;
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    if (!candidate.InterfaceSettings.IsFullyConfigured)
+                    {
+                        failureMessages.Add(LF("AgentLanguageModelResolver.Failure.InterfaceIncompleteFormat", "{0}：接口配置不完整", GetLanguageModelDisplayName(candidate)));
+                        continue;
+                    }
+
+                    try
+                    {
+                        return await operationAsync(candidate, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        lastError = ex;
+                        failureMessages.Add(LF("AgentLanguageModelResolver.Failure.ModelErrorFormat", "{0}：{1}", GetLanguageModelDisplayName(candidate), ex.Message));
+
+                        if (IsContextOverflowError(ex))
+                        {
+                            continue;
+                        }
+
+                        shouldRetryWholeLevel = true;
+                    }
                 }
 
-                try
+                if (shouldRetryWholeLevel)
                 {
-                    return await operationAsync(candidate, cancellationToken).ConfigureAwait(false);
+                    errorCount++;
+                    if (errorCount <= maxRetries)
+                    {
+                        double delaySeconds = Math.Ceiling(Math.Pow(1.4, errorCount));
+                        await Task.Delay(TimeSpan.FromSeconds(delaySeconds), cancellationToken).ConfigureAwait(false);
+                        continue;
+                    }
                 }
-                catch (Exception ex)
-                {
-                    lastError = ex;
-                    failureMessages.Add(LF("AgentLanguageModelResolver.Failure.ModelErrorFormat", "{0}：{1}", GetLanguageModelDisplayName(candidate), ex.Message));
-                }
+
+                var failureText = failureMessages.Count == 0
+                    ? L("AgentLanguageModelResolver.Failure.NoCallableCandidates", "没有可调用的候选语言模型。")
+                    : LF("AgentLanguageModelResolver.Failure.AttemptedInOrderFormat", "已按顺序尝试：{0}", JoinMessages(failureMessages));
+
+                throw new InvalidOperationException(
+                    LF("AgentLanguageModelResolver.Error.AgentCapabilityLayerNoAvailableModelFormat", "代理“{0}”绑定的功能层级“{1}”没有找到无错误可用的语言模型。{2}", agent.DisplayNameOrFallback, plan.SelectionDisplayName, failureText),
+                    lastError);
             }
-
-            var failureText = failureMessages.Count == 0
-                ? L("AgentLanguageModelResolver.Failure.NoCallableCandidates", "没有可调用的候选语言模型。")
-                : LF("AgentLanguageModelResolver.Failure.AttemptedInOrderFormat", "已按顺序尝试：{0}", JoinMessages(failureMessages));
-
-            throw new InvalidOperationException(
-                LF("AgentLanguageModelResolver.Error.AgentCapabilityLayerNoAvailableModelFormat", "代理“{0}”绑定的功能层级“{1}”没有找到无错误可用的语言模型。{2}", agent.DisplayNameOrFallback, plan.SelectionDisplayName, failureText),
-                lastError);
         }
 
         public async Task<T> ExecuteCapabilityLayerWithFallbackAsync<T>(
@@ -142,34 +175,67 @@ namespace Ferrita.Controls.AgentConfigurationControl.Services
             Exception? lastError = null;
             var failureMessages = new List<string>();
 
-            foreach (var candidate in plan.Cands)
+            int errorCount = 0;
+            const int maxRetries = 10;
+
+            while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                failureMessages.Clear();
+                lastError = null;
+                bool shouldRetryWholeLevel = false;
 
-                if (!candidate.InterfaceSettings.IsFullyConfigured)
+                foreach (var candidate in plan.Cands)
                 {
-                    failureMessages.Add(LF("AgentLanguageModelResolver.Failure.InterfaceIncompleteFormat", "{0}：接口配置不完整", GetLanguageModelDisplayName(candidate)));
-                    continue;
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    if (!candidate.InterfaceSettings.IsFullyConfigured)
+                    {
+                        failureMessages.Add(LF("AgentLanguageModelResolver.Failure.InterfaceIncompleteFormat", "{0}：接口配置不完整", GetLanguageModelDisplayName(candidate)));
+                        continue;
+                    }
+
+                    try
+                    {
+                        return await operationAsync(candidate, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        lastError = ex;
+                        failureMessages.Add(LF("AgentLanguageModelResolver.Failure.ModelErrorFormat", "{0}：{1}", GetLanguageModelDisplayName(candidate), ex.Message));
+
+                        if (IsContextOverflowError(ex))
+                        {
+                            continue;
+                        }
+
+                        shouldRetryWholeLevel = true;
+                    }
                 }
 
-                try
+                if (shouldRetryWholeLevel)
                 {
-                    return await operationAsync(candidate, cancellationToken).ConfigureAwait(false);
+                    errorCount++;
+                    if (errorCount <= maxRetries)
+                    {
+                        double delaySeconds = Math.Ceiling(Math.Pow(1.4, errorCount));
+                        await Task.Delay(TimeSpan.FromSeconds(delaySeconds), cancellationToken).ConfigureAwait(false);
+                        continue;
+                    }
                 }
-                catch (Exception ex)
-                {
-                    lastError = ex;
-                    failureMessages.Add(LF("AgentLanguageModelResolver.Failure.ModelErrorFormat", "{0}：{1}", GetLanguageModelDisplayName(candidate), ex.Message));
-                }
+
+                var failureText = failureMessages.Count == 0
+                    ? L("AgentLanguageModelResolver.Failure.NoCallableCandidates", "没有可调用的候选语言模型。")
+                    : LF("AgentLanguageModelResolver.Failure.AttemptedInOrderFormat", "已按顺序尝试：{0}", JoinMessages(failureMessages));
+
+                throw new InvalidOperationException(
+                    LF("AgentLanguageModelResolver.Error.CapabilityLayerNoAvailableModelFormat", "功能层级“{0}”没有找到无错误可用的语言模型。{1}", plan.SelectionDisplayName, failureText),
+                    lastError);
             }
-
-            var failureText = failureMessages.Count == 0
-                ? L("AgentLanguageModelResolver.Failure.NoCallableCandidates", "没有可调用的候选语言模型。")
-                : LF("AgentLanguageModelResolver.Failure.AttemptedInOrderFormat", "已按顺序尝试：{0}", JoinMessages(failureMessages));
-
-            throw new InvalidOperationException(
-                LF("AgentLanguageModelResolver.Error.CapabilityLayerNoAvailableModelFormat", "功能层级“{0}”没有找到无错误可用的语言模型。{1}", plan.SelectionDisplayName, failureText),
-                lastError);
         }
 
         public int GetMinimumContextWindowTokens(AgentDefinition agent)
@@ -381,6 +447,55 @@ namespace Ferrita.Controls.AgentConfigurationControl.Services
         {
             var format = L(resourceKey, fallbackFormat);
             return string.Format(format, args);
+        }
+
+        private static bool IsContextOverflowError(Exception? ex)
+        {
+            if (ex == null)
+            {
+                return false;
+            }
+
+            if (IsContextOverflowMessage(ex.Message))
+            {
+                return true;
+            }
+
+            if (ex.InnerException != null && IsContextOverflowError(ex.InnerException))
+            {
+                return true;
+            }
+
+            if (ex is AggregateException aggEx)
+            {
+                foreach (var inner in aggEx.InnerExceptions)
+                {
+                    if (IsContextOverflowError(inner))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsContextOverflowMessage(string? message)
+        {
+            if (string.IsNullOrEmpty(message))
+            {
+                return false;
+            }
+
+            var lower = message.ToLowerInvariant();
+            return lower.Contains("max token") ||
+                   lower.Contains("too much") ||
+                   lower.Contains("token") ||
+                   lower.Contains("context length") ||
+                   lower.Contains("context window") ||
+                   lower.Contains("context_length_exceeded") ||
+                   lower.Contains("limit exceeded") ||
+                   lower.Contains("too many tokens");
         }
 
         private sealed record CapabilityLayerResolutionPlan(

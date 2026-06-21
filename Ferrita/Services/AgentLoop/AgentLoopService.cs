@@ -451,7 +451,8 @@ namespace Ferrita.Services.AgentLoop
             IReadOnlyList<AgentToolBackfill> ToolBackfills,
             AgentLoopFinalOutput? FinalOutput,
             AgentLoopFinalOutput? LatestPassdownOutput,
-            IReadOnlyList<string> NewlyLoadedToolKitKeys);
+            IReadOnlyList<string> NewlyLoadedToolKitKeys,
+            string? ReasoningText = null);
 
         private sealed class AssistantVisibleTextStreamingTracker
         {
@@ -693,12 +694,16 @@ namespace Ferrita.Services.AgentLoop
                     request.Agent,
                     request.ToolConfirmationCallback != null)
                 .WithAvailableToolKits(availableToolKits);
+            var baseSystemPromptCandidates = _languageModelResolver.GetCandidateModels(request.Agent);
+            bool isJsonToolCalling = baseSystemPromptCandidates.Count > 0 && baseSystemPromptCandidates.All(c => c.EnableUniversalToolCalling);
+
             var baseSystemPrompt = _systemPromptBuilder.BuildCompleteSystemPrompt(
                 request.Agent,
                 supportsHostToolConfirmation: request.ToolConfirmationCallback != null,
                 availableToolKits: availableToolKits,
                 activeToolKitKeys: activeToolKitKeys,
-                isSubAgent: request.IsSubAgent);
+                isSubAgent: request.IsSubAgent,
+                disableToolTips: isJsonToolCalling);
 
             if (request.IsScheduledTaskSession)
             {
@@ -836,27 +841,19 @@ namespace Ferrita.Services.AgentLoop
                         var triggerTokenCount = (int)(contextWindowTokens * 0.95d);
                         
                         int currentTokenCount = 0;
-                        var estimatedTokens = AgentLoopTokenCounter.EstimateMessages(preparedContext.PreparedMessages);
-                        if (estimatedTokens * 10 < triggerTokenCount)
+                        try
                         {
-                            currentTokenCount = estimatedTokens;
+                            var tokenCountResult = await _tokenCounter.CountAsync(
+                                maxCompactionModel,
+                                preparedContext.PreparedMessages,
+                                request.CompactionFilePath,
+                                mediaProgressCallback,
+                                cancellationToken).ConfigureAwait(false);
+                            currentTokenCount = tokenCountResult.TokenCount;
                         }
-                        else
+                        catch
                         {
-                            try
-                            {
-                                var tokenCountResult = await _tokenCounter.CountAsync(
-                                    maxCompactionModel,
-                                    preparedContext.PreparedMessages,
-                                    request.CompactionFilePath,
-                                    mediaProgressCallback,
-                                    cancellationToken).ConfigureAwait(false);
-                                currentTokenCount = tokenCountResult.TokenCount;
-                            }
-                            catch
-                            {
-                                currentTokenCount = 0;
-                            }
+                            currentTokenCount = 0;
                         }
 
                         bool isCompactionPreconditionMet = !request.MinCompactionEnabled || isMinCompacted;
@@ -1025,6 +1022,9 @@ namespace Ferrita.Services.AgentLoop
                 }
 
                 StreamedResponseResult response;
+                bool retried = false;
+
+                tryInvoke:
                 try
                 {
                     response = await InvokeModelStreamingAsync(
@@ -1043,6 +1043,215 @@ namespace Ferrita.Services.AgentLoop
                         latestPassdownOutput,
                         onEventAsync,
                         cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (!retried && request.MaxCompactionEnabled && IsContextOverflowError(ex))
+                {
+                    retried = true;
+
+                    // 发送开始压缩通知事件
+                    await PublishAsync(
+                        onEventAsync,
+                        new AgentLoopRuntimeEvent
+                        {
+                            Kind = AgentLoopRuntimeEventKind.ContextCompressionApplied,
+                            IterationNumber = iterationNumber,
+                            Message = "检测到上下文长度超出模型限制，开始进行上下文压缩（MaxCompaction）..."
+                        },
+                        cancellationToken).ConfigureAwait(false);
+
+                    isMinCompacted = false;
+
+                    // 执行 MaxCompaction 压缩历史
+                    // 区分固有系统消息与可压缩的历史记录，仅压缩代理循环中产生的内容和非系统历史消息
+                    var inherentSystemMessages = persistentHistory
+                        .Where(msg => msg.Role == LanguageModelChatRole.System)
+                        .ToList();
+                    var compressibleHistory = persistentHistory
+                        .Where(msg => msg.Role != LanguageModelChatRole.System)
+                        .Concat(turnHistory)
+                        .ToList();
+
+                    var historyBuilder = new StringBuilder();
+                    foreach (var msg in compressibleHistory)
+                    {
+                        var roleName = msg.Role.ToString();
+                        var authorStr = string.IsNullOrEmpty(msg.AuthorName) ? "" : $" (Author: {msg.AuthorName})";
+                        historyBuilder.AppendLine($"=== Role: {roleName}{authorStr} ===");
+                        foreach (var block in msg.ContentBlocks)
+                        {
+                            if (block.Kind == LanguageModelChatContentBlockKind.Text || block.Kind == LanguageModelChatContentBlockKind.HostPreservedContent)
+                            {
+                                historyBuilder.AppendLine(block.Content);
+                            }
+                            else
+                            {
+                                historyBuilder.AppendLine($"[Binary/Media Data Kind: {block.Kind}, MediaType: {block.MediaType}, Size: {block.Data?.Length ?? 0} bytes]");
+                            }
+                        }
+                        historyBuilder.AppendLine();
+                    }
+                    var formattedHistory = historyBuilder.ToString();
+
+                    var compressionPrompt = $@"你是一个上下文压缩助手。由于当前对话的上下文长度已经达到模型的极限，你需要对以下的历史对话进行深度压缩和总结（MaxCompaction），以便继续后续任务。
+
+请严格遵守以下压缩要点：
+1. 用户在整个过程中所有的指令（User messages / Instructions），必须尽可能原样保留。
+2. 代理（Assistant）在整个过程中进行的所有操作、工具调用与返回结果，需要高度凝练地保留，仅保留核心步骤、主要发现和结果。
+3. 必须详细说明：
+   - 任务的详情与目的。
+   - 任务当前的进行情况。
+   - 中断点（即触发本次压缩之前最后进行的动作和当前状态）的详细信息。
+4. 保留其他一切对继续任务所必要的关键上下文信息。
+5. 你的输出内容需要尽可能详细、尽可能丰富（保留尽可能多的细节，不要过度省略关键信息，输出长度可以较长，保留更多内容）。
+
+以下是待压缩的完整对话历史：
+{formattedHistory}";
+
+                    string compressedHistoryText;
+                    try
+                    {
+                        compressedHistoryText = await _languageModelResolver.ExecuteCapabilityLayerWithFallbackAsync(
+                            CapabilityLayerBuiltIns.ContextCompressionLayerKey,
+                            async (compModel, ct) =>
+                            {
+                                var messages = new[]
+                                {
+                                    new LanguageModelChatMessage(LanguageModelChatRole.User, compressionPrompt)
+                                };
+                                var responseComp = await _chatService.GetResponseAsync(compModel, messages, ct).ConfigureAwait(false);
+                                return responseComp.Text;
+                            },
+                            cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception exComp)
+                    {
+                        compressedHistoryText = $"[MaxCompaction failed: {exComp.Message}]\n\n" + formattedHistory;
+                    }
+
+                    persistentHistory = new List<LanguageModelChatMessage>(inherentSystemMessages)
+                    {
+                        new LanguageModelChatMessage(
+                            LanguageModelChatRole.User,
+                            $"[系统已对历史上下文进行 MaxCompaction 压缩，以下是之前的任务摘要及所有指令原样保留的内容：]\n\n{compressedHistoryText}")
+                        {
+                            AuthorName = "System"
+                        }
+                    };
+                    turnHistory = new List<LanguageModelChatMessage>();
+
+                    // 估算压缩前的 token 数
+                    int currentTokenCount = 0;
+                    if (compactionCandidates.Length > 0)
+                    {
+                        var maxCompactionModel = compactionCandidates
+                            .OrderBy(model => model.EffectiveContextWindowTokens)
+                            .First();
+                        try
+                        {
+                            var tokenCountResult = await _tokenCounter.CountAsync(
+                                maxCompactionModel,
+                                preparedContext.PreparedMessages,
+                                request.CompactionFilePath,
+                                mediaProgressCallback,
+                                cancellationToken).ConfigureAwait(false);
+                            currentTokenCount = tokenCountResult.TokenCount;
+                        }
+                        catch
+                        {
+                            currentTokenCount = 0;
+                        }
+                    }
+
+                    systemPrompt = baseSystemPrompt;
+                    runtimeToolCallNotice = BuildRuntimeToolCallNotice(request);
+                    preparedContext = await _contextManager.PrepareAsync(
+                        request.Agent,
+                        systemPrompt,
+                        request.Input,
+                        request.InputContentBlocks,
+                        persistentHistory,
+                        turnHistory,
+                        request.CompactionFilePath,
+                        debugRunContext,
+                        iterationNumber,
+                        ResolveSessionResourcesFolderPath(request),
+                        runtimeToolCallNotice,
+                        request.OptimizeToolCallPromptEnabled,
+                        cancellationToken).ConfigureAwait(false);
+
+                    persistentHistory = preparedContext.PersistentHistory
+                        .Select(message => message.Clone())
+                        .ToList();
+                    turnHistory = preparedContext.TurnHistory
+                        .Select(message => message.Clone())
+                        .ToList();
+
+                    // 估算压缩后的 token 数
+                    int afterTokenCount = 0;
+                    if (compactionCandidates.Length > 0)
+                    {
+                        var maxCompactionModel = compactionCandidates
+                            .OrderBy(model => model.EffectiveContextWindowTokens)
+                            .First();
+                        var contextWindowTokens = maxCompactionModel.EffectiveContextWindowTokens;
+                        
+                        try
+                        {
+                            var tokenCountResult = await _tokenCounter.CountAsync(
+                                maxCompactionModel,
+                                preparedContext.PreparedMessages,
+                                request.CompactionFilePath,
+                                mediaProgressCallback,
+                                cancellationToken).ConfigureAwait(false);
+                            afterTokenCount = tokenCountResult.TokenCount;
+                        }
+                        catch
+                        {
+                            afterTokenCount = 0;
+                        }
+
+                        appliedMinCompaction = new AgentLoopContextCompressionInfo
+                        {
+                            ContextWindowTokens = contextWindowTokens,
+                            EstimatedTokenCountBeforeCompression = currentTokenCount,
+                            EstimatedTokenCountAfterCompression = afterTokenCount,
+                            TargetTokenCountAfterCompression = (int)(contextWindowTokens * 0.95d),
+                            CompressionLayerKey = "MaxCompaction",
+                            CompressionModelId = maxCompactionModel.SummaryModelId,
+                            CompactedToolCallIds = Array.Empty<string>()
+                        };
+                    }
+
+                    // 发送压缩结束通知事件
+                    await PublishAsync(
+                        onEventAsync,
+                        new AgentLoopRuntimeEvent
+                        {
+                            Kind = AgentLoopRuntimeEventKind.ContextCompressionApplied,
+                            IterationNumber = iterationNumber,
+                            Message = "上下文压缩（MaxCompaction）已完成，正在重新请求...",
+                            ContextCompression = appliedMinCompaction
+                        },
+                        cancellationToken).ConfigureAwait(false);
+
+                    // 重建 preparedSnapshot
+                    preparedSnapshot = new AgentLoopPreparedRequestDebugSnapshot
+                    {
+                        SystemPrompt = systemPrompt,
+                        Input = request.Input,
+                        PersistentHistory = preparedContext.PersistentHistory
+                            .Select(message => message.Clone())
+                            .ToArray(),
+                        TurnHistory = preparedContext.TurnHistory
+                            .Select(message => message.Clone())
+                            .ToArray(),
+                        PreparedMessages = preparedContext.PreparedMessages
+                            .Select(message => message.Clone())
+                            .ToArray(),
+                        ContextCompression = appliedMinCompaction ?? preparedContext.ContextCompression
+                    };
+
+                    goto tryInvoke;
                 }
                 catch (Exception ex)
                 {
@@ -1077,7 +1286,8 @@ namespace Ferrita.Services.AgentLoop
                 AppendCurrentTurnHistory(
                     response.AssistantResponse,
                     response.ToolBackfills,
-                    turnHistory);
+                    turnHistory,
+                    response.ReasoningText);
 
                 AgentLoopDebugRecorder.RecordIterationOutcome(
                     debugRunContext,
@@ -1110,6 +1320,78 @@ namespace Ferrita.Services.AgentLoop
                     },
                     cancellationToken).ConfigureAwait(false);
 
+                if (onEventAsync != null)
+                {
+                    var capturedPersistentHistory = persistentHistory.Select(message => message.Clone()).ToList();
+                    var capturedTurnHistory = turnHistory.Select(message => message.Clone()).ToList();
+                    var capturedCompactionFilePath = request.CompactionFilePath;
+                    var capturedSessionResourcesFolderPath = ResolveSessionResourcesFolderPath(request);
+                    var capturedRuntimeToolCallNotice = BuildRuntimeToolCallNotice(request);
+                    var capturedOptimizeToolCallPromptEnabled = request.OptimizeToolCallPromptEnabled;
+                    var capturedModelId = response.ModelId;
+                    var capturedSystemPrompt = systemPrompt;
+                    var capturedIterationNumber = iterationNumber;
+
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var latestPreparedContext = await _contextManager.PrepareAsync(
+                                request.Agent,
+                                capturedSystemPrompt,
+                                request.Input,
+                                request.InputContentBlocks,
+                                capturedPersistentHistory,
+                                capturedTurnHistory,
+                                capturedCompactionFilePath,
+                                debugRunContext: null,
+                                iterationNumber: capturedIterationNumber,
+                                sessionResourcesFolderPath: capturedSessionResourcesFolderPath,
+                                runtimeToolCallNotice: capturedRuntimeToolCallNotice,
+                                forceOptimizeToolCallPrompt: capturedOptimizeToolCallPromptEnabled,
+                                cancellationToken: CancellationToken.None).ConfigureAwait(false);
+
+                            var candidates = _languageModelResolver.GetCandidateModels(request.Agent)
+                                .Where(model => model.InterfaceSettings.IsFullyConfigured)
+                                .ToArray();
+                            if (candidates.Length > 0)
+                            {
+                                var activeModel = candidates
+                                    .OrderBy(model => model.EffectiveContextWindowTokens)
+                                    .First();
+
+                                var tokenCountResult = await _tokenCounter.CountAsync(
+                                    activeModel,
+                                    latestPreparedContext.PreparedMessages,
+                                    capturedCompactionFilePath,
+                                    progressCallback: null,
+                                    cancellationToken: CancellationToken.None).ConfigureAwait(false);
+
+                                await PublishAsync(
+                                    onEventAsync,
+                                    new AgentLoopRuntimeEvent
+                                    {
+                                        Kind = AgentLoopRuntimeEventKind.IterationCompleted,
+                                        IterationNumber = capturedIterationNumber,
+                                        ModelId = capturedModelId,
+                                        TokenUsage = new AgentLoopTokenUsageInfo
+                                        {
+                                            ContextWindowTokens = activeModel.EffectiveContextWindowTokens,
+                                            EstimatedInputTokenCount = tokenCountResult.TokenCount,
+                                            EstimatedOutputTokenCount = 0,
+                                            ModelId = capturedModelId
+                                        }
+                                    },
+                                    CancellationToken.None).ConfigureAwait(false);
+                            }
+                        }
+                        catch
+                        {
+                            // Ignore async exceptions
+                        }
+                    });
+                }
+
                 if (response.FinalOutput != null)
                 {
                     return new AgentLoopResult
@@ -1129,6 +1411,55 @@ namespace Ferrita.Services.AgentLoop
                 LastModelId = lastModelId,
                 Iterations = iterations.ToArray()
             };
+        }
+
+        private static bool IsContextOverflowError(Exception? ex)
+        {
+            if (ex == null)
+            {
+                return false;
+            }
+
+            if (IsContextOverflowMessage(ex.Message))
+            {
+                return true;
+            }
+
+            if (ex.InnerException != null && IsContextOverflowError(ex.InnerException))
+            {
+                return true;
+            }
+
+            if (ex is AggregateException aggEx)
+            {
+                foreach (var inner in aggEx.InnerExceptions)
+                {
+                    if (IsContextOverflowError(inner))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsContextOverflowMessage(string? message)
+        {
+            if (string.IsNullOrEmpty(message))
+            {
+                return false;
+            }
+
+            var lower = message.ToLowerInvariant();
+            return lower.Contains("max token") ||
+                   lower.Contains("too much") ||
+                   lower.Contains("token") ||
+                   lower.Contains("context length") ||
+                   lower.Contains("context window") ||
+                   lower.Contains("context_length_exceeded") ||
+                   lower.Contains("limit exceeded") ||
+                   lower.Contains("too many tokens");
         }
 
         private async Task<AgentLoopContextCompressionInfo?> TryApplyMinCompactionAsync(
@@ -1162,11 +1493,7 @@ namespace Ferrita.Services.AgentLoop
             var contextWindowTokens = compactionModel.EffectiveContextWindowTokens;
             var triggerTokenCount = Math.Max(1, (int)Math.Floor(contextWindowTokens * MinCompactionTriggerRatio));
             
-            var estimatedTokens = AgentLoopTokenCounter.EstimateMessages(preparedContext.PreparedMessages);
-            if (estimatedTokens * 10 < triggerTokenCount)
-            {
-                return null;
-            }
+
 
             AgentLoopTokenCountResult tokenCount;
             try
@@ -1304,16 +1631,39 @@ namespace Ferrita.Services.AgentLoop
                 .ToArray();
 
             LanguageModelChatResponse response;
-            try
+            int errorCount = 0;
+            const int maxRetries = 10;
+            while (true)
             {
-                response = await _chatService.GetResponseAsync(
-                    model,
-                    compactionMessages,
-                    cancellationToken).ConfigureAwait(false);
-            }
-            catch
-            {
-                return Array.Empty<string>();
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    response = await _chatService.GetResponseAsync(
+                        model,
+                        compactionMessages,
+                        cancellationToken).ConfigureAwait(false);
+                    break;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    if (IsContextOverflowError(ex))
+                    {
+                        return Array.Empty<string>();
+                    }
+
+                    errorCount++;
+                    if (errorCount > maxRetries)
+                    {
+                        return Array.Empty<string>();
+                    }
+
+                    double delaySeconds = Math.Ceiling(Math.Pow(1.4, errorCount));
+                    await Task.Delay(TimeSpan.FromSeconds(delaySeconds), cancellationToken).ConfigureAwait(false);
+                }
             }
 
             var assistantResponse = ParseAssistantResponse(
@@ -1354,443 +1704,464 @@ namespace Ferrita.Services.AgentLoop
             var failureMessages = new List<string>();
             var attemptNumber = 0;
 
-            foreach (var candidate in candidates)
+            int errorCount = 0;
+            const int maxRetries = 10;
+
+            while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                failureMessages.Clear();
+                lastError = null;
+                bool shouldRetryWholeLevel = false;
 
-                if (!candidate.InterfaceSettings.IsFullyConfigured)
+                foreach (var candidate in candidates)
                 {
-                    failureMessages.Add($"{GetLanguageModelDisplayName(candidate)}: interface settings are incomplete.");
-                    continue;
-                }
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                attemptNumber++;
-                AgentLoopDebugRecorder.RecordPreparedRequest(
-                    debugRunContext,
-                    request,
-                    preparedSnapshot,
-                    candidates,
-                    candidate,
-                    iterationNumber,
-                    attemptNumber);
-
-                var modelId = candidate.SummaryModelId;
-                var hasStartedStreaming = false;
-                var rawContentBuilder = new StringBuilder();
-                var rawReasoningContentBuilder = new StringBuilder();
-                var estimatedInputTokenCount = AgentLoopTokenCounter.EstimateMessages(preparedSnapshot.PreparedMessages);
-                var toolInvocationStreamingParser = new FerritaToolInvocationStreamingParser(
-                    _toolManager.GetRegisteredTools(resolveIcons: false)
-                        .Select(registration => registration.Definition));
-                IReadOnlyList<FerritaStreamingToolCallSnapshot> previousToolCallSnapshots =
-                    Array.Empty<FerritaStreamingToolCallSnapshot>();
-                var toolCallIdsByIndex = new Dictionary<int, string>();
-                var presentationTracker = new AssistantPresentationStreamingTracker(
-                    request.Agent.IsStructuredXmlIO
-                        ? AgentLoopOutputKind.StructuredXml
-                        : AgentLoopOutputKind.NaturalLanguage,
-                    request.EnableGemmaThoughtCompatibility);
-                List<AgentLoopStreamingUpdateDebugSnapshot>? streamingUpdates = debugRunContext == null
-                    ? null
-                    : new List<AgentLoopStreamingUpdateDebugSnapshot>();
-                var lastStreamingTokenUsageRefreshTicks = 0L;
-                var lastStreamingProtocolRefreshTicks = 0L;
-                var streamingTokenUsageRefreshIntervalTicks = (long)(Stopwatch.Frequency * StreamingTokenUsageRefreshInterval.TotalSeconds);
-                var streamingProtocolRefreshIntervalTicks = (long)(Stopwatch.Frequency * StreamingProtocolRefreshInterval.TotalSeconds);
-
-                AgentLoopTokenUsageInfo BuildStreamingTokenUsage()
-                {
-                    return new AgentLoopTokenUsageInfo
+                    if (!candidate.InterfaceSettings.IsFullyConfigured)
                     {
-                        ContextWindowTokens = candidate.EffectiveContextWindowTokens,
-                        EstimatedInputTokenCount = estimatedInputTokenCount,
-                        EstimatedOutputTokenCount =
-                            EstimateTextLength(rawContentBuilder.Length) +
-                            EstimateTextLength(rawReasoningContentBuilder.Length),
-                        ModelId = modelId
-                    };
-                }
-
-                static int EstimateTextLength(int length)
-                {
-                    return length <= 0
-                        ? 0
-                        : Math.Max(1, (int)Math.Ceiling(length / 4.0d));
-                }
-
-                AgentLoopTokenUsageInfo? TryBuildStreamingTokenUsage(bool force = false)
-                {
-                    if (onEventAsync == null)
-                    {
-                        return null;
+                        failureMessages.Add($"{GetLanguageModelDisplayName(candidate)}: interface settings are incomplete.");
+                        continue;
                     }
 
-                    var now = Stopwatch.GetTimestamp();
-                    if (!force && now - lastStreamingTokenUsageRefreshTicks < streamingTokenUsageRefreshIntervalTicks)
+                    attemptNumber++;
+                    AgentLoopDebugRecorder.RecordPreparedRequest(
+                        debugRunContext,
+                        request,
+                        preparedSnapshot,
+                        candidates,
+                        candidate,
+                        iterationNumber,
+                        attemptNumber);
+
+                    var modelId = candidate.SummaryModelId;
+                    var hasStartedStreaming = false;
+                    var rawContentBuilder = new StringBuilder();
+                    var rawReasoningContentBuilder = new StringBuilder();
+                    var toolInvocationStreamingParser = new FerritaToolInvocationStreamingParser(
+                        _toolManager.GetRegisteredTools(resolveIcons: false)
+                            .Select(registration => registration.Definition));
+                    IReadOnlyList<FerritaStreamingToolCallSnapshot> previousToolCallSnapshots =
+                        Array.Empty<FerritaStreamingToolCallSnapshot>();
+                    var toolCallIdsByIndex = new Dictionary<int, string>();
+                    var presentationTracker = new AssistantPresentationStreamingTracker(
+                        request.Agent.IsStructuredXmlIO
+                            ? AgentLoopOutputKind.StructuredXml
+                            : AgentLoopOutputKind.NaturalLanguage,
+                        request.EnableGemmaThoughtCompatibility);
+                    List<AgentLoopStreamingUpdateDebugSnapshot>? streamingUpdates = debugRunContext == null
+                        ? null
+                        : new List<AgentLoopStreamingUpdateDebugSnapshot>();
+                    var lastStreamingProtocolRefreshTicks = 0L;
+                    var streamingProtocolRefreshIntervalTicks = (long)(Stopwatch.Frequency * StreamingProtocolRefreshInterval.TotalSeconds);
+
+                    IReadOnlyList<AgentLoopStreamingUpdateDebugSnapshot> GetStreamingUpdatesForDebug()
                     {
-                        return null;
+                        return streamingUpdates != null
+                            ? streamingUpdates
+                            : Array.Empty<AgentLoopStreamingUpdateDebugSnapshot>();
                     }
 
-                    lastStreamingTokenUsageRefreshTicks = now;
-                    return BuildStreamingTokenUsage();
-                }
-
-                IReadOnlyList<AgentLoopStreamingUpdateDebugSnapshot> GetStreamingUpdatesForDebug()
-                {
-                    return streamingUpdates != null
-                        ? streamingUpdates
-                        : Array.Empty<AgentLoopStreamingUpdateDebugSnapshot>();
-                }
-
-                bool ShouldRefreshStreamingProtocolProjection(bool force = false)
-                {
-                    if (force)
+                    bool ShouldRefreshStreamingProtocolProjection(bool force = false)
                     {
-                        lastStreamingProtocolRefreshTicks = Stopwatch.GetTimestamp();
+                        if (force)
+                        {
+                            lastStreamingProtocolRefreshTicks = Stopwatch.GetTimestamp();
+                            return true;
+                        }
+
+                        var now = Stopwatch.GetTimestamp();
+                        if (now - lastStreamingProtocolRefreshTicks < streamingProtocolRefreshIntervalTicks)
+                        {
+                            return false;
+                        }
+
+                        lastStreamingProtocolRefreshTicks = now;
                         return true;
                     }
 
-                    var now = Stopwatch.GetTimestamp();
-                    if (now - lastStreamingProtocolRefreshTicks < streamingProtocolRefreshIntervalTicks)
+                    try
                     {
-                        return false;
-                    }
+                        await PublishAsync(
+                            onEventAsync,
+                            new AgentLoopRuntimeEvent
+                            {
+                                Kind = AgentLoopRuntimeEventKind.IterationStarted,
+                                IterationNumber = iterationNumber,
+                                ModelId = modelId,
+                                TokenUsage = null
+                            },
+                            cancellationToken).ConfigureAwait(false);
 
-                    lastStreamingProtocolRefreshTicks = now;
-                    return true;
-                }
-
-                try
-                {
-                    await PublishAsync(
-                        onEventAsync,
-                        new AgentLoopRuntimeEvent
+                        bool isJsonToolCalling = candidates.Count > 0 && candidates.All(c => c.EnableUniversalToolCalling);
+                        List<FerritaPromptToolDefinition>? callableTools = null;
+                        if (isJsonToolCalling)
                         {
-                            Kind = AgentLoopRuntimeEventKind.IterationStarted,
-                            IterationNumber = iterationNumber,
-                            ModelId = modelId,
-                            TokenUsage = TryBuildStreamingTokenUsage(force: true)
-                        },
-                        cancellationToken).ConfigureAwait(false);
-
-                    await foreach (var update in _chatService.GetStreamingResponseAsync(
-                                       candidate,
-                                       preparedSnapshot.PreparedMessages.Select(message => message.Clone()).ToArray(),
-                                       cancellationToken,
-                                       (progress, ct) => PublishAsync(
-                                           onEventAsync,
-                                           new AgentLoopRuntimeEvent
-                                           {
-                                               Kind = AgentLoopRuntimeEventKind.MediaProcessingProgressUpdated,
-                                               IterationNumber = iterationNumber,
-                                               ModelId = modelId,
-                                               MediaProcessingProgress = new AgentLoopMediaProcessingProgress
-                                               {
-                                                   Progress = progress
-                                               }
-                                           },
-                                           ct)).ConfigureAwait(false))
-                    {
-                        if (!string.IsNullOrWhiteSpace(update.ModelId))
-                        {
-                            modelId = update.ModelId;
+                            var availableToolKits = _toolKitService.Load();
+                            callableTools = _toolManager.GetRegisteredTools(resolveIcons: false)
+                                .Select(registration =>
+                                {
+                                    var rawDescription = FerritaToolPromptSupport.ResolvePromptDescription(registration, availableToolKits);
+                                    var (description, fewShots) = FerritaToolPromptSupport.SplitFewShots(rawDescription);
+                                    return new FerritaPromptToolDefinition(
+                                        registration.Definition.Name,
+                                        description,
+                                        registration.Definition.Parameters,
+                                        registration.RequiresAgentPermission,
+                                        fewShots);
+                                })
+                                .ToList();
                         }
 
-                        if (!string.IsNullOrEmpty(update.ReasoningTextDelta))
-                        {
-                            rawReasoningContentBuilder.Append(update.ReasoningTextDelta);
-                            await PublishAsync(
+                        var responseStream = _chatService.GetStreamingResponseAsync(
+                            candidate,
+                            preparedSnapshot.PreparedMessages.Select(message => message.Clone()).ToArray(),
+                            cancellationToken,
+                            mediaProcessingProgress: (progress, ct) => PublishAsync(
                                 onEventAsync,
                                 new AgentLoopRuntimeEvent
                                 {
-                                    Kind = AgentLoopRuntimeEventKind.ReasoningDelta,
+                                    Kind = AgentLoopRuntimeEventKind.MediaProcessingProgressUpdated,
                                     IterationNumber = iterationNumber,
                                     ModelId = modelId,
-                                    ReasoningDelta = update.ReasoningTextDelta,
-                                    TokenUsage = TryBuildStreamingTokenUsage()
+                                    MediaProcessingProgress = new AgentLoopMediaProcessingProgress
+                                    {
+                                        Progress = progress
+                                    }
                                 },
+                                ct),
+                            tools: callableTools);
+
+                        await foreach (var update in responseStream.ConfigureAwait(false))
+                        {
+                            if (!string.IsNullOrWhiteSpace(update.ModelId))
+                            {
+                                modelId = update.ModelId;
+                            }
+
+                            if (!string.IsNullOrEmpty(update.ReasoningTextDelta))
+                            {
+                                rawReasoningContentBuilder.Append(update.ReasoningTextDelta);
+                                await PublishAsync(
+                                    onEventAsync,
+                                    new AgentLoopRuntimeEvent
+                                    {
+                                        Kind = AgentLoopRuntimeEventKind.ReasoningDelta,
+                                        IterationNumber = iterationNumber,
+                                        ModelId = modelId,
+                                        ReasoningDelta = update.ReasoningTextDelta,
+                                        TokenUsage = null
+                                    },
+                                    cancellationToken).ConfigureAwait(false);
+                            }
+
+                            var rawContentLengthBeforeAppend = rawContentBuilder.Length;
+                            var wasAppendedToRawContent = !string.IsNullOrEmpty(update.TextDelta);
+                            if (wasAppendedToRawContent)
+                            {
+                                hasStartedStreaming = true;
+                                rawContentBuilder.Append(update.TextDelta);
+                            }
+
+                            if (streamingUpdates != null)
+                            {
+                                streamingUpdates.Add(new AgentLoopStreamingUpdateDebugSnapshot
+                                {
+                                    SequenceNumber = streamingUpdates.Count + 1,
+                                    ReceivedAtLocal = DateTimeOffset.Now,
+                                    Update = update,
+                                    WasAppendedToRawContent = wasAppendedToRawContent,
+                                    RawContentLengthBeforeAppend = rawContentLengthBeforeAppend,
+                                    RawContentLengthAfterAppend = rawContentBuilder.Length,
+                                    RawContentTailAfterAppend = GetStringBuilderTail(
+                                        rawContentBuilder,
+                                        StreamingTraceRawContentTailLength)
+                                });
+                            }
+
+                            if (!wasAppendedToRawContent)
+                            {
+                                continue;
+                            }
+
+                            if (!ShouldRefreshStreamingProtocolProjection())
+                            {
+                                continue;
+                            }
+
+                            var currentRawContent = rawContentBuilder.ToString();
+                            var currentProtocolContent = PrepareAssistantProtocolContent(
+                                currentRawContent,
+                                request.EnableGemmaThoughtCompatibility,
+                                isFinal: false);
+                            var currentToolCallSnapshots = toolInvocationStreamingParser.Parse(currentProtocolContent);
+                            await PublishStreamingToolCallUpdatesAsync(
+                                onEventAsync,
+                                currentToolCallSnapshots,
+                                previousToolCallSnapshots,
+                                toolCallIdsByIndex,
+                                toolCallIdFactory,
+                                iterationNumber,
+                                modelId,
+                                cancellationToken).ConfigureAwait(false);
+                            previousToolCallSnapshots = currentToolCallSnapshots;
+
+                            var presentationDeltas = presentationTracker.ExtractDeltas(currentRawContent, isFinal: false);
+                            await PublishPresentationDeltasAsync(
+                                onEventAsync,
+                                presentationDeltas,
+                                iterationNumber,
+                                modelId,
+                                null,
                                 cancellationToken).ConfigureAwait(false);
                         }
 
-                        var rawContentLengthBeforeAppend = rawContentBuilder.Length;
-                        var wasAppendedToRawContent = !string.IsNullOrEmpty(update.TextDelta);
-                        if (wasAppendedToRawContent)
+                        var rawContent = rawContentBuilder.ToString();
+                        AgentAssistantResponse assistantResponse;
+                        if (TryPromoteAssistantResponseFromReasoning(
+                                rawContent,
+                                rawReasoningContentBuilder.ToString(),
+                                request.EnableGemmaThoughtCompatibility,
+                                out var promotedRawContent,
+                                out var promotedAssistantResponse))
                         {
+                            rawContent = promotedRawContent;
+                            assistantResponse = promotedAssistantResponse;
                             hasStartedStreaming = true;
-                            rawContentBuilder.Append(update.TextDelta);
                         }
-
-                        if (streamingUpdates != null)
+                        else
                         {
-                            streamingUpdates.Add(new AgentLoopStreamingUpdateDebugSnapshot
-                            {
-                                SequenceNumber = streamingUpdates.Count + 1,
-                                ReceivedAtLocal = DateTimeOffset.Now,
-                                Update = update,
-                                WasAppendedToRawContent = wasAppendedToRawContent,
-                                RawContentLengthBeforeAppend = rawContentLengthBeforeAppend,
-                                RawContentLengthAfterAppend = rawContentBuilder.Length,
-                                RawContentTailAfterAppend = GetStringBuilderTail(
-                                    rawContentBuilder,
-                                    StreamingTraceRawContentTailLength)
-                            });
+                            assistantResponse = ParseAssistantResponse(
+                                rawContent,
+                                request.EnableGemmaThoughtCompatibility);
                         }
 
-                        if (!wasAppendedToRawContent)
-                        {
-                            continue;
-                        }
-
-                        if (!ShouldRefreshStreamingProtocolProjection())
-                        {
-                            continue;
-                        }
-
-                        var currentRawContent = rawContentBuilder.ToString();
-                        var currentProtocolContent = PrepareAssistantProtocolContent(
-                            currentRawContent,
+                        var finalProtocolContent = PrepareAssistantProtocolContent(
+                            rawContent,
                             request.EnableGemmaThoughtCompatibility,
-                            isFinal: false);
-                        var currentToolCallSnapshots = toolInvocationStreamingParser.Parse(currentProtocolContent);
+                            isFinal: true);
+                        var finalToolCallSnapshots = toolInvocationStreamingParser.Parse(finalProtocolContent);
                         await PublishStreamingToolCallUpdatesAsync(
                             onEventAsync,
-                            currentToolCallSnapshots,
+                            finalToolCallSnapshots,
                             previousToolCallSnapshots,
                             toolCallIdsByIndex,
                             toolCallIdFactory,
                             iterationNumber,
                             modelId,
                             cancellationToken).ConfigureAwait(false);
-                        previousToolCallSnapshots = currentToolCallSnapshots;
 
-                        var presentationDeltas = presentationTracker.ExtractDeltas(currentRawContent, isFinal: false);
+                        var finalPresentationDeltas = presentationTracker.ExtractDeltas(rawContent, isFinal: true);
                         await PublishPresentationDeltasAsync(
                             onEventAsync,
-                            presentationDeltas,
+                            finalPresentationDeltas,
                             iterationNumber,
                             modelId,
-                            presentationDeltas.Count > 0 ? TryBuildStreamingTokenUsage() : null,
+                            null,
                             cancellationToken).ConfigureAwait(false);
-                    }
+                        var hasToolActivity = assistantResponse.GetToolCallParts().Count > 0;
 
-                    var rawContent = rawContentBuilder.ToString();
-                    AgentAssistantResponse assistantResponse;
-                    if (TryPromoteAssistantResponseFromReasoning(
-                            rawContent,
-                            rawReasoningContentBuilder.ToString(),
-                            request.EnableGemmaThoughtCompatibility,
-                            out var promotedRawContent,
-                            out var promotedAssistantResponse))
-                    {
-                        rawContent = promotedRawContent;
-                        assistantResponse = promotedAssistantResponse;
-                        hasStartedStreaming = true;
-                    }
-                    else
-                    {
-                        assistantResponse = ParseAssistantResponse(
-                            rawContent,
-                            request.EnableGemmaThoughtCompatibility);
-                    }
+                        if (hasToolActivity)
+                        {
+                            await PublishAsync(
+                                onEventAsync,
+                                new AgentLoopRuntimeEvent
+                                {
+                                    Kind = AgentLoopRuntimeEventKind.AssistantToolCallsReceived,
+                                    IterationNumber = iterationNumber,
+                                    ModelId = modelId,
+                                    ToolXml = rawContent
+                                },
+                                cancellationToken).ConfigureAwait(false);
 
-                    var finalProtocolContent = PrepareAssistantProtocolContent(
-                        rawContent,
-                        request.EnableGemmaThoughtCompatibility,
-                        isFinal: true);
-                    var finalToolCallSnapshots = toolInvocationStreamingParser.Parse(finalProtocolContent);
-                    await PublishStreamingToolCallUpdatesAsync(
-                        onEventAsync,
-                        finalToolCallSnapshots,
-                        previousToolCallSnapshots,
-                        toolCallIdsByIndex,
-                        toolCallIdFactory,
-                        iterationNumber,
-                        modelId,
-                        cancellationToken).ConfigureAwait(false);
+                            var executionResult = await ExecuteAssistantToolCallsAsync(
+                                request,
+                                assistantResponse,
+                                runtimeToolContext,
+                                toolKitMembershipMap,
+                                activeToolKitKeys,
+                                pendingAsyncToolExecutions,
+                                completedAsyncToolResultsById,
+                                completedAsyncToolProgressById,
+                                asyncToolPublicationGate,
+                                toolCallIdsByIndex,
+                                toolCallIdFactory,
+                                iterationNumber,
+                                modelId,
+                                latestPassdownOutput,
+                                onEventAsync,
+                                cancellationToken).ConfigureAwait(false);
 
-                    var finalPresentationDeltas = presentationTracker.ExtractDeltas(rawContent, isFinal: true);
-                    await PublishPresentationDeltasAsync(
-                        onEventAsync,
-                        finalPresentationDeltas,
-                        iterationNumber,
-                        modelId,
-                        finalPresentationDeltas.Count > 0 ? TryBuildStreamingTokenUsage(force: true) : null,
-                        cancellationToken).ConfigureAwait(false);
-                    var hasToolActivity = assistantResponse.GetToolCallParts().Count > 0;
+                            AgentLoopDebugRecorder.RecordStreamingTrace(
+                                debugRunContext,
+                                request.Agent,
+                                candidate,
+                                iterationNumber,
+                                attemptNumber,
+                                modelId,
+                                GetStreamingUpdatesForDebug(),
+                                rawContent,
+                                hasStartedStreaming,
+                                completedNormally: true,
+                                terminalMessage: null);
 
-                    if (hasToolActivity)
-                    {
+                            return new StreamedResponseResult(
+                                attemptNumber,
+                                modelId,
+                                assistantResponse,
+                                executionResult.ToolBackfills,
+                                FinalOutput: request.IsSubAgent && executionResult.LatestPassdownOutput?.Source == AgentLoopFinalOutputSource.PassToMainAgentPayload
+                                    ? executionResult.LatestPassdownOutput
+                                    : null,
+                                executionResult.LatestPassdownOutput,
+                                executionResult.NewlyLoadedToolKitKeys,
+                                rawReasoningContentBuilder.ToString());
+                        }
+
+                        if (request.IsSubAgent && latestPassdownOutput == null)
+                        {
+                            var reminderBackfill = CreateBackfill(
+                                0,
+                                0,
+                                [_toolManager.CreateToolReturnPayload(
+                                    FerritaBuiltInToolNames.PassToMainAgent,
+                                    FerritaToolResult.Success($"Sub-agent loops do not end on plain text. Continue with tools, or call {FerritaBuiltInToolNames.PassToMainAgent} to return content to the main agent."))]);
+
+                            AgentLoopDebugRecorder.RecordStreamingTrace(
+                                debugRunContext,
+                                request.Agent,
+                                candidate,
+                                iterationNumber,
+                                attemptNumber,
+                                modelId,
+                                GetStreamingUpdatesForDebug(),
+                                rawContent,
+                                hasStartedStreaming,
+                                completedNormally: true,
+                                terminalMessage: null);
+
+                            return new StreamedResponseResult(
+                                attemptNumber,
+                                modelId,
+                                assistantResponse,
+                                [reminderBackfill],
+                                FinalOutput: null,
+                                LatestPassdownOutput: null,
+                                Array.Empty<string>(),
+                                rawReasoningContentBuilder.ToString());
+                        }
+
+                        var finalOutput = latestPassdownOutput ??
+                                           BuildAssistantTextFinalOutput(
+                                               request.Agent,
+                                              rawContent,
+                                              request.EnableGemmaThoughtCompatibility);
                         await PublishAsync(
                             onEventAsync,
                             new AgentLoopRuntimeEvent
                             {
-                                Kind = AgentLoopRuntimeEventKind.AssistantToolCallsReceived,
+                                Kind = AgentLoopRuntimeEventKind.FinalOutputProduced,
                                 IterationNumber = iterationNumber,
                                 ModelId = modelId,
-                                ToolXml = rawContent
+                                FinalOutput = finalOutput
                             },
                             cancellationToken).ConfigureAwait(false);
 
-                        var executionResult = await ExecuteAssistantToolCallsAsync(
-                            request,
-                            assistantResponse,
-                            runtimeToolContext,
-                            toolKitMembershipMap,
-                            activeToolKitKeys,
-                            pendingAsyncToolExecutions,
-                            completedAsyncToolResultsById,
-                            completedAsyncToolProgressById,
-                            asyncToolPublicationGate,
-                            toolCallIdsByIndex,
-                            toolCallIdFactory,
+                        AgentLoopDebugRecorder.RecordStreamingTrace(
+                            debugRunContext,
+                            request.Agent,
+                            candidate,
                             iterationNumber,
+                            attemptNumber,
                             modelId,
+                            GetStreamingUpdatesForDebug(),
+                            rawContent,
+                            hasStartedStreaming,
+                            completedNormally: true,
+                            terminalMessage: null);
+
+                        return new StreamedResponseResult(
+                            attemptNumber,
+                            modelId,
+                            assistantResponse,
+                            Array.Empty<AgentToolBackfill>(),
+                            finalOutput,
                             latestPassdownOutput,
-                            onEventAsync,
-                            cancellationToken).ConfigureAwait(false);
-
-                        AgentLoopDebugRecorder.RecordStreamingTrace(
-                            debugRunContext,
-                            request.Agent,
-                            candidate,
-                            iterationNumber,
-                            attemptNumber,
-                            modelId,
-                            GetStreamingUpdatesForDebug(),
-                            rawContent,
-                            hasStartedStreaming,
-                            completedNormally: true,
-                            terminalMessage: null);
-
-                        return new StreamedResponseResult(
-                            attemptNumber,
-                            modelId,
-                            assistantResponse,
-                            executionResult.ToolBackfills,
-                            FinalOutput: request.IsSubAgent && executionResult.LatestPassdownOutput?.Source == AgentLoopFinalOutputSource.PassToMainAgentPayload
-                                ? executionResult.LatestPassdownOutput
-                                : null,
-                            executionResult.LatestPassdownOutput,
-                            executionResult.NewlyLoadedToolKitKeys);
+                            Array.Empty<string>(),
+                            rawReasoningContentBuilder.ToString());
                     }
-
-                    if (request.IsSubAgent && latestPassdownOutput == null)
-                    {
-                        var reminderBackfill = CreateBackfill(
-                            0,
-                            0,
-                            [_toolManager.CreateToolReturnPayload(
-                                FerritaBuiltInToolNames.PassToMainAgent,
-                                FerritaToolResult.Success($"Sub-agent loops do not end on plain text. Continue with tools, or call {FerritaBuiltInToolNames.PassToMainAgent} to return content to the main agent."))]);
-
-                        AgentLoopDebugRecorder.RecordStreamingTrace(
-                            debugRunContext,
-                            request.Agent,
-                            candidate,
-                            iterationNumber,
-                            attemptNumber,
-                            modelId,
-                            GetStreamingUpdatesForDebug(),
-                            rawContent,
-                            hasStartedStreaming,
-                            completedNormally: true,
-                            terminalMessage: null);
-
-                        return new StreamedResponseResult(
-                            attemptNumber,
-                            modelId,
-                            assistantResponse,
-                            [reminderBackfill],
-                            FinalOutput: null,
-                            LatestPassdownOutput: null,
-                            Array.Empty<string>());
-                    }
-
-                    var finalOutput = latestPassdownOutput ??
-                                       BuildAssistantTextFinalOutput(
-                                           request.Agent,
-                                          rawContent,
-                                          request.EnableGemmaThoughtCompatibility);
-                    await PublishAsync(
-                        onEventAsync,
-                        new AgentLoopRuntimeEvent
-                        {
-                            Kind = AgentLoopRuntimeEventKind.FinalOutputProduced,
-                            IterationNumber = iterationNumber,
-                            ModelId = modelId,
-                            FinalOutput = finalOutput
-                        },
-                        cancellationToken).ConfigureAwait(false);
-
-                    AgentLoopDebugRecorder.RecordStreamingTrace(
-                        debugRunContext,
-                        request.Agent,
-                        candidate,
-                        iterationNumber,
-                        attemptNumber,
-                        modelId,
-                        GetStreamingUpdatesForDebug(),
-                        rawContent,
-                        hasStartedStreaming,
-                        completedNormally: true,
-                        terminalMessage: null);
-
-                    return new StreamedResponseResult(
-                        attemptNumber,
-                        modelId,
-                        assistantResponse,
-                        Array.Empty<AgentToolBackfill>(),
-                        finalOutput,
-                        latestPassdownOutput,
-                        Array.Empty<string>());
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    AgentLoopDebugRecorder.RecordStreamingTrace(
-                        debugRunContext,
-                        request.Agent,
-                        candidate,
-                        iterationNumber,
-                        attemptNumber,
-                        modelId,
-                        GetStreamingUpdatesForDebug(),
-                        rawContentBuilder.ToString(),
-                        hasStartedStreaming,
-                        completedNormally: false,
-                        terminalMessage: ex.Message);
-
-                    AgentLoopDebugRecorder.RecordMainRequestFailure(
-                        debugRunContext,
-                        request.Agent,
-                        candidate,
-                        iterationNumber,
-                        attemptNumber,
-                        modelId,
-                        rawContentBuilder.ToString(),
-                        hasStartedStreaming,
-                        ex);
-
-                    if (hasStartedStreaming)
+                    catch (OperationCanceledException)
                     {
                         throw;
                     }
+                    catch (Exception ex)
+                    {
+                        AgentLoopDebugRecorder.RecordStreamingTrace(
+                            debugRunContext,
+                            request.Agent,
+                            candidate,
+                            iterationNumber,
+                            attemptNumber,
+                            modelId,
+                            GetStreamingUpdatesForDebug(),
+                            rawContentBuilder.ToString(),
+                            hasStartedStreaming,
+                            completedNormally: false,
+                            terminalMessage: ex.Message);
 
-                    lastError = ex;
-                    failureMessages.Add($"{GetLanguageModelDisplayName(candidate)}: {ex.Message}");
+                        AgentLoopDebugRecorder.RecordMainRequestFailure(
+                            debugRunContext,
+                            request.Agent,
+                            candidate,
+                            iterationNumber,
+                            attemptNumber,
+                            modelId,
+                            rawContentBuilder.ToString(),
+                            hasStartedStreaming,
+                            ex);
+
+                        if (hasStartedStreaming)
+                        {
+                            throw;
+                        }
+
+                        bool isCompactionCase = request.MaxCompactionEnabled && IsContextOverflowError(ex);
+                        if (isCompactionCase)
+                        {
+                            throw;
+                        }
+
+                        lastError = ex;
+                        failureMessages.Add($"{GetLanguageModelDisplayName(candidate)}: {ex.Message}");
+
+                        if (IsContextOverflowError(ex))
+                        {
+                            continue;
+                        }
+
+                        shouldRetryWholeLevel = true;
+                    }
                 }
+
+                if (shouldRetryWholeLevel)
+                {
+                    errorCount++;
+                    if (errorCount <= maxRetries)
+                    {
+                        double delaySeconds = Math.Ceiling(Math.Pow(1.4, errorCount));
+                        await Task.Delay(TimeSpan.FromSeconds(delaySeconds), cancellationToken).ConfigureAwait(false);
+                        continue;
+                    }
+                }
+
+                var failureText = failureMessages.Count == 0
+                    ? "No callable candidate language model is available."
+                    : $"Tried candidates in order: {string.Join("; ", failureMessages)}";
+
+                throw new InvalidOperationException(
+                    $"Agent '{request.Agent.DisplayNameOrFallback}' could not start a streaming response. {failureText}",
+                    lastError);
             }
-
-            var failureText = failureMessages.Count == 0
-                ? "No callable candidate language model is available."
-                : $"Tried candidates in order: {string.Join("; ", failureMessages)}";
-
-            throw new InvalidOperationException(
-                $"Agent '{request.Agent.DisplayNameOrFallback}' could not start a streaming response. {failureText}",
-                lastError);
         }
 
         private static string GetStringBuilderTail(StringBuilder builder, int maxLength)
@@ -5022,7 +5393,8 @@ namespace Ferrita.Services.AgentLoop
         private static void AppendCurrentTurnHistory(
             AgentAssistantResponse assistantResponse,
             IReadOnlyList<AgentToolBackfill> toolBackfills,
-            ICollection<LanguageModelChatMessage> turnHistory)
+            ICollection<LanguageModelChatMessage> turnHistory,
+            string? reasoningText)
         {
             ArgumentNullException.ThrowIfNull(assistantResponse);
             ArgumentNullException.ThrowIfNull(toolBackfills);
@@ -5034,6 +5406,7 @@ namespace Ferrita.Services.AgentLoop
                 .ToArray();
 
             var backfillCursor = 0;
+            var addedReasoning = false;
             for (var partIndex = 0; partIndex < assistantResponse.Parts.Count; partIndex++)
             {
                 var part = assistantResponse.Parts[partIndex];
@@ -5049,7 +5422,11 @@ namespace Ferrita.Services.AgentLoop
                         : part.Content;
                     turnHistory.Add(new LanguageModelChatMessage(
                         LanguageModelChatRole.Assistant,
-                        content));
+                        content)
+                    {
+                        ReasoningContent = !addedReasoning ? reasoningText : null
+                    });
+                    addedReasoning = true;
                 }
 
                 while (backfillCursor < orderedBackfills.Length &&

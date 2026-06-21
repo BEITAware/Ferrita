@@ -8,6 +8,13 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
         Tool = 3
     }
 
+    public sealed class LanguageModelToolCall
+    {
+        public string Name { get; set; } = string.Empty;
+        public string ArgumentsJson { get; set; } = string.Empty;
+        public string Id { get; set; } = string.Empty;
+    }
+
     public enum LanguageModelChatContentBlockKind
     {
         Text = 0,
@@ -148,6 +155,8 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
 
         public bool IsHostInjectedTail { get; init; }
 
+        public string? ReasoningContent { get; init; }
+
         public LanguageModelChatMessage Clone()
         {
             return new LanguageModelChatMessage(
@@ -155,7 +164,8 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
                 ContentBlocks.Select(block => block.Clone()).ToArray())
             {
                 AuthorName = AuthorName,
-                IsHostInjectedTail = IsHostInjectedTail
+                IsHostInjectedTail = IsHostInjectedTail,
+                ReasoningContent = ReasoningContent
             };
         }
 

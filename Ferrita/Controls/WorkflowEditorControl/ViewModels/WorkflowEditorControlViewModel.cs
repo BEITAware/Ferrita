@@ -567,16 +567,17 @@ namespace Ferrita.Controls.WorkflowEditorControl.ViewModels
                 ContextInjectionContent = string.Empty
             };
 
-            node.InputPorts.Add(CreatePort(
+            node.InputPorts.Add(CreateStablePort(
                 "ctx-inject-input",
                 L("WorkflowEditor.Port.NaturalLanguageInput", "自然语言输入"),
                 SessionFlowPortDirection.Input,
                 SessionFlowPortType.NaturalLanguage));
-            node.OutputPorts.Add(CreatePort(
+            node.OutputPorts.Add(CreateStablePort(
                 "ctx-inject-output",
                 L("WorkflowEditor.Port.NaturalLanguageOutput", "自然语言输出"),
                 SessionFlowPortDirection.Output,
-                SessionFlowPortType.NaturalLanguage));
+                SessionFlowPortType.NaturalLanguage,
+                isTransparentOutput: true));
 
             Nodes.Add(node);
             SelectNode(node);

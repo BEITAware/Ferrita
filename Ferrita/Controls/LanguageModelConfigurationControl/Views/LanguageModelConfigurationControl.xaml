@@ -130,6 +130,10 @@
                         <CheckBox IsChecked="{Binding EnableDocumentInput, UpdateSourceTrigger=PropertyChanged}"
                                   Content="{DynamicResource LanguageModelConfiguration.InputModalities.Document}"/>
                     </WrapPanel>
+                    <CheckBox Margin="0,8,0,0"
+                              IsChecked="{Binding EnableUniversalToolCalling, UpdateSourceTrigger=PropertyChanged}"
+                              Content="{DynamicResource LanguageModelConfiguration.EnableUniversalToolCalling}"
+                              FontWeight="SemiBold"/>
                 </StackPanel>
 
                 <TextBlock Grid.Row="2"
@@ -175,7 +179,7 @@
             </Grid>
         </DataTemplate>
 
-        <DataTemplate DataType="{x:Type models:MeaiLanguageModelSettings}">
+        <DataTemplate DataType="{x:Type models:OpenAiLanguageModelSettings}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -284,6 +288,86 @@
                               SelectedItem="{Binding ReasoningEffort, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
 
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type models:OpenAiResponsesLanguageModelSettings}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0"
+                            Grid.Column="0"
+                            Margin="0,0,12,12">
+                    <TextBlock Text="{DynamicResource Common.ModelId}" FontWeight="SemiBold"/>
+                    <TextBox Margin="0,6,0,0"
+                             Text="{Binding ModelId, UpdateSourceTrigger=LostFocus}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="0"
+                            Grid.Column="1"
+                            Margin="0,0,12,12">
+                    <TextBlock Text="{DynamicResource Common.ApiKey}" FontWeight="SemiBold"/>
+                    <TextBox Margin="0,6,0,0"
+                             Text="{Binding ApiKey, UpdateSourceTrigger=LostFocus}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1"
+                            Grid.Column="0"
+                            Margin="0,0,12,12">
+                    <TextBlock Text="{DynamicResource Common.BaseUrl}" FontWeight="SemiBold"/>
+                    <TextBox Margin="0,6,0,0"
+                             Text="{Binding BaseUrl, UpdateSourceTrigger=LostFocus}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1"
+                            Grid.Column="1"
+                            Margin="0,0,12,12">
+                    <CheckBox IsChecked="{Binding UseTemperature, UpdateSourceTrigger=PropertyChanged}"
+                              Content="{DynamicResource LanguageModelConfiguration.SendTemperature}"/>
+                    <TextBox Margin="0,6,0,0"
+                             IsEnabled="{Binding UseTemperature}"
+                             Text="{Binding Temperature, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2"
+                            Grid.Column="0"
+                            Margin="0,0,0,12">
+                    <CheckBox IsChecked="{Binding UseTopP, UpdateSourceTrigger=PropertyChanged}"
+                              Content="{DynamicResource LanguageModelConfiguration.SendTopPUnderscore}"/>
+                    <TextBox Margin="0,6,0,0"
+                             IsEnabled="{Binding UseTopP}"
+                             Text="{Binding TopP, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2"
+                            Grid.Column="1"
+                            Margin="0,0,12,12">
+                    <CheckBox IsChecked="{Binding UseMaxOutputTokens, UpdateSourceTrigger=PropertyChanged}"
+                              Content="{DynamicResource LanguageModelConfiguration.LimitOutputTokens}"/>
+                    <TextBox Margin="0,6,0,0"
+                             IsEnabled="{Binding UseMaxOutputTokens}"
+                             Text="{Binding MaxOutputTokens, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="3"
+                            Grid.Column="0"
+                            Margin="0,0,12,12">
+                    <CheckBox IsChecked="{Binding UseReasoningEffort, UpdateSourceTrigger=PropertyChanged}"
+                              Content="{DynamicResource LanguageModelConfiguration.ReasoningEffort}"/>
+                    <ComboBox Margin="0,6,0,0"
+                              IsEnabled="{Binding UseReasoningEffort}"
+                              ItemsSource="{Binding SupportedReasoningEfforts}"
+                              SelectedItem="{Binding ReasoningEffort, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
             </Grid>
         </DataTemplate>
 

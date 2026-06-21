@@ -89,17 +89,17 @@
     <system:String x:Key="LM_Google_UseThinkingLevel">使用 Thinking Level</system:String>
     <system:String x:Key="LM_Google_UseThinkingBudget">使用 Thinking Budget</system:String>
     <system:String x:Key="LM_Google_IncludeThoughts">包含 Thinking (Thoughts)</system:String>
-    <system:String x:Key="LM_Meai_ModelId">模型标识 (Model ID)：</system:String>
-    <system:String x:Key="LM_Meai_ApiKey">API Key：</system:String>
-    <system:String x:Key="LM_Meai_BaseUrl">Base URL：</system:String>
-    <system:String x:Key="LM_Meai_UseTemp">使用 Temperature</system:String>
-    <system:String x:Key="LM_Meai_UseTopP">使用 Top P</system:String>
-    <system:String x:Key="LM_Meai_UseMaxTokens">使用 Max Output Tokens</system:String>
-    <system:String x:Key="LM_Meai_UsePresence">使用 Presence Penalty</system:String>
-    <system:String x:Key="LM_Meai_UseFrequency">使用 Frequency Penalty</system:String>
-    <system:String x:Key="LM_Meai_UseSeed">使用 Seed</system:String>
-    <system:String x:Key="LM_Meai_UseReasoningEffort">使用 Reasoning Effort</system:String>
-    <system:String x:Key="LM_Meai_UseReasoningOutput">使用 Reasoning Output</system:String>
+    <system:String x:Key="LM_OpenAi_ModelId">模型标识 (Model ID)：</system:String>
+    <system:String x:Key="LM_OpenAi_ApiKey">API Key：</system:String>
+    <system:String x:Key="LM_OpenAi_BaseUrl">Base URL：</system:String>
+    <system:String x:Key="LM_OpenAi_UseTemp">使用 Temperature</system:String>
+    <system:String x:Key="LM_OpenAi_UseTopP">使用 Top P</system:String>
+    <system:String x:Key="LM_OpenAi_UseMaxTokens">使用 Max Output Tokens</system:String>
+    <system:String x:Key="LM_OpenAi_UsePresence">使用 Presence Penalty</system:String>
+    <system:String x:Key="LM_OpenAi_UseFrequency">使用 Frequency Penalty</system:String>
+    <system:String x:Key="LM_OpenAi_UseSeed">使用 Seed</system:String>
+    <system:String x:Key="LM_OpenAi_UseReasoningEffort">使用 Reasoning Effort</system:String>
+    <system:String x:Key="LM_OpenAi_UseReasoningOutput">使用 Reasoning Output</system:String>
 
     <!-- 功能层级设置子页面 -->
     <system:String x:Key="Layer_SubStepTitle">功能层级</system:String>

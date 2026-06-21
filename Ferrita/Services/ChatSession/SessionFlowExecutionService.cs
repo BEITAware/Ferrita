@@ -419,13 +419,16 @@ namespace Ferrita.Services.ChatSession
             }
 
             var explicitOutputs = new Dictionary<string, RoutedPayload>(StringComparer.OrdinalIgnoreCase);
-            var binding = deliveredBindings.FirstOrDefault(b =>
-                string.Equals(b.Port.Id, "ctx-inject-input", StringComparison.OrdinalIgnoreCase));
+            var binding = deliveredBindings.FirstOrDefault(b => IsPortIdMatch(b.Port.Id, "ctx-inject-input"));
             if (binding != null)
             {
-                explicitOutputs["ctx-inject-output"] = new RoutedPayload(
-                    binding.Payload,
-                    binding.IsAlreadyPresented);
+                var outputPort = compiledNode.Node.OutputPorts.FirstOrDefault(p => IsPortIdMatch(p.Id, "ctx-inject-output"));
+                if (outputPort != null)
+                {
+                    explicitOutputs[outputPort.Id] = new RoutedPayload(
+                        binding.Payload,
+                        binding.IsAlreadyPresented);
+                }
             }
 
             string? customMessage = null;
@@ -449,14 +452,18 @@ namespace Ferrita.Services.ChatSession
             var left = GetRequiredBoolean(compiledNode, deliveredBindings, "in-a");
             var right = GetRequiredBoolean(compiledNode, deliveredBindings, "in-b");
 
+            var explicitOutputs = new Dictionary<string, RoutedPayload>(StringComparer.OrdinalIgnoreCase);
+            var outputPort = compiledNode.Node.OutputPorts.FirstOrDefault(p => IsPortIdMatch(p.Id, "out-result"));
+            if (outputPort != null)
+            {
+                explicitOutputs[outputPort.Id] = new RoutedPayload(
+                    CreateBooleanPayload(operation(left, right)),
+                    false);
+            }
+
             return new NodeExecutionOutcome
             {
-                ExplicitOutputPayloads = new Dictionary<string, RoutedPayload>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["out-result"] = new RoutedPayload(
-                        CreateBooleanPayload(operation(left, right)),
-                        false)
-                }
+                ExplicitOutputPayloads = explicitOutputs
             };
         }
 
@@ -465,14 +472,18 @@ namespace Ferrita.Services.ChatSession
             IReadOnlyList<DeliveredInputBinding> deliveredBindings)
         {
             var value = GetRequiredBoolean(compiledNode, deliveredBindings, "in-a");
+            var explicitOutputs = new Dictionary<string, RoutedPayload>(StringComparer.OrdinalIgnoreCase);
+            var outputPort = compiledNode.Node.OutputPorts.FirstOrDefault(p => IsPortIdMatch(p.Id, "out-result"));
+            if (outputPort != null)
+            {
+                explicitOutputs[outputPort.Id] = new RoutedPayload(
+                    CreateBooleanPayload(!value),
+                    false);
+            }
+
             return new NodeExecutionOutcome
             {
-                ExplicitOutputPayloads = new Dictionary<string, RoutedPayload>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["out-result"] = new RoutedPayload(
-                        CreateBooleanPayload(!value),
-                        false)
-                }
+                ExplicitOutputPayloads = explicitOutputs
             };
         }
 
@@ -593,9 +604,13 @@ namespace Ferrita.Services.ChatSession
                 return true;
             }
 
+            if (outcome.ExplicitOutputPayloads.TryGetValue(sourcePort.Id, out payload))
+            {
+                return true;
+            }
+
             if (sourcePort.IsTransparentOutput)
             {
-                outcome.ExplicitOutputPayloads.TryGetValue(sourcePort.Id, out payload);
                 return true;
             }
 
@@ -643,6 +658,28 @@ namespace Ferrita.Services.ChatSession
             return runtimeState.IncomingConnections.Values.All(item => item.IsResolved);
         }
 
+        private static bool IsPortIdMatch(string actualId, string expectedBaseId)
+        {
+            if (string.IsNullOrWhiteSpace(actualId) || string.IsNullOrWhiteSpace(expectedBaseId))
+            {
+                return false;
+            }
+
+            if (string.Equals(actualId, expectedBaseId, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (actualId.Length > expectedBaseId.Length &&
+                actualId.StartsWith(expectedBaseId, StringComparison.OrdinalIgnoreCase) &&
+                actualId[expectedBaseId.Length] == '-')
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         private bool TryGetPortBinding(
             SessionFlowCompiledNode compiledNode,
             IReadOnlyList<DeliveredInputBinding> deliveredBindings,
@@ -650,22 +687,21 @@ namespace Ferrita.Services.ChatSession
             out DeliveredInputBinding? binding,
             out string errorMessage)
         {
-            binding = deliveredBindings.FirstOrDefault(item =>
-                string.Equals(item.Port.Id, portId, StringComparison.OrdinalIgnoreCase));
+            binding = deliveredBindings.FirstOrDefault(item => IsPortIdMatch(item.Port.Id, portId));
             if (binding != null)
             {
                 errorMessage = string.Empty;
                 return true;
             }
 
-            var inputPort = compiledNode.InputPortsById.TryGetValue(portId, out var port) ? port : null;
+            var inputPort = compiledNode.Node.InputPorts.FirstOrDefault(p => IsPortIdMatch(p.Id, portId));
             if (inputPort == null)
             {
                 errorMessage = $"找不到输入端口：{portId}";
                 return false;
             }
 
-            if (compiledNode.GetIncomingConnectionsForTargetPort(portId).Count == 0)
+            if (compiledNode.GetIncomingConnectionsForTargetPort(inputPort.Id).Count == 0)
             {
                 errorMessage = $"端口“{inputPort.Name}”没有任何输入连接。";
                 return false;
@@ -967,7 +1003,7 @@ namespace Ferrita.Services.ChatSession
                     request,
                     ChatSessionRuntimeEventKind.ContextCompressionApplied,
                     compiledNode,
-                    message: "本轮代理迭代触发了上下文压缩。",
+                    message: update.Message ?? "本轮代理迭代触发了上下文压缩。",
                     iterationNumber: update.IterationNumber,
                     modelId: update.ModelId,
                     contextCompression: update.ContextCompression),

@@ -146,8 +146,7 @@ namespace Ferrita.Controls.FerritaPreferencesControl.ViewModels.Pages
             new("Microsoft.CodeAnalysis.VisualBasic.Workspaces", "4.14.0", "MIT", "", "Microsoft.CodeAnalysis-LICENSE.txt"),
             new("Microsoft.CodeAnalysis.Workspaces.Common", "4.14.0", "MIT", "", "Microsoft.CodeAnalysis-LICENSE.txt"),
             new("Microsoft.CSharp", "4.7.0", "MIT"),
-            new("Microsoft.Extensions.AI.Abstractions", "10.4.1", "MIT"),
-            new("Microsoft.Extensions.AI.OpenAI", "10.4.1", "MIT"),
+
             new("Microsoft.Extensions.Configuration.Abstractions", "10.0.2", "MIT"),
             new("Microsoft.Extensions.DependencyInjection.Abstractions", "10.0.2", "MIT"),
             new("Microsoft.Extensions.Diagnostics.Abstractions", "10.0.2", "MIT"),

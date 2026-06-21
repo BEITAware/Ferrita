@@ -59,15 +59,16 @@ public class OKXMLTests
     [TestMethod]
     public void TestLinkExtractionAndStripping()
     {
-        string content = "Here is a link ok.MyWiki.wiki/doc-name_1.0. And another [Doc 2](ok.MyWiki.wiki/doc2_1.9.3) in parenthesis.";
+        string content = "Here is a link ok.MyWiki.wiki/doc-name_1.0. And another [Doc 2](ok.MyWiki.wiki/doc2_1.9.3) in parenthesis. And a Chinese one ok.CatWiki.wiki/猫的介绍_1.0.";
 
         var links = OKWikiManager.ExtractOkLinks(content);
-        Assert.AreEqual(2, links.Count);
+        Assert.AreEqual(3, links.Count);
         Assert.IsTrue(links.Contains("ok.MyWiki.wiki/doc-name_1.0"));
         Assert.IsTrue(links.Contains("ok.MyWiki.wiki/doc2_1.9.3"));
+        Assert.IsTrue(links.Contains("ok.CatWiki.wiki/猫的介绍_1.0"));
 
         var stripped = OKWikiManager.StripOkLinks(content);
-        Assert.AreEqual("Here is a link . And another Doc 2 in parenthesis.", stripped);
+        Assert.AreEqual("Here is a link . And another Doc 2 in parenthesis. And a Chinese one .", stripped);
 
         var (page1, ver1) = OKWikiManager.ParseOkLink("ok.MyWiki.wiki/doc-name_1.0");
         Assert.AreEqual("doc-name", page1);
@@ -76,6 +77,31 @@ public class OKXMLTests
         var (page2, ver2) = OKWikiManager.ParseOkLink("ok.MyWiki.wiki/doc2_1.9.3");
         Assert.AreEqual("doc2", page2);
         Assert.AreEqual("1.9.3", ver2);
+
+        var (page3, ver3) = OKWikiManager.ParseOkLink("ok.CatWiki.wiki/猫的介绍_1.0");
+        Assert.AreEqual("猫的介绍", page3);
+        Assert.AreEqual("1.0", ver3);
+    }
+
+    [TestMethod]
+    public async Task TestWikiMetadataWithOptionalFields()
+    {
+        var manager = new OKWikiManager(_testDir, "TestWikiWithMetadata", description: "This is a test wiki.", author: "Antigravity");
+        await manager.InitializeAsync();
+
+        string xmlPath = Path.Combine(_testDir, "TestWikiWithMetadata.xml");
+        Assert.IsTrue(File.Exists(xmlPath), "Wiki级 XML 元数据文件应当被成功创建");
+
+        var serializer = new System.Xml.Serialization.XmlSerializer(typeof(OKWikiMetadata));
+        using var fs = new FileStream(xmlPath, FileMode.Open, FileAccess.Read);
+        var meta = (OKWikiMetadata)serializer.Deserialize(fs)!;
+
+        Assert.AreEqual("TestWikiWithMetadata", meta.WikiName);
+        Assert.AreEqual("This is a test wiki.", meta.Description);
+        Assert.AreEqual("Antigravity", meta.Author);
+        Assert.IsTrue((DateTime.UtcNow - meta.CreatedAt).TotalSeconds < 10);
+
+        await manager.DisposeAsync();
     }
 
     [TestMethod]

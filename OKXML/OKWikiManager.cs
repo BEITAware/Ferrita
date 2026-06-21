@@ -61,7 +61,9 @@ public class OKWikiManager : IAsyncDisposable
     /// <param name="wikiRootPath">Wiki 根目录。</param>
     /// <param name="wikiName">Wiki 名称（如果尚不存在元数据文件则必须提供；否则将从现有的 [WikiName].xml 中自动提取）。</param>
     /// <param name="embeddingProvider">嵌入向量模型提供程序，如果为 null，将默认构建一个 Dummy 向量模型。</param>
-    public OKWikiManager(string wikiRootPath, string? wikiName = null, IEmbeddingProvider? embeddingProvider = null)
+    /// <param name="description">Wiki 的简介描述（可选）。</param>
+    /// <param name="author">Wiki 的作者名字（可选）。</param>
+    public OKWikiManager(string wikiRootPath, string? wikiName = null, IEmbeddingProvider? embeddingProvider = null, string? description = null, string? author = null)
     {
         WikiRootPath = Path.GetFullPath(wikiRootPath);
         DatabasePath = Path.Combine(WikiRootPath, "Database");
@@ -75,7 +77,7 @@ public class OKWikiManager : IAsyncDisposable
         // 确定 WikiName 并加载/初始化元数据
         WikiName = ResolveWikiName(WikiRootPath, wikiName);
 
-        EnsureWikiMetadataFile();
+        EnsureWikiMetadataFile(description, author);
 
         // 配置 AerialCityEngine
         var builder = new AerialCityBuilder()
@@ -100,7 +102,9 @@ public class OKWikiManager : IAsyncDisposable
     /// <param name="wikiRootPath">Wiki 根目录。</param>
     /// <param name="embeddingConfig">嵌入服务配置（API Key、模型名等）。</param>
     /// <param name="wikiName">Wiki 名称（如果尚不存在元数据文件则必须提供；否则将从现有的 [WikiName].xml 中自动提取）。</param>
-    public OKWikiManager(string wikiRootPath, OKEmbeddingConfig embeddingConfig, string? wikiName = null)
+    /// <param name="description">Wiki 的简介描述（可选）。</param>
+    /// <param name="author">Wiki 的作者名字（可选）。</param>
+    public OKWikiManager(string wikiRootPath, OKEmbeddingConfig embeddingConfig, string? wikiName = null, string? description = null, string? author = null)
     {
         ArgumentNullException.ThrowIfNull(embeddingConfig);
 
@@ -116,7 +120,7 @@ public class OKWikiManager : IAsyncDisposable
         // 确定 WikiName 并加载/初始化元数据
         WikiName = ResolveWikiName(WikiRootPath, wikiName);
 
-        EnsureWikiMetadataFile();
+        EnsureWikiMetadataFile(description, author);
 
         // 使用真实 API 嵌入提供程序配置 AerialCityEngine
         var apiProvider = new ApiEmbeddingProvider(embeddingConfig);
@@ -360,7 +364,7 @@ public class OKWikiManager : IAsyncDisposable
 
             string mdText = await File.ReadAllTextAsync(filePath, ct);
             // 匹配格式：ok.[wiki名称].wiki/pageName_oldVersion
-            string pattern = $@"ok\.[a-zA-Z0-9_-]+\.wiki\/{Regex.Escape(pageName)}_{Regex.Escape(oldVersion)}(?![0-9.])";
+            string pattern = $@"ok\.[\p{{L}}\p{{N}}_-]+\.wiki\/{Regex.Escape(pageName)}_{Regex.Escape(oldVersion)}(?![0-9.])";
 
             if (Regex.IsMatch(mdText, pattern))
             {
@@ -472,10 +476,10 @@ public class OKWikiManager : IAsyncDisposable
     public static string StripOkLinks(string content)
     {
         // 1. 去除格式：[显示文本](ok.wikiName.wiki/PageName_Version) -> 显示文本
-        string result = Regex.Replace(content, @"\[([^\]]+)\]\(ok\.[a-zA-Z0-9_-]+\.wiki\/[a-zA-Z0-9_-]+_[0-9]+(?:\.[0-9]+)*\)", "$1");
+        string result = Regex.Replace(content, @"\[([^\]]+)\]\(ok\.[\p{L}\p{N}_-]+\.wiki\/[\p{L}\p{N}_-]+_[0-9]+(?:\.[0-9]+)*\)", "$1");
 
         // 2. 去除裸链接形式的 OK 命名空间链接本体：ok.wikiName.wiki/PageName_Version -> 空字符
-        result = Regex.Replace(result, @"ok\.[a-zA-Z0-9_-]+\.wiki\/[a-zA-Z0-9_-]+_[0-9]+(?:\.[0-9]+)*", "");
+        result = Regex.Replace(result, @"ok\.[\p{L}\p{N}_-]+\.wiki\/[\p{L}\p{N}_-]+_[0-9]+(?:\.[0-9]+)*", "");
 
         return result;
     }
@@ -485,7 +489,7 @@ public class OKWikiManager : IAsyncDisposable
     /// </summary>
     public static List<string> ExtractOkLinks(string content)
     {
-        var matches = Regex.Matches(content, @"ok\.[a-zA-Z0-9_-]+\.wiki\/[a-zA-Z0-9_-]+_[0-9]+(?:\.[0-9]+)*");
+        var matches = Regex.Matches(content, @"ok\.[\p{L}\p{N}_-]+\.wiki\/[\p{L}\p{N}_-]+_[0-9]+(?:\.[0-9]+)*");
         var list = new List<string>();
         foreach (Match match in matches)
         {
@@ -499,7 +503,7 @@ public class OKWikiManager : IAsyncDisposable
     /// </summary>
     public static (string PageName, string Version) ParseOkLink(string link)
     {
-        var match = Regex.Match(link, @"ok\.[a-zA-Z0-9_-]+\.wiki\/([a-zA-Z0-9_-]+)_([0-9]+(?:\.[0-9]+)*)");
+        var match = Regex.Match(link, @"^ok\.[\p{L}\p{N}_-]+\.wiki\/([\p{L}\p{N}_-]+?)_([0-9]+(?:\.[0-9]+)*)$");
         if (match.Success)
         {
             return (match.Groups[1].Value, match.Groups[2].Value);
@@ -776,7 +780,7 @@ public class OKWikiManager : IAsyncDisposable
         return wikiName;
     }
 
-    private void EnsureWikiMetadataFile()
+    private void EnsureWikiMetadataFile(string? description = null, string? author = null)
     {
         string xmlPath = Path.Combine(WikiRootPath, $"{WikiName}.xml");
         if (!File.Exists(xmlPath))
@@ -784,7 +788,9 @@ public class OKWikiManager : IAsyncDisposable
             var meta = new OKWikiMetadata
             {
                 WikiName = WikiName,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                Description = description,
+                Author = author
             };
             SerializeXml(xmlPath, meta);
         }

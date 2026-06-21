@@ -19,7 +19,7 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Models
         private int _thinkingBudget = -1;
         private bool _includeThoughts = true;
 
-        public override string InterfaceType => "GOOGLE";
+        public override string InterfaceType => "Google";
 
         public IReadOnlyList<string> SupportedThinkingLevels => s_supportedThinkingLevels;
 

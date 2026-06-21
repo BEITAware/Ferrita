@@ -1,11 +1,14 @@
+using System;
+using System.Collections.Generic;
+
 namespace Ferrita.Controls.LanguageModelConfigurationControl.Models
 {
-    public sealed class MeaiLanguageModelSettings : LanguageModelInterfaceSettings
+    public class OpenAiLanguageModelSettings : LanguageModelInterfaceSettings
     {
         private static readonly string[] s_supportedReasoningEfforts = ["Low", "Medium", "High"];
         private string _modelId = string.Empty;
         private string _apiKey = string.Empty;
-        private string _baseUrl = string.Empty;
+        private string _baseUrl = "https://api.openai.com/v1";
         private bool _useTemperature;
         private decimal _temperature = 1.0m;
         private bool _useTopP;
@@ -23,7 +26,7 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Models
         private bool _useReasoningOutput = true;
         private string _reasoningOutput = "Full";
 
-        public override string InterfaceType => "MEAI";
+        public override string InterfaceType => "OpenAI Chat Completions API";
 
         public IReadOnlyList<string> SupportedReasoningEfforts => s_supportedReasoningEfforts;
 
@@ -184,6 +187,5 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Models
                 _ => "Medium"
             };
         }
-
     }
 }

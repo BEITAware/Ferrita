@@ -1,5 +1,7 @@
 using System.ComponentModel;
 using System.Windows.Input;
+using System.Linq;
+using System.Collections.Generic;
 using Ferrita.Commands;
 using Ferrita.Controls.LanguageModelConfigurationControl.Services;
 using Ferrita.Infrastructure.Mvvm;
@@ -21,6 +23,7 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Models
         private bool _enableAudioInput = true;
         private bool _enableVideoInput = true;
         private bool _enableDocumentInput = true;
+        private bool _enableUniversalToolCalling = false;
         private string _testResponse = string.Empty;
         private bool _isTesting;
         private bool _canCancelTest;
@@ -65,7 +68,10 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Models
 
                 if (!string.Equals(InterfaceSettings.InterfaceType, normalizedValue, StringComparison.Ordinal))
                 {
-                    InterfaceSettings = CreateInterfaceSettings(normalizedValue);
+                    var oldSettings = InterfaceSettings;
+                    var newSettings = CreateInterfaceSettings(normalizedValue);
+                    CopyCommonSettings(oldSettings, newSettings);
+                    InterfaceSettings = newSettings;
                 }
 
                 NotifyDerivedStateChanged();
@@ -134,6 +140,12 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Models
         {
             get => _enableDocumentInput;
             set => SetProperty(ref _enableDocumentInput, value);
+        }
+
+        public bool EnableUniversalToolCalling
+        {
+            get => _enableUniversalToolCalling;
+            set => SetProperty(ref _enableUniversalToolCalling, value);
         }
 
         public bool IsFullyConfigured =>
@@ -280,6 +292,40 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Models
         private static string LF(string resourceKey, string fallback, params object[] args)
         {
             return string.Format(L(resourceKey, fallback), args);
+        }
+
+        private static void CopyCommonSettings(LanguageModelInterfaceSettings source, LanguageModelInterfaceSettings target)
+        {
+            if (source == null || target == null) return;
+            var sourceProperties = source.GetType().GetProperties();
+            var targetProperties = target.GetType().GetProperties();
+
+            var commonNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "ModelId", "ApiKey", "BaseUrl",
+                "UseTemperature", "Temperature",
+                "UseTopP", "TopP",
+                "UseMaxOutputTokens", "MaxOutputTokens"
+            };
+
+            foreach (var prop in sourceProperties)
+            {
+                if (!commonNames.Contains(prop.Name)) continue;
+                if (!prop.CanRead) continue;
+
+                var targetProp = targetProperties.FirstOrDefault(p => string.Equals(p.Name, prop.Name, StringComparison.OrdinalIgnoreCase) && p.CanWrite);
+                if (targetProp == null) continue;
+
+                try
+                {
+                    var value = prop.GetValue(source);
+                    targetProp.SetValue(target, value);
+                }
+                catch
+                {
+                    // Ignore reflection errors if types mismatch
+                }
+            }
         }
     }
 }

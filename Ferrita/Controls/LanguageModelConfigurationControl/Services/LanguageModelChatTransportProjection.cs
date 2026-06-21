@@ -138,7 +138,8 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
                     projectedBlocks)
                 {
                     AuthorName = message.AuthorName,
-                    IsHostInjectedTail = message.IsHostInjectedTail
+                    IsHostInjectedTail = message.IsHostInjectedTail,
+                    ReasoningContent = message.ReasoningContent
                 }
                 : message.Clone();
         }

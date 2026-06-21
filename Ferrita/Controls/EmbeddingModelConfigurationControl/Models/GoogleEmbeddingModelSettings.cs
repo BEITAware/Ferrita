@@ -21,7 +21,7 @@ namespace Ferrita.Controls.EmbeddingModelConfigurationControl.Models
         private string _taskType = "RETRIEVAL_DOCUMENT";
         private bool _sendInlineData;
 
-        public override string InterfaceType => "GOOGLE";
+        public override string InterfaceType => "Google";
 
         public IReadOnlyList<string> SupportedTaskTypes => s_supportedTaskTypes;
 

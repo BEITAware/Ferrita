@@ -325,9 +325,10 @@
                                                         <StackPanel Grid.Column="2">
                                                             <TextBlock Text="{DynamicResource LM_LabelProtocol}" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
                                                             <ComboBox SelectedValuePath="Content" SelectedValue="{Binding InterfaceType, UpdateSourceTrigger=PropertyChanged}" Height="26" VerticalContentAlignment="Center">
-                                                                <ComboBoxItem Content="MEAI"/>
-                                                                <ComboBoxItem Content="GOOGLE"/>
-                                                            </ComboBox>
+                                                                 <ComboBoxItem Content="OpenAI Chat Completions API"/>
+                                                                 <ComboBoxItem Content="OpenAI Responses API"/>
+                                                                 <ComboBoxItem Content="Google"/>
+                                                             </ComboBox>
                                                         </StackPanel>
                                                     </Grid>
                                                     
@@ -417,9 +418,9 @@
                                                                     </StackPanel>
                                                                 </Grid>
                                                             </DataTemplate>
- 
-                                                            <!-- MEAI 设置模板 -->
-                                                            <DataTemplate DataType="{x:Type local:WizardMeaiSettings}">
+
+                                                            <!-- OPENAI 设置模板 -->
+                                                            <DataTemplate DataType="{x:Type local:WizardOpenAiSettings}">
                                                                 <Grid>
                                                                     <Grid.RowDefinitions>
                                                                         <RowDefinition Height="Auto"/>
@@ -434,54 +435,54 @@
                                                                         <ColumnDefinition Width="10"/>
                                                                         <ColumnDefinition Width="*"/>
                                                                     </Grid.ColumnDefinitions>
- 
+
                                                                     <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,8">
-                                                                        <TextBlock Text="{DynamicResource LM_Meai_ModelId}" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
+                                                                        <TextBlock Text="{DynamicResource LM_OpenAi_ModelId}" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
                                                                         <TextBox Text="{Binding ModelId, UpdateSourceTrigger=PropertyChanged}" Height="26" VerticalContentAlignment="Center" Padding="4,0"/>
                                                                     </StackPanel>
                                                                     <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,8">
-                                                                        <TextBlock Text="{DynamicResource LM_Meai_ApiKey}" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
+                                                                        <TextBlock Text="{DynamicResource LM_OpenAi_ApiKey}" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
                                                                         <TextBox Text="{Binding ApiKey, UpdateSourceTrigger=PropertyChanged}" Height="26" VerticalContentAlignment="Center" Padding="4,0"/>
                                                                     </StackPanel>
- 
+
                                                                     <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,8">
-                                                                        <TextBlock Text="{DynamicResource LM_Meai_BaseUrl}" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
+                                                                        <TextBlock Text="{DynamicResource LM_OpenAi_BaseUrl}" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
                                                                         <TextBox Text="{Binding BaseUrl, UpdateSourceTrigger=PropertyChanged}" Height="26" VerticalContentAlignment="Center" Padding="4,0"/>
                                                                     </StackPanel>
- 
+
                                                                     <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,0,8">
-                                                                        <CheckBox Content="{DynamicResource LM_Meai_UseTemp}" IsChecked="{Binding UseTemperature}" Foreground="White" Margin="0,0,0,4"/>
+                                                                        <CheckBox Content="{DynamicResource LM_OpenAi_UseTemp}" IsChecked="{Binding UseTemperature}" Foreground="White" Margin="0,0,0,4"/>
                                                                         <TextBox Text="{Binding Temperature, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding UseTemperature}" Height="26" VerticalContentAlignment="Center" Padding="4,0"/>
                                                                     </StackPanel>
                                                                     <StackPanel Grid.Row="2" Grid.Column="2" Margin="0,0,0,8">
-                                                                        <CheckBox Content="{DynamicResource LM_Meai_UseTopP}" IsChecked="{Binding UseTopP}" Foreground="White" Margin="0,0,0,4"/>
+                                                                        <CheckBox Content="{DynamicResource LM_OpenAi_UseTopP}" IsChecked="{Binding UseTopP}" Foreground="White" Margin="0,0,0,4"/>
                                                                         <TextBox Text="{Binding TopP, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding UseTopP}" Height="26" VerticalContentAlignment="Center" Padding="4,0"/>
                                                                     </StackPanel>
- 
+
                                                                     <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,0,0,8">
-                                                                        <CheckBox Content="{DynamicResource LM_Meai_UseMaxTokens}" IsChecked="{Binding UseMaxOutputTokens}" Foreground="White" Margin="0,0,0,4"/>
+                                                                        <CheckBox Content="{DynamicResource LM_OpenAi_UseMaxTokens}" IsChecked="{Binding UseMaxOutputTokens}" Foreground="White" Margin="0,0,0,4"/>
                                                                         <TextBox Text="{Binding MaxOutputTokens, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding UseMaxOutputTokens}" Height="26" VerticalContentAlignment="Center" Padding="4,0"/>
                                                                     </StackPanel>
                                                                     <StackPanel Grid.Row="3" Grid.Column="2" Margin="0,0,0,8">
-                                                                        <CheckBox Content="{DynamicResource LM_Meai_UsePresence}" IsChecked="{Binding UsePresencePenalty}" Foreground="White" Margin="0,0,0,4"/>
+                                                                        <CheckBox Content="{DynamicResource LM_OpenAi_UsePresence}" IsChecked="{Binding UsePresencePenalty}" Foreground="White" Margin="0,0,0,4"/>
                                                                         <TextBox Text="{Binding PresencePenalty, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding UsePresencePenalty}" Height="26" VerticalContentAlignment="Center" Padding="4,0"/>
                                                                     </StackPanel>
- 
+
                                                                     <StackPanel Grid.Row="4" Grid.Column="0" Margin="0,0,0,8">
-                                                                        <CheckBox Content="{DynamicResource LM_Meai_UseFrequency}" IsChecked="{Binding UseFrequencyPenalty}" Foreground="White" Margin="0,0,0,4"/>
+                                                                        <CheckBox Content="{DynamicResource LM_OpenAi_UseFrequency}" IsChecked="{Binding UseFrequencyPenalty}" Foreground="White" Margin="0,0,0,4"/>
                                                                         <TextBox Text="{Binding FrequencyPenalty, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding UseFrequencyPenalty}" Height="26" VerticalContentAlignment="Center" Padding="4,0"/>
                                                                     </StackPanel>
                                                                     <StackPanel Grid.Row="4" Grid.Column="2" Margin="0,0,0,8">
-                                                                        <CheckBox Content="{DynamicResource LM_Meai_UseSeed}" IsChecked="{Binding UseSeed}" Foreground="White" Margin="0,0,0,4"/>
+                                                                        <CheckBox Content="{DynamicResource LM_OpenAi_UseSeed}" IsChecked="{Binding UseSeed}" Foreground="White" Margin="0,0,0,4"/>
                                                                         <TextBox Text="{Binding Seed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding UseSeed}" Height="26" VerticalContentAlignment="Center" Padding="4,0"/>
                                                                     </StackPanel>
- 
+
                                                                     <StackPanel Grid.Row="5" Grid.Column="0" Margin="0,0,0,8">
-                                                                        <CheckBox Content="{DynamicResource LM_Meai_UseReasoningEffort}" IsChecked="{Binding UseReasoningEffort}" Foreground="White" Margin="0,0,0,4"/>
+                                                                        <CheckBox Content="{DynamicResource LM_OpenAi_UseReasoningEffort}" IsChecked="{Binding UseReasoningEffort}" Foreground="White" Margin="0,0,0,4"/>
                                                                         <ComboBox ItemsSource="{Binding SupportedReasoningEfforts}" SelectedItem="{Binding ReasoningEffort}" IsEnabled="{Binding UseReasoningEffort}" Height="26" VerticalContentAlignment="Center"/>
                                                                     </StackPanel>
                                                                     <StackPanel Grid.Row="5" Grid.Column="2" Margin="0,0,0,8">
-                                                                        <CheckBox Content="{DynamicResource LM_Meai_UseReasoningOutput}" IsChecked="{Binding UseReasoningOutput}" Foreground="White" Margin="0,0,0,4"/>
+                                                                        <CheckBox Content="{DynamicResource LM_OpenAi_UseReasoningOutput}" IsChecked="{Binding UseReasoningOutput}" Foreground="White" Margin="0,0,0,4"/>
                                                                         <ComboBox ItemsSource="{Binding SupportedReasoningOutputs}" SelectedItem="{Binding ReasoningOutput}" IsEnabled="{Binding UseReasoningOutput}" Height="26" VerticalContentAlignment="Center"/>
                                                                     </StackPanel>
                                                                 </Grid>

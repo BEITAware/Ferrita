@@ -24,6 +24,7 @@ using Ferrita.Controls.WorkflowEditorControl.Views;
 using Ferrita.Controls.PersonaSettingsControl.ViewModels;
 using Ferrita.Controls.PersonaSettingsControl.Views;
 using Ferrita.Controls.ScheduledTasksControl.Views;
+using Ferrita.Controls.KnowledgeBrowserControl.Views;
 using Ferrita.Infrastructure.Mvvm;
 using Ferrita.Panels.DocumentWorkspace.Models;
 using Ferrita.Panels.DocumentWorkspace.ViewModels;
@@ -98,6 +99,7 @@ namespace Ferrita.Panels.MultiFunctionArea.ViewModels
             public const string AgentWizard = "agent-wizard";
             public const string PersonaSettings = "persona-settings";
             public const string ScheduledTasks = "scheduled-tasks";
+            public const string KnowledgeBrowser = "knowledge-browser";
         }
 
         private IReadOnlyList<MultiFunctionTabDefinition> CreateDefinitions()
@@ -235,6 +237,17 @@ namespace Ferrita.Panels.MultiFunctionArea.ViewModels
                     IconPath = "pack://application:,,,/Resources/BatchProcess.png",
                     MaxCount = 1,
                     ContentFactory = _ => CreateScheduledTasksView()
+                },
+                new()
+                {
+                    TypeKey = TabTypes.KnowledgeBrowser,
+                    TitleResourceKey = "Tabs.KnowledgeBrowser.Title",
+                    Title = L("Tabs.KnowledgeBrowser.Title", "知识浏览器"),
+                    DescriptionResourceKey = "Tabs.KnowledgeBrowser.Description",
+                    Description = L("Tabs.KnowledgeBrowser.Description", "浏览和管理知识库中的知识文件。"),
+                    IconPath = "pack://application:,,,/Resources/ResourcesLibrary.png",
+                    MaxCount = 1,
+                    ContentFactory = _ => CreateKnowledgeBrowserView()
                 }
             };
         }
@@ -445,6 +458,11 @@ namespace Ferrita.Panels.MultiFunctionArea.ViewModels
         private static object CreateScheduledTasksView()
         {
             return new ScheduledTasksControl();
+        }
+
+        private static object CreateKnowledgeBrowserView()
+        {
+            return new KnowledgeBrowserControl();
         }
     }
 }

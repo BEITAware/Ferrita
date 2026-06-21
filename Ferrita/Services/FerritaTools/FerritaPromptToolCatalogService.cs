@@ -97,11 +97,15 @@ namespace Ferrita.Services.FerritaTools
             IReadOnlyList<FerritaToolKitDefinition> availableToolKits,
             bool requiresHostConfirmation)
         {
+            var rawDescription = FerritaToolPromptSupport.ResolvePromptDescription(registration, availableToolKits);
+            var (description, fewShots) = FerritaToolPromptSupport.SplitFewShots(rawDescription);
+
             return new FerritaPromptToolDefinition(
                 registration.Definition.Name,
-                FerritaToolPromptSupport.ResolvePromptDescription(registration, availableToolKits),
+                description,
                 registration.Definition.Parameters,
-                requiresHostConfirmation);
+                requiresHostConfirmation,
+                fewShots);
         }
     }
 }

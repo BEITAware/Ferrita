@@ -1,4 +1,5 @@
 using Ferrita.Controls.LanguageModelConfigurationControl.Models;
+using Ferrita.Services.FerritaTools;
 
 namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
 {
@@ -20,7 +21,8 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
             LanguageModelDefinition model,
             IReadOnlyList<LanguageModelChatMessage> messages,
             CancellationToken cancellationToken = default,
-            Func<LanguageModelMediaProcessingProgress, CancellationToken, ValueTask>? mediaProcessingProgress = null)
+            Func<LanguageModelMediaProcessingProgress, CancellationToken, ValueTask>? mediaProcessingProgress = null,
+            IReadOnlyList<FerritaPromptToolDefinition>? tools = null)
         {
             ArgumentNullException.ThrowIfNull(model);
             ArgumentNullException.ThrowIfNull(messages);
@@ -31,7 +33,7 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
                     mediaProcessingProgress,
                     cancellationToken)
                 .ConfigureAwait(false);
-            return await ResolveAdapter(model).GetResponseAsync(model, projectedMessages, cancellationToken).ConfigureAwait(false);
+            return await ResolveAdapter(model).GetResponseAsync(model, projectedMessages, cancellationToken, tools).ConfigureAwait(false);
         }
 
         public async Task<int> CountTokensAsync(
@@ -55,9 +57,9 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
         public async IAsyncEnumerable<LanguageModelStreamingChatUpdate> GetStreamingResponseAsync(
             LanguageModelDefinition model,
             IReadOnlyList<LanguageModelChatMessage> messages,
-            [System.Runtime.CompilerServices.EnumeratorCancellation]
-            CancellationToken cancellationToken = default,
-            Func<LanguageModelMediaProcessingProgress, CancellationToken, ValueTask>? mediaProcessingProgress = null)
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default,
+            Func<LanguageModelMediaProcessingProgress, CancellationToken, ValueTask>? mediaProcessingProgress = null,
+            IReadOnlyList<FerritaPromptToolDefinition>? tools = null)
         {
             ArgumentNullException.ThrowIfNull(model);
             ArgumentNullException.ThrowIfNull(messages);
@@ -69,7 +71,7 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
                     cancellationToken)
                 .ConfigureAwait(false);
             await foreach (var update in ResolveAdapter(model)
-                               .GetStreamingResponseAsync(model, projectedMessages, cancellationToken)
+                               .GetStreamingResponseAsync(model, projectedMessages, cancellationToken, tools)
                                .ConfigureAwait(false))
             {
                 yield return update;

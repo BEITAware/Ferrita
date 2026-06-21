@@ -86,7 +86,7 @@ namespace Ferrita.Services.ChatSession
             var projectedMessages = ChatSessionTurnHistoryBuilder.BuildForNextTurn(session, currentUserText: null);
             return new ChatSessionContextWindowSnapshot
             {
-                EstimatedTokenCount = EstimateTokens(projectedMessages),
+                EstimatedTokenCount = 0,
                 ContextWindowTokens = window.ContextWindowTokens,
                 AgentName = window.AgentName,
                 ModelName = window.ModelName
@@ -122,7 +122,7 @@ namespace Ferrita.Services.ChatSession
             var projectedMessages = ChatSessionTurnHistoryBuilder.BuildForNextTurn(session, currentUserText: null);
             return new ChatSessionContextWindowSnapshot
             {
-                EstimatedTokenCount = EstimateTokens(projectedMessages),
+                EstimatedTokenCount = 0,
                 ContextWindowTokens = window.ContextWindowTokens,
                 AgentName = window.AgentName,
                 ModelName = window.ModelName
@@ -190,40 +190,7 @@ namespace Ferrita.Services.ChatSession
                     StringComparer.OrdinalIgnoreCase);
         }
 
-        private static int EstimateTokens(IReadOnlyList<LanguageModelChatMessage> messages)
-        {
-            if (messages.Count == 0)
-            {
-                return 0;
-            }
 
-            var total = 0;
-            foreach (var message in messages)
-            {
-                total += 4;
-                total += EstimateTokens(message.Role.ToString());
-                total += EstimateTokens(message.AuthorName);
-                foreach (var block in message.ContentBlocks)
-                {
-                    total += EstimateTokens(block.Content);
-                    total += EstimateTokens(block.ResourcePath);
-                    total += EstimateTokens(block.MediaType);
-                    if (block.Data?.Length > 0)
-                    {
-                        total += Math.Max(1, block.Data.Length / 1024);
-                    }
-                }
-            }
-
-            return Math.Max(1, total);
-        }
-
-        private static int EstimateTokens(string? content)
-        {
-            return string.IsNullOrWhiteSpace(content)
-                ? 0
-                : Math.Max(1, (int)Math.Ceiling(content.Length / 4.0d));
-        }
 
         private static string GetModelDisplayName(LanguageModelDefinition model)
         {

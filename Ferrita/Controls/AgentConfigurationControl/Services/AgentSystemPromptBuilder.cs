@@ -59,7 +59,8 @@ namespace Ferrita.Controls.AgentConfigurationControl.Services
                 supportsHostToolConfirmation: false,
                 availableToolKits: null,
                 activeToolKitKeys: GetDefaultToolKitKeys(agent),
-                isSubAgent: false);
+                isSubAgent: false,
+                disableToolTips: false);
         }
 
         public string BuildCompleteSystemPrompt(
@@ -67,7 +68,8 @@ namespace Ferrita.Controls.AgentConfigurationControl.Services
             bool supportsHostToolConfirmation,
             IReadOnlyList<FerritaToolKitDefinition>? availableToolKits = null,
             IReadOnlyCollection<string>? activeToolKitKeys = null,
-            bool isSubAgent = false)
+            bool isSubAgent = false,
+            bool disableToolTips = false)
         {
             ArgumentNullException.ThrowIfNull(agent);
 
@@ -84,9 +86,12 @@ namespace Ferrita.Controls.AgentConfigurationControl.Services
             AppendPersonaSection(builder, agent);
             AppendInputOutputSection(builder, agent);
             AppendPassdownSection(builder, agent, isSubAgent);
-            AppendExternalToolSection(builder, externalTools, supportsHostToolConfirmation);
-            AppendProtocolSection(builder, agent, externalTools.Count > 0, supportsHostToolConfirmation, isSubAgent);
-            AppendResponseRulesSection(builder, agent, externalTools.Count > 0, isSubAgent);
+            if (!disableToolTips)
+            {
+                AppendExternalToolSection(builder, externalTools, supportsHostToolConfirmation);
+                AppendProtocolSection(builder, agent, externalTools.Count > 0, supportsHostToolConfirmation, isSubAgent);
+                AppendResponseRulesSection(builder, agent, externalTools.Count > 0, isSubAgent);
+            }
 
             return builder.ToString().Trim();
         }

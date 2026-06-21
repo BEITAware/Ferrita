@@ -5,13 +5,13 @@ namespace Ferrita.Controls.EmbeddingModelConfigurationControl.Services
 {
     public static class EmbeddingModelInterfaceCatalog
     {
-        public const string DefaultInterfaceType = "OPENAI";
+        public const string DefaultInterfaceType = "OpenAI";
 
         private static readonly IReadOnlyDictionary<string, Func<EmbeddingModelInterfaceSettings>> s_settingsFactories =
             new Dictionary<string, Func<EmbeddingModelInterfaceSettings>>(StringComparer.OrdinalIgnoreCase)
             {
-                ["GOOGLE"] = static () => new GoogleEmbeddingModelSettings(),
-                ["OPENAI"] = static () => new OpenAiEmbeddingModelSettings()
+                ["Google"] = static () => new GoogleEmbeddingModelSettings(),
+                ["OpenAI"] = static () => new OpenAiEmbeddingModelSettings()
             };
 
         public static IReadOnlyList<string> AvailableInterfaceTypes { get; } = s_settingsFactories.Keys
@@ -36,18 +36,19 @@ namespace Ferrita.Controls.EmbeddingModelConfigurationControl.Services
 
         public static string NormalizeInterfaceType(string? interfaceType)
         {
-            var normalizedType = (interfaceType ?? string.Empty).Trim().ToUpperInvariant();
-            return normalizedType.Length == 0 ? DefaultInterfaceType : normalizedType;
+            var normalizedType = (interfaceType ?? string.Empty).Trim();
+            if (normalizedType.Length == 0) return DefaultInterfaceType;
+            if (string.Equals(normalizedType, "openai", StringComparison.OrdinalIgnoreCase)) return "OpenAI";
+            if (string.Equals(normalizedType, "google", StringComparison.OrdinalIgnoreCase)) return "Google";
+            return normalizedType;
         }
 
         internal static EmbeddingApiType ToApiType(string? interfaceType)
         {
-            return NormalizeInterfaceType(interfaceType) switch
-            {
-                "GOOGLE" => EmbeddingApiType.Google,
-                "OPENAI" => EmbeddingApiType.OpenAI,
-                var value => throw new InvalidOperationException($"Unsupported embedding model interface type: {value}")
-            };
+            var normalized = NormalizeInterfaceType(interfaceType);
+            if (string.Equals(normalized, "Google", StringComparison.OrdinalIgnoreCase)) return EmbeddingApiType.Google;
+            if (string.Equals(normalized, "OpenAI", StringComparison.OrdinalIgnoreCase)) return EmbeddingApiType.OpenAI;
+            throw new InvalidOperationException($"Unsupported embedding model interface type: {normalized}");
         }
     }
 }

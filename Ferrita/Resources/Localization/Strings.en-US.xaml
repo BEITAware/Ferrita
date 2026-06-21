@@ -94,6 +94,7 @@
     <system:String x:Key="LanguageModelConfiguration.InputModalities.Audio">Audio</system:String>
     <system:String x:Key="LanguageModelConfiguration.InputModalities.Video">Video</system:String>
     <system:String x:Key="LanguageModelConfiguration.InputModalities.Document">Document</system:String>
+    <system:String x:Key="LanguageModelConfiguration.EnableUniversalToolCalling">Enable Universal Tool Calling</system:String>
     <system:String x:Key="LanguageModelConfiguration.InterfaceSettings.Default">Interface Settings</system:String>
     <system:String x:Key="LanguageModelConfiguration.InterfaceSettings.Format">{0} Interface Settings</system:String>
     <system:String x:Key="LanguageModelConfiguration.TestModel">Test Model</system:String>
@@ -729,6 +730,8 @@
     <system:String x:Key="Tabs.ScheduledTasks.Title">Scheduled Tasks</system:String>
     <system:String x:Key="Tabs.ScheduledTasks.Description">Manage and view timed scheduled tasks and automated execution tasks.</system:String>
     <system:String x:Key="Tabs.ScheduledTasks.Hint">This panel currently has no content.</system:String>
+    <system:String x:Key="Tabs.KnowledgeBrowser.Title">Knowledge Browser</system:String>
+    <system:String x:Key="Tabs.KnowledgeBrowser.Description">Browse and manage knowledge files in the knowledge base.</system:String>
     <system:String x:Key="Tabs.Placeholder.NoContentFormat">Tab '{0}' has no content yet.</system:String>
     <system:String x:Key="DocumentWorkspace.Placeholder.Default">Document content here...</system:String>
     <system:String x:Key="DocumentWorkspace.Placeholder.NoContentViewModelFormat">Document '{0}' has no content view model yet.</system:String>

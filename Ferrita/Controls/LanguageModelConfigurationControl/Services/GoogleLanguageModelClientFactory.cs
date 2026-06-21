@@ -7,8 +7,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Ferrita.Controls.LanguageModelConfigurationControl.Models;
 using Ferrita.Services.Localization;
+using Ferrita.Services.FerritaTools;
 
 namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
 {
@@ -27,7 +29,31 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
         private static readonly ConcurrentDictionary<string, UploadedGoogleFileReference> s_uploadedFileCache =
             new(StringComparer.OrdinalIgnoreCase);
 
-        public string InterfaceType => "GOOGLE";
+        private static readonly Lazy<HashSet<string>> s_validToolNames = new(() =>
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var toolManager = new FerritaToolManager();
+                var list = toolManager.GetRegisteredTools(resolveIcons: false);
+                if (list != null)
+                {
+                    foreach (var tool in list)
+                    {
+                        if (tool?.Definition?.Name != null)
+                        {
+                            set.Add(tool.Definition.Name);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+            return set;
+        });
+
+        public string InterfaceType => "Google";
 
         public LanguageModelInterfaceSettings CreateInterfaceSettings()
         {
@@ -42,12 +68,14 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
         public async Task<LanguageModelChatResponse> GetResponseAsync(
             LanguageModelDefinition model,
             IReadOnlyList<LanguageModelChatMessage> messages,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            IReadOnlyList<FerritaPromptToolDefinition>? tools = null)
         {
             var settings = GetSettings(model);
             using var request = await CreateGenerateContentRequestAsync(
                     settings,
                     messages,
+                    tools,
                     useStreamingEndpoint: false,
                     cancellationToken).ConfigureAwait(false);
             using var response = await s_httpClient.SendAsync(
@@ -57,13 +85,403 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
 
             using var document = await ReadJsonDocumentAsync(response, cancellationToken).ConfigureAwait(false);
             var parsed = ParseResponsePayload(document.RootElement, settings.ModelId);
+
+            var finalText = parsed.Text;
+            bool useNativeTools = tools != null && tools.Count > 0;
+
+            if (useNativeTools && parsed.ToolCalls.Count > 0)
+            {
+                var xmlBuilder = new StringBuilder();
+                if (!string.IsNullOrWhiteSpace(finalText))
+                {
+                    xmlBuilder.Append(finalText);
+                    xmlBuilder.Append("\n\n");
+                }
+                
+                foreach (var tc in parsed.ToolCalls)
+                {
+                    xmlBuilder.Append($"<Tool ToolName=\"{tc.Name}\" ToolCallID=\"{tc.Id}\">");
+                    if (!string.IsNullOrEmpty(tc.ArgumentsJson))
+                    {
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(tc.ArgumentsJson);
+                            foreach (var prop in doc.RootElement.EnumerateObject())
+                            {
+                                var paramName = prop.Name;
+                                var paramValue = prop.Value.ValueKind == JsonValueKind.String
+                                    ? prop.Value.GetString() ?? string.Empty
+                                    : prop.Value.GetRawText();
+
+                                xmlBuilder.Append($"<{paramName}>");
+                                if (paramValue.Contains("<") || paramValue.Contains(">") || paramValue.Contains("&"))
+                                {
+                                    xmlBuilder.Append($"<![CDATA[{paramValue}]]>");
+                                }
+                                else
+                                {
+                                    xmlBuilder.Append(paramValue);
+                                }
+                                xmlBuilder.Append($"</{paramName}>");
+                            }
+                        }
+                        catch {}
+                    }
+                    xmlBuilder.Append("</Tool>");
+                }
+                
+                finalText = xmlBuilder.ToString();
+            }
+
             return new LanguageModelChatResponse
             {
-                Text = parsed.Text,
+                Text = finalText,
                 ReasoningText = parsed.ReasoningText,
                 ModelId = parsed.ModelId,
                 InputTokenCount = parsed.InputTokenCount,
                 TotalTokenCount = parsed.TotalTokenCount
+            };
+        }
+
+        private static IReadOnlyList<LanguageModelToolCall> ParseXmlToolCalls(string xmlText)
+        {
+            var results = new List<LanguageModelToolCall>();
+            if (string.IsNullOrEmpty(xmlText))
+            {
+                return results;
+            }
+
+            // 1. Standard format: <Tool ToolName="xxx">...</Tool> or <ToolAsync ToolName="xxx">...</ToolAsync>
+            var standardMatches = Regex.Matches(xmlText, @"<(Tool|ToolAsync)\s+[^>]*ToolName\s*=\s*(?:""(?<name>[^""]*)""|'(?<name>[^']*)')[^>]*>(?<body>.*?)</\1>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            foreach (Match match in standardMatches)
+            {
+                var toolName = match.Groups["name"].Value;
+                var body = match.Groups["body"].Value;
+                AddToolCall(results, match.Value, toolName, body, null);
+            }
+
+            // 2. Alternative format: <tool_call>...</tool_call> or <Tool_call>...</Tool_call>
+            var toolCallMatches = Regex.Matches(xmlText, @"<(tool_call|Tool_call)(?<attrs>\s+[^>]*)?>(?<body>.*?)</\1>", RegexOptions.Singleline);
+            foreach (Match match in toolCallMatches)
+            {
+                var attrs = match.Groups["attrs"].Value;
+                var body = match.Groups["body"].Value;
+
+                var toolName = Regex.Match(attrs, @"(?:ToolName|name)\s*=\s*(?:""(?<name>[^""]*)""|'(?<name>[^']*)')", RegexOptions.IgnoreCase).Groups["name"].Value;
+                if (string.IsNullOrEmpty(toolName))
+                {
+                    var childNameMatch = Regex.Match(body, @"<(?:ToolName|name)>(?:\s*<!\[CDATA\[(?<cdata>.*?)\]\]>\s*|(?<val>.*?))</(?:ToolName|name)>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+                    if (childNameMatch.Success)
+                    {
+                        toolName = childNameMatch.Groups["cdata"].Success ? childNameMatch.Groups["cdata"].Value : childNameMatch.Groups["val"].Value;
+                    }
+                }
+
+                toolName = toolName?.Trim();
+                if (!string.IsNullOrEmpty(toolName))
+                {
+                    AddToolCall(results, match.Value, toolName, body, new[] { "ToolName", "name" });
+                }
+            }
+
+            // 3. Alternative format: <ToolName>...</ToolName> where ToolName is a valid Ferrita tool name
+            var validTools = s_validToolNames.Value;
+            if (validTools.Count > 0)
+            {
+                var escapedNames = new List<string>();
+                foreach (var name in validTools)
+                {
+                    escapedNames.Add(Regex.Escape(name));
+                }
+                var pattern = @"<(" + string.Join("|", escapedNames) + @")(?<attrs>\s+[^>]*)?>(?<body>.*?)</\1>";
+                var tagNameMatches = Regex.Matches(xmlText, pattern, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+                foreach (Match match in tagNameMatches)
+                {
+                    var toolName = match.Groups[1].Value;
+                    var body = match.Groups["body"].Value;
+                    AddToolCall(results, match.Value, toolName, body, null);
+                }
+            }
+
+            return results;
+        }
+
+        private static void AddToolCall(
+            List<LanguageModelToolCall> results,
+            string fullMatchText,
+            string toolName,
+            string body,
+            string[]? excludeParamNames)
+        {
+            var args = new Dictionary<string, object?>();
+            var paramMatches = Regex.Matches(body, @"<(?<param>[A-Za-z0-9_.-]+)>(?:\s*<!\[CDATA\[(?<cdata>.*?)\]\]>\s*|(?<val>.*?))</\1>", RegexOptions.Singleline);
+            foreach (Match pm in paramMatches)
+            {
+                var paramName = pm.Groups["param"].Value;
+                if (excludeParamNames != null)
+                {
+                    bool shouldExclude = false;
+                    foreach (var exclude in excludeParamNames)
+                    {
+                        if (string.Equals(exclude, paramName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            shouldExclude = true;
+                            break;
+                        }
+                    }
+                    if (shouldExclude)
+                    {
+                        continue;
+                    }
+                }
+                var paramValue = pm.Groups["cdata"].Success ? pm.Groups["cdata"].Value : pm.Groups["val"].Value;
+                args[paramName] = paramValue;
+            }
+
+            var toolCallId = Regex.Match(fullMatchText, @"ToolCallID\s*=\s*(?:""(?<id>[^""]*)""|'(?<id>[^']*)')", RegexOptions.IgnoreCase).Groups["id"].Value;
+            if (string.IsNullOrEmpty(toolCallId))
+            {
+                toolCallId = "tc_" + Guid.NewGuid().ToString("N")[..8];
+            }
+
+            bool alreadyExists = false;
+            foreach (var r in results)
+            {
+                if (string.Equals(r.Name, toolName, StringComparison.OrdinalIgnoreCase) && r.Id == toolCallId)
+                {
+                    alreadyExists = true;
+                    break;
+                }
+            }
+
+            if (!alreadyExists)
+            {
+                results.Add(new LanguageModelToolCall
+                {
+                    Name = toolName,
+                    ArgumentsJson = JsonSerializer.Serialize(args),
+                    Id = toolCallId
+                });
+            }
+        }
+
+        private static string StripXmlToolCalls(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            var clean = text;
+
+            // 1. Strip standard format
+            clean = Regex.Replace(clean, @"<(Tool|ToolAsync)\s+[^>]*ToolName\s*=\s*(?:""[^""]*""|'[^']*')[^>]*>.*?</\1>", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+            // 2. Strip <tool_call> and <Tool_call>
+            clean = Regex.Replace(clean, @"<(tool_call|Tool_call)(?:\s+[^>]*)?>.*?</\1>", "", RegexOptions.Singleline);
+
+            // 3. Strip <ToolName>...</ToolName> for valid tool names
+            var validTools = s_validToolNames.Value;
+            if (validTools.Count > 0)
+            {
+                var escapedNames = new List<string>();
+                foreach (var name in validTools)
+                {
+                    escapedNames.Add(Regex.Escape(name));
+                }
+                var pattern = @"<(" + string.Join("|", escapedNames) + @")(?:\s+[^>]*)?>.*?</\1>";
+                clean = Regex.Replace(clean, pattern, "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            }
+
+            return clean.Trim();
+        }
+
+        private static IReadOnlyList<(string ToolName, string Content, string ToolCallId)> ParseXmlToolReturns(string xmlText)
+        {
+            var results = new List<(string ToolName, string Content, string ToolCallId)>();
+            if (string.IsNullOrEmpty(xmlText))
+            {
+                return results;
+            }
+
+            var matches = Regex.Matches(xmlText, @"<ToolReturn\s+[^>]*ToolName\s*=\s*(?:""(?<name>[^""]*)""|'(?<name>[^']*)')[^>]*>(?<body>.*?)</ToolReturn>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            foreach (Match match in matches)
+            {
+                var toolName = match.Groups["name"].Value;
+                var body = match.Groups["body"].Value;
+
+                var toolCallId = Regex.Match(match.Value, @"ToolCallID\s*=\s*(?:""(?<id>[^""]*)""|'(?<id>[^']*)')", RegexOptions.IgnoreCase).Groups["id"].Value;
+                if (string.IsNullOrEmpty(toolCallId))
+                {
+                    toolCallId = Regex.Match(match.Value, @"ToolCallId\s*=\s*(?:""(?<id>[^""]*)""|'(?<id>[^']*)')", RegexOptions.IgnoreCase).Groups["id"].Value;
+                }
+
+                results.Add((toolName, body, toolCallId));
+            }
+
+            return results;
+        }
+
+        private static async Task<List<GoogleContent>> BuildContentsForJsonToolCallingAsync(
+            GoogleLanguageModelSettings settings,
+            IReadOnlyList<LanguageModelChatMessage> messages,
+            InlinePayloadBudget inlineBudget,
+            CancellationToken cancellationToken)
+        {
+            var contents = new List<GoogleContent>();
+            
+            foreach (var message in messages.Where(message => message.Role != LanguageModelChatRole.System))
+            {
+                var role = message.Role;
+                var contentText = message.Content;
+
+                if (role == LanguageModelChatRole.Assistant)
+                {
+                    var xmlToolCalls = ParseXmlToolCalls(contentText);
+                    if (xmlToolCalls.Count > 0)
+                    {
+                        var cleanText = StripXmlToolCalls(contentText);
+                        var parts = new List<GooglePart>();
+                        if (!string.IsNullOrEmpty(message.ReasoningContent))
+                        {
+                            parts.Add(new GooglePart
+                            {
+                                Text = message.ReasoningContent,
+                                Thought = true
+                            });
+                        }
+                        if (!string.IsNullOrWhiteSpace(cleanText))
+                        {
+                            parts.Add(new GooglePart { Text = cleanText });
+                        }
+
+                        foreach (var tc in xmlToolCalls)
+                        {
+                            var args = new Dictionary<string, object?>();
+                            if (!string.IsNullOrEmpty(tc.ArgumentsJson))
+                            {
+                                try
+                                {
+                                    args = JsonSerializer.Deserialize<Dictionary<string, object?>>(tc.ArgumentsJson) ?? args;
+                                }
+                                catch {}
+                            }
+                            parts.Add(new GooglePart
+                            {
+                                FunctionCall = new GoogleFunctionCall
+                                {
+                                    Name = tc.Name,
+                                    Args = args
+                                }
+                            });
+                        }
+
+                        contents.Add(new GoogleContent
+                        {
+                            Role = "model",
+                            Parts = parts
+                        });
+                        continue;
+                    }
+                }
+
+                var xmlToolReturns = ParseXmlToolReturns(contentText);
+                if (xmlToolReturns.Count > 0)
+                {
+                    foreach (var tr in xmlToolReturns)
+                    {
+                        contents.Add(new GoogleContent
+                        {
+                            Role = "function",
+                            Parts = new[]
+                            {
+                                new GooglePart
+                                {
+                                    FunctionResponse = new GoogleFunctionResponse
+                                    {
+                                        Name = tr.ToolName,
+                                        Response = new Dictionary<string, object?> { { "output", tr.Content } }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    continue;
+                }
+
+                var normalParts = await BuildPartsAsync(
+                    settings,
+                    message,
+                    inlineBudget,
+                    preserveAuthorMetadata: true,
+                    cancellationToken).ConfigureAwait(false);
+                if (normalParts.Count > 0)
+                {
+                    contents.Add(new GoogleContent
+                    {
+                        Role = ToGoogleRole(message.Role),
+                        Parts = normalParts
+                    });
+                }
+            }
+
+            return contents;
+        }
+
+        private static IReadOnlyList<GoogleTool>? MapGoogleTools(IReadOnlyList<FerritaPromptToolDefinition>? tools)
+        {
+            if (tools == null || tools.Count == 0)
+            {
+                return null;
+            }
+
+            var declarations = new List<GoogleFunctionDeclaration>();
+            foreach (var tool in tools)
+            {
+                var properties = new Dictionary<string, GoogleSchema>();
+                var required = new List<string>();
+
+                foreach (var p in tool.Parameters)
+                {
+                    var paramType = p.ParameterType switch
+                    {
+                        FerritaToolParameterType.Boolean => "BOOLEAN",
+                        FerritaToolParameterType.Integer => "INTEGER",
+                        FerritaToolParameterType.Number => "NUMBER",
+                        _ => "STRING"
+                    };
+
+                    properties[p.Name] = new GoogleSchema
+                    {
+                        Type = paramType,
+                        Description = p.Description
+                    };
+
+                    if (p.IsRequired)
+                    {
+                        required.Add(p.Name);
+                    }
+                }
+
+                declarations.Add(new GoogleFunctionDeclaration
+                {
+                    Name = tool.Name,
+                    Description = tool.Description,
+                    Parameters = new GoogleSchema
+                    {
+                        Type = "OBJECT",
+                        Properties = properties,
+                        Required = required.Count > 0 ? required : null
+                    }
+                });
+            }
+
+            return new[]
+            {
+                new GoogleTool
+                {
+                    FunctionDeclarations = declarations
+                }
             };
         }
 
@@ -96,12 +514,14 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
         public async IAsyncEnumerable<LanguageModelStreamingChatUpdate> GetStreamingResponseAsync(
             LanguageModelDefinition model,
             IReadOnlyList<LanguageModelChatMessage> messages,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+            [EnumeratorCancellation] CancellationToken cancellationToken = default,
+            IReadOnlyList<FerritaPromptToolDefinition>? tools = null)
         {
             var settings = GetSettings(model);
             using var request = await CreateGenerateContentRequestAsync(
                     settings,
                     messages,
+                    tools,
                     useStreamingEndpoint: true,
                     cancellationToken).ConfigureAwait(false);
             request.Headers.Accept.ParseAdd("text/event-stream");
@@ -208,10 +628,11 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
         private static async Task<HttpRequestMessage> CreateGenerateContentRequestAsync(
             GoogleLanguageModelSettings settings,
             IReadOnlyList<LanguageModelChatMessage> messages,
+            IReadOnlyList<FerritaPromptToolDefinition>? tools,
             bool useStreamingEndpoint,
             CancellationToken cancellationToken)
         {
-            var payload = await BuildRequestPayloadAsync(settings, messages, cancellationToken).ConfigureAwait(false);
+            var payload = await BuildRequestPayloadAsync(settings, messages, tools, cancellationToken).ConfigureAwait(false);
             var action = useStreamingEndpoint
                 ? $"{NormalizeModelIdForPath(settings.ModelId)}:streamGenerateContent?alt=sse"
                 : $"{NormalizeModelIdForPath(settings.ModelId)}:generateContent";
@@ -229,7 +650,7 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
             IReadOnlyList<LanguageModelChatMessage> messages,
             CancellationToken cancellationToken)
         {
-            var payload = await BuildRequestPayloadAsync(settings, messages, cancellationToken).ConfigureAwait(false);
+            var payload = await BuildRequestPayloadAsync(settings, messages, null, cancellationToken).ConfigureAwait(false);
             var action = $"{NormalizeModelIdForPath(settings.ModelId)}:countTokens";
             var request = new HttpRequestMessage(HttpMethod.Post, BuildApiUri(settings, $"v1beta/models/{action}"));
             request.Headers.Add("x-goog-api-key", settings.ApiKey);
@@ -243,11 +664,22 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
         private static async Task<GoogleGenerateContentRequest> BuildRequestPayloadAsync(
             GoogleLanguageModelSettings settings,
             IReadOnlyList<LanguageModelChatMessage> messages,
+            IReadOnlyList<FerritaPromptToolDefinition>? tools,
             CancellationToken cancellationToken)
         {
             var inlineBudget = new InlinePayloadBudget(InlinePayloadBudgetBytes);
             var systemInstruction = await BuildSystemInstructionAsync(settings, messages, inlineBudget, cancellationToken).ConfigureAwait(false);
-            var contents = await BuildContentsAsync(settings, messages, inlineBudget, cancellationToken).ConfigureAwait(false);
+            
+            bool useNativeTools = tools != null && tools.Count > 0;
+            List<GoogleContent> contents;
+            if (useNativeTools)
+            {
+                contents = await BuildContentsForJsonToolCallingAsync(settings, messages, inlineBudget, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                contents = await BuildContentsAsync(settings, messages, inlineBudget, cancellationToken).ConfigureAwait(false);
+            }
 
             if (contents.Count == 0)
             {
@@ -262,7 +694,8 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
             {
                 SystemInstruction = systemInstruction,
                 Contents = contents,
-                GenerationConfig = CreateGenerationConfig(settings)
+                GenerationConfig = CreateGenerationConfig(settings),
+                Tools = MapGoogleTools(tools)
             };
         }
 
@@ -324,6 +757,14 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
             CancellationToken cancellationToken)
         {
             var parts = new List<GooglePart>();
+            if (!string.IsNullOrEmpty(message.ReasoningContent))
+            {
+                parts.Add(new GooglePart
+                {
+                    Text = message.ReasoningContent,
+                    Thought = true
+                });
+            }
             if (preserveAuthorMetadata && !string.IsNullOrWhiteSpace(message.AuthorName))
             {
                 parts.Add(new GooglePart
@@ -733,6 +1174,7 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
             var textBuilder = new StringBuilder();
             var reasoningBuilder = new StringBuilder();
             List<LanguageModelStreamingContentDebugItem>? debugItems = null;
+            var toolCalls = new List<LanguageModelToolCall>();
 
             if (rootElement.TryGetProperty("candidates", out var candidatesElement) &&
                 candidatesElement.ValueKind == JsonValueKind.Array)
@@ -751,7 +1193,26 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
 
                     foreach (var partElement in partsElement.EnumerateArray())
                     {
-                        AppendPartText(partElement, textBuilder, reasoningBuilder, debugItems);
+                        if (partElement.TryGetProperty("functionCall", out var funcCallElement) &&
+                            funcCallElement.ValueKind == JsonValueKind.Object)
+                        {
+                            var name = GetOptionalString(funcCallElement, "name") ?? string.Empty;
+                            var argsJson = string.Empty;
+                            if (funcCallElement.TryGetProperty("args", out var argsElement))
+                            {
+                                argsJson = JsonSerializer.Serialize(argsElement, s_jsonOptions);
+                            }
+                            toolCalls.Add(new LanguageModelToolCall
+                            {
+                                Name = name,
+                                ArgumentsJson = argsJson,
+                                Id = "tc_" + Guid.NewGuid().ToString("N")[..8]
+                            });
+                        }
+                        else
+                        {
+                            AppendPartText(partElement, textBuilder, reasoningBuilder, debugItems);
+                        }
                     }
                 }
             }
@@ -762,7 +1223,8 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
                 GetOptionalString(rootElement, "modelVersion") ?? fallbackModelId,
                 debugItems ?? (IReadOnlyList<LanguageModelStreamingContentDebugItem>)Array.Empty<LanguageModelStreamingContentDebugItem>(),
                 NormalizeUsageCount(GetUsageMetadataNumber(rootElement, "promptTokenCount")),
-                NormalizeUsageCount(GetUsageMetadataNumber(rootElement, "totalTokenCount")));
+                NormalizeUsageCount(GetUsageMetadataNumber(rootElement, "totalTokenCount")),
+                toolCalls);
         }
 
         private static LanguageModelStreamingChatUpdate ParseStreamingEventPayload(string payload, string fallbackModelId)
@@ -1208,7 +1670,8 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
             string ModelId,
             IReadOnlyList<LanguageModelStreamingContentDebugItem> DebugItems,
             int? InputTokenCount,
-            int? TotalTokenCount);
+            int? TotalTokenCount,
+            IReadOnlyList<LanguageModelToolCall> ToolCalls);
 
         private sealed record UploadedGoogleFileReference(
             string FileUri,
@@ -1225,27 +1688,39 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
 
             [JsonPropertyName("generationConfig")]
             public GoogleGenerationConfig? GenerationConfig { get; init; }
+
+            [JsonPropertyName("tools")]
+            public IReadOnlyList<GoogleTool>? Tools { get; init; }
         }
 
         private sealed class GoogleContent
         {
             [JsonPropertyName("role")]
-            public string? Role { get; init; }
+            public string? Role { get; set; }
 
             [JsonPropertyName("parts")]
-            public IReadOnlyList<GooglePart> Parts { get; init; } = Array.Empty<GooglePart>();
+            public IReadOnlyList<GooglePart> Parts { get; set; } = Array.Empty<GooglePart>();
         }
 
         private sealed class GooglePart
         {
             [JsonPropertyName("text")]
-            public string? Text { get; init; }
+            public string? Text { get; set; }
 
             [JsonPropertyName("inlineData")]
-            public GoogleInlineData? InlineData { get; init; }
+            public GoogleInlineData? InlineData { get; set; }
 
             [JsonPropertyName("fileData")]
-            public GoogleFileData? FileData { get; init; }
+            public GoogleFileData? FileData { get; set; }
+
+            [JsonPropertyName("functionCall")]
+            public GoogleFunctionCall? FunctionCall { get; set; }
+
+            [JsonPropertyName("functionResponse")]
+            public GoogleFunctionResponse? FunctionResponse { get; set; }
+
+            [JsonPropertyName("thought")]
+            public bool? Thought { get; set; }
         }
 
         private sealed class GoogleInlineData
@@ -1291,6 +1766,57 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.Services
 
             [JsonPropertyName("thinkingLevel")]
             public string? ThinkingLevel { get; init; }
+        }
+
+        private sealed class GoogleTool
+        {
+            [JsonPropertyName("functionDeclarations")]
+            public IReadOnlyList<GoogleFunctionDeclaration>? FunctionDeclarations { get; init; }
+        }
+
+        private sealed class GoogleFunctionDeclaration
+        {
+            [JsonPropertyName("name")]
+            public string Name { get; init; } = string.Empty;
+
+            [JsonPropertyName("description")]
+            public string Description { get; init; } = string.Empty;
+
+            [JsonPropertyName("parameters")]
+            public GoogleSchema? Parameters { get; init; }
+        }
+
+        private sealed class GoogleSchema
+        {
+            [JsonPropertyName("type")]
+            public string Type { get; init; } = "OBJECT";
+
+            [JsonPropertyName("properties")]
+            public IDictionary<string, GoogleSchema>? Properties { get; init; }
+
+            [JsonPropertyName("required")]
+            public IReadOnlyList<string>? Required { get; init; }
+
+            [JsonPropertyName("description")]
+            public string? Description { get; init; }
+        }
+
+        private sealed class GoogleFunctionCall
+        {
+            [JsonPropertyName("name")]
+            public string Name { get; init; } = string.Empty;
+
+            [JsonPropertyName("args")]
+            public object? Args { get; init; }
+        }
+
+        private sealed class GoogleFunctionResponse
+        {
+            [JsonPropertyName("name")]
+            public string Name { get; init; } = string.Empty;
+
+            [JsonPropertyName("response")]
+            public object? Response { get; init; }
         }
     }
 }

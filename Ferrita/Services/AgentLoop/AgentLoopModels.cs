@@ -342,6 +342,8 @@ namespace Ferrita.Services.AgentLoop
 
         public string? ModelId { get; init; }
 
+        public string? Message { get; init; }
+
         public string? TextDelta { get; init; }
 
         public string? ReasoningDelta { get; init; }

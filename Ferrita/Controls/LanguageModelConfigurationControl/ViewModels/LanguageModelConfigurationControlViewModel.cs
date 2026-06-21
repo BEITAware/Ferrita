@@ -416,6 +416,7 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.ViewModels
                 EnableAudioInput = source.EnableAudioInput,
                 EnableVideoInput = source.EnableVideoInput,
                 EnableDocumentInput = source.EnableDocumentInput,
+                EnableUniversalToolCalling = source.EnableUniversalToolCalling,
                 InterfaceSettings = CloneInterfaceSettings(source.InterfaceSettings)
             };
         }
@@ -441,27 +442,27 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.ViewModels
                     ThinkingBudget = google.ThinkingBudget,
                     IncludeThoughts = google.IncludeThoughts
                 },
-                MeaiLanguageModelSettings meai => new MeaiLanguageModelSettings
+                OpenAiLanguageModelSettings openai => new OpenAiLanguageModelSettings
                 {
-                    ModelId = meai.ModelId,
-                    ApiKey = meai.ApiKey,
-                    BaseUrl = meai.BaseUrl,
-                    UseTemperature = meai.UseTemperature,
-                    Temperature = meai.Temperature,
-                    UseTopP = meai.UseTopP,
-                    TopP = meai.TopP,
-                    UseMaxOutputTokens = meai.UseMaxOutputTokens,
-                    MaxOutputTokens = meai.MaxOutputTokens,
-                    UsePresencePenalty = meai.UsePresencePenalty,
-                    PresencePenalty = meai.PresencePenalty,
-                    UseFrequencyPenalty = meai.UseFrequencyPenalty,
-                    FrequencyPenalty = meai.FrequencyPenalty,
-                    UseSeed = meai.UseSeed,
-                    Seed = meai.Seed,
-                    UseReasoningEffort = meai.UseReasoningEffort,
-                    ReasoningEffort = meai.ReasoningEffort,
-                    UseReasoningOutput = meai.UseReasoningOutput,
-                    ReasoningOutput = meai.ReasoningOutput
+                    ModelId = openai.ModelId,
+                    ApiKey = openai.ApiKey,
+                    BaseUrl = openai.BaseUrl,
+                    UseTemperature = openai.UseTemperature,
+                    Temperature = openai.Temperature,
+                    UseTopP = openai.UseTopP,
+                    TopP = openai.TopP,
+                    UseMaxOutputTokens = openai.UseMaxOutputTokens,
+                    MaxOutputTokens = openai.MaxOutputTokens,
+                    UsePresencePenalty = openai.UsePresencePenalty,
+                    PresencePenalty = openai.PresencePenalty,
+                    UseFrequencyPenalty = openai.UseFrequencyPenalty,
+                    FrequencyPenalty = openai.FrequencyPenalty,
+                    UseSeed = openai.UseSeed,
+                    Seed = openai.Seed,
+                    UseReasoningEffort = openai.UseReasoningEffort,
+                    ReasoningEffort = openai.ReasoningEffort,
+                    UseReasoningOutput = openai.UseReasoningOutput,
+                    ReasoningOutput = openai.ReasoningOutput
                 },
                 _ => LanguageModelDefinition.CreateInterfaceSettings(source.InterfaceType)
             };
@@ -487,12 +488,12 @@ namespace Ferrita.Controls.LanguageModelConfigurationControl.ViewModels
                     google.IncludeThoughts = true;
                     break;
 
-                case MeaiLanguageModelSettings meai:
-                    meai.BaseUrl = "https://api.openai.com/v1";
-                    meai.Temperature = 1.0m;
-                    meai.TopP = 1.0m;
-                    meai.MaxOutputTokens = 2048;
-                    meai.ReasoningEffort = "Medium";
+                case OpenAiLanguageModelSettings openai:
+                    openai.BaseUrl = "https://api.openai.com/v1";
+                    openai.Temperature = 1.0m;
+                    openai.TopP = 1.0m;
+                    openai.MaxOutputTokens = 2048;
+                    openai.ReasoningEffort = "Medium";
                     break;
             }
         }

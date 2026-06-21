@@ -1026,16 +1026,15 @@
                         
                         <!-- 
                             ═══════════════════════════════════════════════════════════════════════════
-                            [已禁用] 基于 Windows API 的模糊效果尝试
-                            原因：SetWindowCompositionAttribute 在 Popup 上效果不稳定
-                            保留代码以供将来参考：helpers:PopupBlurHelper.IsBlurEnabled="True"
+                            [已启用] 使用 Windows API 实现的高斯模糊效果
                             ═══════════════════════════════════════════════════════════════════════════
                         -->
                         <Popup x:Name="PART_Popup" 
                                AllowsTransparency="True" 
                                IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" 
                                Placement="Bottom" 
-                               PopupAnimation="Slide">
+                               PopupAnimation="Slide"
+                               helpers:PopupBlurHelper.IsBlurEnabled="True">
                             <Grid MaxHeight="{TemplateBinding MaxDropDownHeight}" MinWidth="{TemplateBinding ActualWidth}" Margin="2">
                                 <!-- 阴影层 -->
                                 <Border CornerRadius="4" Margin="-2">
@@ -1047,14 +1046,14 @@
                                     </Border.Background>
                                 </Border>
                                 
-                                <!-- 主背景层 - Aero 深色玻璃渐变 -->
+                                <!-- 主背景层 - Aero 深色玻璃渐变 (采用高透明度以突显高斯模糊效果) -->
                                 <Border x:Name="DropDownBorder" CornerRadius="4" Opacity="0">
                                     <Border.Background>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                            <GradientStop Color="#F0102030" Offset="0"/>
-                                            <GradientStop Color="#F0183050" Offset="0.3"/>
-                                            <GradientStop Color="#F0102840" Offset="0.7"/>
-                                            <GradientStop Color="#F0081828" Offset="1"/>
+                                            <GradientStop Color="#B0102030" Offset="0"/>
+                                            <GradientStop Color="#B0183050" Offset="0.3"/>
+                                            <GradientStop Color="#B0102840" Offset="0.7"/>
+                                            <GradientStop Color="#B0081828" Offset="1"/>
                                         </LinearGradientBrush>
                                     </Border.Background>
                                     <Border.Triggers>

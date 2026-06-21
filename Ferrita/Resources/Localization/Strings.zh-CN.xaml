@@ -93,6 +93,7 @@
     <system:String x:Key="LanguageModelConfiguration.InputModalities.Audio">音频</system:String>
     <system:String x:Key="LanguageModelConfiguration.InputModalities.Video">视频</system:String>
     <system:String x:Key="LanguageModelConfiguration.InputModalities.Document">文档</system:String>
+    <system:String x:Key="LanguageModelConfiguration.EnableUniversalToolCalling">启用通用的工具调用</system:String>
     <system:String x:Key="LanguageModelConfiguration.InterfaceSettings.Default">接口配置</system:String>
     <system:String x:Key="LanguageModelConfiguration.InterfaceSettings.Format">{0} 接口配置</system:String>
     <system:String x:Key="LanguageModelConfiguration.TestModel">测试模型</system:String>
@@ -719,6 +720,8 @@
     <system:String x:Key="Tabs.ScheduledTasks.Title">计划任务</system:String>
     <system:String x:Key="Tabs.ScheduledTasks.Description">管理和查看定时计划任务以及自动执行的任务。</system:String>
     <system:String x:Key="Tabs.ScheduledTasks.Hint">此面板目前没有实际内容。</system:String>
+    <system:String x:Key="Tabs.KnowledgeBrowser.Title">知识浏览器</system:String>
+    <system:String x:Key="Tabs.KnowledgeBrowser.Description">浏览和管理知识库中的知识文件。</system:String>
     <system:String x:Key="Tabs.Placeholder.NoContentFormat">标签页“{0}”还没有内容。</system:String>
     <system:String x:Key="DocumentWorkspace.Placeholder.Default">文档内容将显示在这里...</system:String>
     <system:String x:Key="DocumentWorkspace.Placeholder.NoContentViewModelFormat">文档“{0}”尚未绑定内容视图模型。</system:String>

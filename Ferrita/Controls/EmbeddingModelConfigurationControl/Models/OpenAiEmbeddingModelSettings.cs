@@ -7,7 +7,7 @@ namespace Ferrita.Controls.EmbeddingModelConfigurationControl.Models
         private string _baseUrl = "https://api.openai.com/v1";
         private string _user = string.Empty;
 
-        public override string InterfaceType => "OPENAI";
+        public override string InterfaceType => "OpenAI";
 
         public string ModelId
         {

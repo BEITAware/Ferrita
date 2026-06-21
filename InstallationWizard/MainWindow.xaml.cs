@@ -70,7 +70,7 @@ namespace InstallationWizard
             }
         }
 
-        private string _selectedLanguageModelKey = "default-meai";
+        private string _selectedLanguageModelKey = "default-openai";
         public string SelectedLanguageModelKey
         {
             get => _selectedLanguageModelKey;
@@ -180,14 +180,14 @@ namespace InstallationWizard
     {
         private string _key = Guid.NewGuid().ToString("N");
         private string _displayName = string.Empty;
-        private string _interfaceType = "MEAI";
+        private string _interfaceType = "OpenAI Chat Completions API";
         private int _contextWindowTokens = 200000;
         private bool _enableImageInput = true;
         private bool _enableAudioInput = true;
         private bool _enableVideoInput = true;
         private bool _enableDocumentInput = true;
         private WizardGoogleSettings _googleSettings = new WizardGoogleSettings();
-        private WizardMeaiSettings _meaiSettings = new WizardMeaiSettings();
+        private WizardOpenAiSettings _openaiSettings = new WizardOpenAiSettings();
 
         public string Key
         {
@@ -251,13 +251,13 @@ namespace InstallationWizard
             set { _googleSettings = value; OnPropertyChanged(); }
         }
 
-        public WizardMeaiSettings MeaiSettings
+        public WizardOpenAiSettings OpenAiSettings
         {
-            get => _meaiSettings;
-            set { _meaiSettings = value; OnPropertyChanged(); }
+            get => _openaiSettings;
+            set { _openaiSettings = value; OnPropertyChanged(); }
         }
 
-        public object InterfaceSettings => InterfaceType == "GOOGLE" ? (object)GoogleSettings : (object)MeaiSettings;
+        public object InterfaceSettings => string.Equals(InterfaceType, "Google", StringComparison.OrdinalIgnoreCase) ? (object)GoogleSettings : (object)OpenAiSettings;
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
@@ -307,7 +307,7 @@ namespace InstallationWizard
         }
     }
 
-    public class WizardMeaiSettings : INotifyPropertyChanged
+    public class WizardOpenAiSettings : INotifyPropertyChanged
     {
         private string _modelId = string.Empty;
         private string _apiKey = string.Empty;
@@ -847,7 +847,7 @@ namespace InstallationWizard
             var newLm = new WizardLanguageModelDefinition
             {
                 DisplayName = string.Empty,
-                InterfaceType = "MEAI",
+                InterfaceType = "OpenAI Chat Completions API",
                 ContextWindowTokens = 200000
             };
             WizardLanguageModels.Add(newLm);
@@ -868,7 +868,7 @@ namespace InstallationWizard
                 EnableVideoInput = current.EnableVideoInput,
                 EnableDocumentInput = current.EnableDocumentInput
             };
-            if (current.InterfaceType == "GOOGLE")
+            if (string.Equals(current.InterfaceType, "Google", StringComparison.OrdinalIgnoreCase))
             {
                 dup.GoogleSettings.ModelId = current.GoogleSettings.ModelId;
                 dup.GoogleSettings.ApiKey = current.GoogleSettings.ApiKey;
@@ -887,25 +887,25 @@ namespace InstallationWizard
             }
             else
             {
-                dup.MeaiSettings.ModelId = current.MeaiSettings.ModelId;
-                dup.MeaiSettings.ApiKey = current.MeaiSettings.ApiKey;
-                dup.MeaiSettings.BaseUrl = current.MeaiSettings.BaseUrl;
-                dup.MeaiSettings.UseTemperature = current.MeaiSettings.UseTemperature;
-                dup.MeaiSettings.Temperature = current.MeaiSettings.Temperature;
-                dup.MeaiSettings.UseTopP = current.MeaiSettings.UseTopP;
-                dup.MeaiSettings.TopP = current.MeaiSettings.TopP;
-                dup.MeaiSettings.UseMaxOutputTokens = current.MeaiSettings.UseMaxOutputTokens;
-                dup.MeaiSettings.MaxOutputTokens = current.MeaiSettings.MaxOutputTokens;
-                dup.MeaiSettings.UsePresencePenalty = current.MeaiSettings.UsePresencePenalty;
-                dup.MeaiSettings.PresencePenalty = current.MeaiSettings.PresencePenalty;
-                dup.MeaiSettings.UseFrequencyPenalty = current.MeaiSettings.UseFrequencyPenalty;
-                dup.MeaiSettings.FrequencyPenalty = current.MeaiSettings.FrequencyPenalty;
-                dup.MeaiSettings.UseSeed = current.MeaiSettings.UseSeed;
-                dup.MeaiSettings.Seed = current.MeaiSettings.Seed;
-                dup.MeaiSettings.UseReasoningEffort = current.MeaiSettings.UseReasoningEffort;
-                dup.MeaiSettings.ReasoningEffort = current.MeaiSettings.ReasoningEffort;
-                dup.MeaiSettings.UseReasoningOutput = current.MeaiSettings.UseReasoningOutput;
-                dup.MeaiSettings.ReasoningOutput = current.MeaiSettings.ReasoningOutput;
+                dup.OpenAiSettings.ModelId = current.OpenAiSettings.ModelId;
+                dup.OpenAiSettings.ApiKey = current.OpenAiSettings.ApiKey;
+                dup.OpenAiSettings.BaseUrl = current.OpenAiSettings.BaseUrl;
+                dup.OpenAiSettings.UseTemperature = current.OpenAiSettings.UseTemperature;
+                dup.OpenAiSettings.Temperature = current.OpenAiSettings.Temperature;
+                dup.OpenAiSettings.UseTopP = current.OpenAiSettings.UseTopP;
+                dup.OpenAiSettings.TopP = current.OpenAiSettings.TopP;
+                dup.OpenAiSettings.UseMaxOutputTokens = current.OpenAiSettings.UseMaxOutputTokens;
+                dup.OpenAiSettings.MaxOutputTokens = current.OpenAiSettings.MaxOutputTokens;
+                dup.OpenAiSettings.UsePresencePenalty = current.OpenAiSettings.UsePresencePenalty;
+                dup.OpenAiSettings.PresencePenalty = current.OpenAiSettings.PresencePenalty;
+                dup.OpenAiSettings.UseFrequencyPenalty = current.OpenAiSettings.UseFrequencyPenalty;
+                dup.OpenAiSettings.FrequencyPenalty = current.OpenAiSettings.FrequencyPenalty;
+                dup.OpenAiSettings.UseSeed = current.OpenAiSettings.UseSeed;
+                dup.OpenAiSettings.Seed = current.OpenAiSettings.Seed;
+                dup.OpenAiSettings.UseReasoningEffort = current.OpenAiSettings.UseReasoningEffort;
+                dup.OpenAiSettings.ReasoningEffort = current.OpenAiSettings.ReasoningEffort;
+                dup.OpenAiSettings.UseReasoningOutput = current.OpenAiSettings.UseReasoningOutput;
+                dup.OpenAiSettings.ReasoningOutput = current.OpenAiSettings.ReasoningOutput;
             }
             WizardLanguageModels.Add(dup);
             SelectedWizardLanguageModel = dup;
@@ -1693,11 +1693,11 @@ To the greatest extent permitted by, but not in contravention of, applicable law
                 foreach (var lm in WizardLanguageModels)
                 {
                     System.Xml.Linq.XElement interfaceSettingsEl;
-                    if (lm.InterfaceType == "GOOGLE")
+                    if (string.Equals(lm.InterfaceType, "Google", StringComparison.OrdinalIgnoreCase))
                     {
                         var g = lm.GoogleSettings;
                         interfaceSettingsEl = new System.Xml.Linq.XElement("InterfaceSettings",
-                            new System.Xml.Linq.XAttribute("Type", "GOOGLE"),
+                            new System.Xml.Linq.XAttribute("Type", "Google"),
                             new System.Xml.Linq.XElement("ModelId", g.ModelId),
                             new System.Xml.Linq.XElement("ApiKey", g.ApiKey),
                             new System.Xml.Linq.XElement("BaseUrl", g.BaseUrl),
@@ -1714,11 +1714,29 @@ To the greatest extent permitted by, but not in contravention of, applicable law
                             new System.Xml.Linq.XElement("IncludeThoughts", g.IncludeThoughts)
                         );
                     }
+                    else if (string.Equals(lm.InterfaceType, "OpenAI Responses API", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var m = lm.OpenAiSettings;
+                        interfaceSettingsEl = new System.Xml.Linq.XElement("InterfaceSettings",
+                            new System.Xml.Linq.XAttribute("Type", "OpenAI Responses API"),
+                            new System.Xml.Linq.XElement("ModelId", m.ModelId),
+                            new System.Xml.Linq.XElement("ApiKey", m.ApiKey),
+                            new System.Xml.Linq.XElement("BaseUrl", m.BaseUrl),
+                            new System.Xml.Linq.XElement("UseTemperature", m.UseTemperature),
+                            new System.Xml.Linq.XElement("Temperature", m.Temperature),
+                            new System.Xml.Linq.XElement("UseTopP", m.UseTopP),
+                            new System.Xml.Linq.XElement("TopP", m.TopP),
+                            new System.Xml.Linq.XElement("UseMaxOutputTokens", m.UseMaxOutputTokens),
+                            new System.Xml.Linq.XElement("MaxOutputTokens", m.MaxOutputTokens),
+                            new System.Xml.Linq.XElement("UseReasoningEffort", m.UseReasoningEffort),
+                            new System.Xml.Linq.XElement("ReasoningEffort", m.ReasoningEffort)
+                        );
+                    }
                     else
                     {
-                        var m = lm.MeaiSettings;
+                        var m = lm.OpenAiSettings;
                         interfaceSettingsEl = new System.Xml.Linq.XElement("InterfaceSettings",
-                            new System.Xml.Linq.XAttribute("Type", "MEAI"),
+                            new System.Xml.Linq.XAttribute("Type", "OpenAI Chat Completions API"),
                             new System.Xml.Linq.XElement("ModelId", m.ModelId),
                             new System.Xml.Linq.XElement("ApiKey", m.ApiKey),
                             new System.Xml.Linq.XElement("BaseUrl", m.BaseUrl),
