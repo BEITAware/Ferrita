@@ -11,6 +11,8 @@ using Ferrita.Services.Localization;
 using Ferrita.Services.ShellIntegration;
 using Ferrita.Services.Daemon;
 using Ferrita.Windows;
+using Ferrita.Tools;
+using Ferrita.Services.ChatSession;
 
 namespace Ferrita
 {
@@ -22,6 +24,7 @@ namespace Ferrita
         private bool _isShuttingDown;
         private MainWindow? _mainWindow;
         private bool _mainWindowShown;
+        private ComputerUseWindow? _computerUseWindow;
 
         public bool IsShuttingDown => _isShuttingDown;
 
@@ -53,6 +56,9 @@ namespace Ferrita
             LocalizationRuntime.Instance.ApplyConfiguredLanguage();
             FerritaPreferencesRegistration.EnsureRegistered();
             Ferrita.Services.Notifications.NotificationService.Instance.ClearTransient();
+
+            ComputerUseSessionManager.SessionStarted += OnComputerUseSessionStarted;
+            ComputerUseSessionManager.SessionEnded += OnComputerUseSessionEnded;
 
             // 3. 处理命令行参数
             var shellChatStartupContext = ShellIntegrationCommandLine.ParseShellChatStartup(e.Args);
@@ -207,6 +213,9 @@ namespace Ferrita
 
         protected override void OnExit(ExitEventArgs e)
         {
+            ComputerUseSessionManager.SessionStarted -= OnComputerUseSessionStarted;
+            ComputerUseSessionManager.SessionEnded -= OnComputerUseSessionEnded;
+
             TrayIconService.Instance.Dispose();
             FerritaDaemonService.Instance.Dispose();
             BackgroundMemoryQueue.Instance.Dispose();
@@ -256,6 +265,57 @@ namespace Ferrita
                 string.Equals(arg, "--skylifter-only", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(arg, "/daemon", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(arg, "/daemon-only", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private void OnComputerUseSessionStarted(object? sender, string sessionId)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    var session = ComputerUseSessionManager.GetSession(sessionId);
+                    if (session == null) return;
+
+                    var chatSession = new ChatSessionRepository().LoadBySessionId(session.ChatSessionId);
+                    if (chatSession == null) return;
+
+                    if (_computerUseWindow != null)
+                    {
+                        try
+                        {
+                            _computerUseWindow.Close();
+                        }
+                        catch { }
+                        _computerUseWindow = null;
+                    }
+
+                    _computerUseWindow = new ComputerUseWindow(chatSession);
+                    _computerUseWindow.Show();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error starting ComputerUseWindow: {ex}");
+                }
+            }));
+        }
+
+        private void OnComputerUseSessionEnded(object? sender, string sessionId)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    if (_computerUseWindow != null)
+                    {
+                        _computerUseWindow.CloseWithAnimation();
+                        _computerUseWindow = null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error ending ComputerUseWindow: {ex}");
+                }
+            }));
         }
     }
 }

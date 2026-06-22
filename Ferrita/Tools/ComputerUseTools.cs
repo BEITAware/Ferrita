@@ -227,20 +227,38 @@ namespace Ferrita.Tools
                                       !assistiveArg.Equals("none", StringComparison.OrdinalIgnoreCase) &&
                                       !assistiveArg.Equals("关闭", StringComparison.OrdinalIgnoreCase);
 
-            // 开启会话并进行输入锁定
-            var session = ComputerUseSessionManager.StartSession(screen, resolutionArg, sessionFolderPath, isAssistiveEnabled);
-            
-            // 截图
-            var screenshotXml = ComputerUseSessionManager.CaptureAndSaveScreenshot(session.SessionId);
+            var chatSessionId = context.Properties.TryGetValue("sessionId", out var sid) ? sid : string.Empty;
+            var ownerAgentId = context.CurrentAgent?.AgentId;
+            var ownerAgentName = context.CurrentAgent?.DisplayNameOrFallback;
 
-            // 向 LLM 明确说明本应用程序的坐标计算法和原点位置
-            var returnText = $"{screenshotXml}\n" +
-                             $"Computer Use session started. Session ID: {session.SessionId}\n\n" +
-                             $"[COORDINATE SYSTEM INFO]\n" +
-                             $"- Origin (0, 0): Corresponds to the TOP-LEFT corner of the active screen (which is also the top-left of the returned screenshot image).\n" +
-                             $"- Target Coordinates: All coordinates (xpos, ypos) you submit to the other tools (Click, DoubleClick, Drag, MoveMouse, etc.) must match the exact pixel coordinates of the returned screenshot image.\n" +
-                             $"- Scaling: The screenshot is scaled from the actual screen so that its short side is {(session.Resolution.Equals("FHD", StringComparison.OrdinalIgnoreCase) ? 1080 : 768)} pixels. You do NOT need to calculate scale factors; just read the coordinates directly from the screenshot image you receive.";
-            return Task.FromResult(FerritaToolResult.Success(returnText));
+            try
+            {
+                // 开启会话并进行输入锁定
+                var session = ComputerUseSessionManager.StartSession(
+                    chatSessionId,
+                    screen,
+                    resolutionArg,
+                    sessionFolderPath,
+                    isAssistiveEnabled,
+                    ownerAgentId,
+                    ownerAgentName);
+                
+                // 截图
+                var screenshotXml = ComputerUseSessionManager.CaptureAndSaveScreenshot(session.SessionId);
+
+                // 向 LLM 明确说明本应用程序的坐标计算法和原点位置
+                var returnText = $"{screenshotXml}\n" +
+                                 $"Computer Use session started. Session ID: {session.SessionId}\n\n" +
+                                 $"[COORDINATE SYSTEM INFO]\n" +
+                                 $"- Origin (0, 0): Corresponds to the TOP-LEFT corner of the active screen (which is also the top-left of the returned screenshot image).\n" +
+                                 $"- Target Coordinates: All coordinates (xpos, ypos) you submit to the other tools (Click, DoubleClick, Drag, MoveMouse, etc.) must match the exact pixel coordinates of the returned screenshot image.\n" +
+                                 $"- Scaling: The screenshot is scaled from the actual screen so that its short side is {(session.Resolution.Equals("FHD", StringComparison.OrdinalIgnoreCase) ? 1080 : 768)} pixels. You do NOT need to calculate scale factors; just read the coordinates directly from the screenshot image you receive.";
+                return Task.FromResult(FerritaToolResult.Success(returnText));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Task.FromResult(FerritaToolResult.Failure(ex.Message));
+            }
         }
     }
 
@@ -282,6 +300,13 @@ namespace Ferrita.Tools
             if (session == null)
             {
                 return Task.FromResult(FerritaToolResult.Failure($"无效的 Session ID: {sessionId}。"));
+            }
+
+            // 安全策略校验：如果当前调用的 AgentId 和启动 Session 的 AgentId 不同，明确报错
+            var currentAgentId = context.CurrentAgent?.AgentId;
+            if (session.OwnerAgentId != currentAgentId)
+            {
+                return Task.FromResult(FerritaToolResult.Failure($"代理“{context.CurrentAgent?.DisplayNameOrFallback}”试图操作由代理“{session.OwnerAgentName}”启动的计算机会话。这被安全策略拒绝。"));
             }
 
             return ExecuteActionAsync(context, arguments, sessionId, session, cancellationToken);

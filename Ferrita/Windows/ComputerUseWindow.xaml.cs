@@ -1,44 +1,31 @@
 using System;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using Ferrita.Controls.ShellChatSessionControl.ViewModels;
-using Ferrita.Services.ShellIntegration;
+using Ferrita.Models.ChatSession;
 
 namespace Ferrita.Windows
 {
-    public partial class ShellChatWindow : Window
+    public partial class ComputerUseWindow : Window
     {
         private readonly ShellChatSessionControlViewModel _viewModel;
 
-        public ShellChatWindow()
-            : this(ShellChatStartupContext.Empty)
-        {
-        }
-
-        public ShellChatWindow(ShellChatStartupContext startupContext)
+        public ComputerUseWindow(ChatSessionModel session)
         {
             InitializeComponent();
 
-            _viewModel = new ShellChatSessionControlViewModel(startupContext);
+            _viewModel = new ShellChatSessionControlViewModel(session, isComputerUseMode: true);
             ChatControl.DataContext = _viewModel;
-            _viewModel.RequestClose += ViewModel_RequestClose;
+            _viewModel.RequestClose += () => CloseWithAnimation();
 
-            Loaded += ShellChatWindow_Loaded;
+            Loaded += ComputerUseWindow_Loaded;
         }
 
-        private void ShellChatWindow_Loaded(object sender, RoutedEventArgs e)
+        private void ComputerUseWindow_Loaded(object sender, RoutedEventArgs e)
         {
             PositionWindowOnScreenRightBottom();
-            
-            // 异步聚焦以确保窗口完全激活和渲染后焦点能落到输入框上
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                ChatControl.FocusComposer();
-            }), System.Windows.Threading.DispatcherPriority.Input);
         }
 
         private void PositionWindowOnScreenRightBottom()
@@ -71,7 +58,7 @@ namespace Ferrita.Windows
             var current = source;
             while (current != null)
             {
-                if (current is TextBoxBase or ButtonBase or ListBoxItem or ScrollBar)
+                if (current is System.Windows.Controls.Primitives.TextBoxBase or System.Windows.Controls.Primitives.ButtonBase or System.Windows.Controls.ListBoxItem or System.Windows.Controls.Primitives.ScrollBar)
                 {
                     return true;
                 }
@@ -83,7 +70,7 @@ namespace Ferrita.Windows
         }
 
         private bool _isClosing = false;
-        private void ViewModel_RequestClose()
+        public void CloseWithAnimation()
         {
             if (_isClosing) return;
             _isClosing = true;
@@ -132,6 +119,11 @@ namespace Ferrita.Windows
 
             sb.Completed += (s, e) => Close();
             sb.Begin(this);
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            _viewModel.Cleanup();
         }
 
         private void BackgroundChrome_SizeChanged(object sender, SizeChangedEventArgs e)

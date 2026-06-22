@@ -24,6 +24,9 @@ namespace Ferrita.Tools
     public class ComputerUseSession
     {
         public string SessionId { get; set; } = string.Empty;
+        public string ChatSessionId { get; set; } = string.Empty;
+        public string? OwnerAgentId { get; set; }
+        public string? OwnerAgentName { get; set; }
         public string SessionFolderPath { get; set; } = string.Empty;
         public Screen Screen { get; set; } = null!;
         public string Resolution { get; set; } = "XGA";
@@ -39,6 +42,9 @@ namespace Ferrita.Tools
     {
         private static readonly ConcurrentDictionary<string, ComputerUseSession> s_sessions = new(StringComparer.OrdinalIgnoreCase);
         private static string? s_activeSessionId;
+
+        public static event EventHandler<string>? SessionStarted;
+        public static event EventHandler<string>? SessionEnded;
 
         private static HOOKPROC? _keyboardProc;
         private static HOOKPROC? _mouseProc;
@@ -111,13 +117,28 @@ namespace Ferrita.Tools
             }
         }
 
-        public static ComputerUseSession StartSession(Screen screen, string resolution, string sessionFolderPath, bool isAssistiveEnabled)
+        public static ComputerUseSession StartSession(
+            string chatSessionId,
+            Screen screen,
+            string resolution,
+            string sessionFolderPath,
+            bool isAssistiveEnabled,
+            string? ownerAgentId,
+            string? ownerAgentName)
         {
             lock (_hookLock)
             {
                 // 如果已有活动会话，先进行清理
                 if (!string.IsNullOrEmpty(s_activeSessionId))
                 {
+                    var activeSession = GetSession(s_activeSessionId);
+                    if (activeSession != null)
+                    {
+                        if (activeSession.OwnerAgentId != ownerAgentId)
+                        {
+                            throw new InvalidOperationException($"无法启动 Computer Use 会话。代理“{activeSession.OwnerAgentName}”正在使用计算机。同时只允许一个 Computer Use 会话存在。");
+                        }
+                    }
                     EndSession(s_activeSessionId);
                 }
 
@@ -131,6 +152,9 @@ namespace Ferrita.Tools
                 var session = new ComputerUseSession
                 {
                     SessionId = sessionId,
+                    ChatSessionId = chatSessionId,
+                    OwnerAgentId = ownerAgentId,
+                    OwnerAgentName = ownerAgentName,
                     Screen = screen,
                     Resolution = resolution,
                     SessionFolderPath = sessionFolderPath,
@@ -158,6 +182,8 @@ namespace Ferrita.Tools
                 ActiveChatSessionExecutionRegistry.Instance.Changed -= OnRegistryChanged;
                 ActiveChatSessionExecutionRegistry.Instance.Changed += OnRegistryChanged;
 
+                SessionStarted?.Invoke(null, sessionId);
+
                 return session;
             }
         }
@@ -174,6 +200,8 @@ namespace Ferrita.Tools
                         ActiveChatSessionExecutionRegistry.Instance.Changed -= OnRegistryChanged;
                         
                         StopHookThread();
+
+                        SessionEnded?.Invoke(null, sessionId);
                     }
                 }
             }
@@ -613,17 +641,27 @@ namespace Ferrita.Tools
 
         private static void OnRegistryChanged(object? sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(s_activeSessionId))
+            var activeId = s_activeSessionId;
+            if (string.IsNullOrEmpty(activeId))
+            {
+                return;
+            }
+
+            var session = GetSession(activeId);
+            if (session == null)
             {
                 return;
             }
 
             var snapshot = ActiveChatSessionExecutionRegistry.Instance.GetSnapshot();
-            bool isActive = snapshot.Any(s => string.Equals(s.SessionId, s_activeSessionId, StringComparison.OrdinalIgnoreCase));
+            bool isActive = snapshot.Any(s => string.Equals(s.SessionId, session.ChatSessionId, StringComparison.OrdinalIgnoreCase));
             if (!isActive)
             {
                 // 当后台执行流程中止或完成时，立刻解锁输入
                 StopHookThread();
+
+                // 同时也结束 Computer Use 会话以自动关闭窗口等
+                EndSession(activeId);
             }
         }
 
@@ -707,11 +745,7 @@ namespace Ferrita.Tools
                         }
                     }
 
-                    // 如果不是注入的输入（物理输入），则直接拦截
-                    if (!isInjected)
-                    {
-                        return new LRESULT(1);
-                    }
+                    // 不再锁定用户物理输入，允许通过
                 }
                 catch (Exception ex)
                 {
@@ -730,11 +764,7 @@ namespace Ferrita.Tools
                     var mouseStruct = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
                     bool isInjected = ((uint)mouseStruct.flags & 0x01) != 0; // LLMHF_INJECTED = 0x01
 
-                    // 如果是物理输入，则拦截
-                    if (!isInjected)
-                    {
-                        return new LRESULT(1);
-                    }
+                    // 不再锁定用户物理输入，允许通过
                 }
                 catch (Exception ex)
                 {

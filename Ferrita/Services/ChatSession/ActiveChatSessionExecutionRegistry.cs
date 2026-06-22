@@ -66,6 +66,11 @@ namespace Ferrita.Services.ChatSession
 
             public CancellationTokenSource CancellationSource { get; init; } = null!;
 
+            /// <summary>
+            /// 运行中的会话对象内存实例
+            /// </summary>
+            public ChatSessionModel? Session { get; set; }
+
             public ActiveChatSessionExecutionSnapshot ToSnapshot()
             {
                 return new ActiveChatSessionExecutionSnapshot
@@ -97,6 +102,8 @@ namespace Ferrita.Services.ChatSession
 
         public event EventHandler? Changed;
 
+        public event EventHandler<ChatSessionRuntimeEvent>? RuntimeEventApplied;
+
         public IReadOnlyList<ActiveChatSessionExecutionSnapshot> GetSnapshot()
         {
             lock (_gate)
@@ -105,6 +112,23 @@ namespace Ferrita.Services.ChatSession
                     .OrderByDescending(record => record.StartedAtUtc)
                     .Select(record => record.ToSnapshot())
                     .ToArray();
+            }
+        }
+
+        /// <summary>
+        /// 获取当前处于运行状态的活跃会话对象内存引用
+        /// </summary>
+        public ChatSessionModel? GetActiveSession(string? sessionId)
+        {
+            var normalizedSessionId = sessionId?.Trim() ?? string.Empty;
+            if (normalizedSessionId.Length == 0)
+            {
+                return null;
+            }
+
+            lock (_gate)
+            {
+                return _records.TryGetValue(normalizedSessionId, out var record) ? record.Session : null;
             }
         }
 
@@ -128,6 +152,7 @@ namespace Ferrita.Services.ChatSession
                 _records[sessionId] = new ActiveExecutionRecord
                 {
                     SessionId = sessionId,
+                    Session = session,
                     SessionTitle = string.IsNullOrWhiteSpace(session.Name) ? sessionId : session.Name.Trim(),
                     FlowName = session.BoundFlowDisplayName,
                     Kind = ResolveKind(session),
@@ -197,6 +222,7 @@ namespace Ferrita.Services.ChatSession
             if (changed)
             {
                 RaiseChanged();
+                RuntimeEventApplied?.Invoke(this, runtimeEvent);
             }
         }
 

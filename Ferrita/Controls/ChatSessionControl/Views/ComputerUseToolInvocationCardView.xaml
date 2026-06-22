@@ -5,9 +5,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:local="clr-namespace:Ferrita.Controls.ChatSessionControl.Views"
              mc:Ignorable="d"
-             Height="276.992"
              ClipToBounds="False"
-             d:DesignWidth="700">
+             d:DesignWidth="920.671"
+             d:DesignHeight="83.0976">
     <UserControl.Resources>
         <!-- 专为 Computer Use 系列工具设计的 Aero 玻璃背景色，美图自 ComputerUseTools.xaml -->
         <RadialGradientBrush x:Key="ComputerUseToolCardBackgroundBrush"
@@ -73,143 +73,60 @@
                           Opacity="0.45"/>
     </UserControl.Resources>
 
-    <!-- 最外层 Grid，不进行任何裁剪以保证装饰图能够自由超出背景卡片 -->
-    <Grid ClipToBounds="False">
-        <!-- 1. 背景卡片层：固定高度 187.5，宽度自适应 -->
-        <Border Height="187.5"
-                VerticalAlignment="Top"
-                Margin="33.4565,46.8921,33.4565,0"
-                CornerRadius="8"
-                BorderBrush="#6793F2FF"
-                BorderThickness="1"
-                Background="{StaticResource ComputerUseToolCardBackgroundBrush}">
-            <Grid ClipToBounds="True">
-                <!-- 圆角内的扫光与高光特效 -->
-                <Border CornerRadius="7"
-                        Background="{StaticResource ComputerUseToolCardTopLightBrush}"
-                        IsHitTestVisible="False"/>
-                <Border CornerRadius="7"
-                        Background="{StaticResource ComputerUseToolCardSheenBrush}"
-                        IsHitTestVisible="False"/>
+    <!-- 最外层 Viewbox 用于在聊天界面中等比缩放整个卡片，以维持完美的尺寸与比例 -->
+    <Viewbox Stretch="Uniform" HorizontalAlignment="Left" VerticalAlignment="Top">
+        <Canvas Width="920.671" Height="83.0976" ClipToBounds="False">
+            <!-- 1. 底层高光层 -->
+            <Path x:Name="Path" Width="886.214" Height="55.95" Canvas.Left="33.959" Canvas.Top="14.217" Stretch="Fill"
+                  Fill="{StaticResource ComputerUseToolCardTopLightBrush}"
+                  Data="F1 M 37.959,47.3921L 916.173,47.3921C 918.382,47.3921 920.173,49.1826 920.173,51.3921L 920.173,229.893C 920.173,232.102 918.382,233.893 916.173,233.893L 37.959,233.893C 35.75,233.893 33.959,232.102 33.959,229.893L 33.959,51.3921C 33.959,49.1826 35.75,47.3921 37.959,47.3921 Z "/>
+            
+            <!-- 2. 背景主体层 -->
+            <Path x:Name="Path_0" Width="887.214" Height="56.25" Canvas.Left="33.457" Canvas.Top="14.067" Stretch="Fill" StrokeLineJoin="Round" Stroke="#6793F2FF"
+                  Fill="{StaticResource ComputerUseToolCardBackgroundBrush}"
+                  Data="F1 M 37.9565,47.3921L 916.171,47.3921C 918.38,47.3921 920.171,49.1826 920.171,51.3916L 920.171,229.893C 920.171,232.102 918.38,233.893 916.171,233.893L 37.9565,233.893C 35.7476,233.893 33.957,232.102 33.957,229.893L 33.957,51.3916C 33.957,49.1826 35.7476,47.3921 37.9565,47.3921 Z "/>
+            
+            <!-- 3. 扫光覆盖层 -->
+            <Path x:Name="Path_1" Width="887.215" Height="56.25" Canvas.Left="33.4565" Canvas.Top="14.067" Stretch="Fill" StrokeLineJoin="Round" Stroke="#6793F2FF"
+                  Fill="{StaticResource ComputerUseToolCardSheenBrush}"
+                  Data="F1 M 37.9565,47.3921L 916.171,47.3921C 918.38,47.3921 920.171,49.1826 920.171,51.3916L 920.171,229.893C 920.171,232.102 918.38,233.893 916.171,233.893L 37.9565,233.893C 35.7476,233.893 33.9565,232.102 33.9565,229.893L 33.9565,51.3916C 33.9565,49.1826 35.7476,47.3921 37.9565,47.3921 Z "/>
+            
+            <!-- 4. 内容与排版区：严格限定在 Path_0 (背景卡片) 的相对坐标内 -->
+            <Grid Canvas.Left="33.457" Canvas.Top="14.067" Width="887.214" Height="56.25" ClipToBounds="True">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-                <!-- 内层内容布局，左边腾出足够宽度避开悬浮大图 -->
-                <Grid Margin="18,16,18,16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="220"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <!-- 工具名称 -->
-                        <TextBlock Text="{Binding State.ToolDisplayName}"
-                                   FontFamily="Microsoft YaHei UI, Segoe UI"
-                                   FontSize="21"
-                                   FontWeight="Bold"
-                                   Foreground="{StaticResource ComputerUseToolBrightTextBrush}"
-                                   Effect="{StaticResource ComputerUseToolTextShadowEffect}"
-                                   TextWrapping="Wrap"/>
-                        
-                        <!-- 功能描述 -->
-                        <TextBlock Margin="0,4,0,0"
-                                   Text="{Binding Description}"
-                                   FontFamily="Segoe UI, Microsoft YaHei UI"
-                                   FontSize="12"
-                                   Foreground="{StaticResource ComputerUseToolSoftTextBrush}"
-                                   Effect="{StaticResource ComputerUseToolTextShadowEffect}"
-                                   TextWrapping="Wrap"/>
-                        
-                        <!-- 运行状态信息 -->
-                        <TextBlock Margin="0,5,0,0"
-                                   FontFamily="Consolas, Microsoft YaHei UI"
-                                   FontSize="11"
-                                   Foreground="{StaticResource ComputerUseToolMutedTextBrush}"
-                                   Effect="{StaticResource ComputerUseToolTextShadowEffect}">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="{DynamicResource ToolInvocation.Status.ReceivingParameters}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding State.IsInvocationClosed}" Value="True">
-                                            <Setter Property="Text" Value="{DynamicResource ToolInvocation.Status.ParametersReceived}"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding State.HasToolResult}" Value="True">
-                                            <Setter Property="Text" Value="{DynamicResource ToolInvocation.Status.ToolResultReceived}"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-
-                        <!-- 执行进度条 -->
-                        <Grid Margin="0,8,0,0">
-                            <Grid.Style>
-                                <Style TargetType="Grid">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding State.HasToolProgress}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Grid.Style>
-                            <StackPanel>
-                                <TextBlock Text="{Binding State.ToolProgressStatusText}"
-                                           FontFamily="Microsoft YaHei UI, Segoe UI"
-                                           FontSize="12"
-                                           Foreground="{StaticResource ComputerUseToolBrightTextBrush}"
-                                           Effect="{StaticResource ComputerUseToolTextShadowEffect}"
-                                           TextWrapping="Wrap"/>
-                                <ProgressBar Margin="0,4,0,0"
-                                             Height="6"
-                                             Minimum="0"
-                                             Maximum="100"
-                                             Foreground="#B493F2FF"
-                                             Background="#24000000"
-                                             BorderBrush="#4493F2FF"
-                                             Value="{Binding State.ToolProgressValue, Mode=OneWay}"
-                                             IsIndeterminate="{Binding State.IsToolProgressIndeterminate, Mode=OneWay}"/>
-                            </StackPanel>
-                        </Grid>
-
-                        <!-- 执行结果展示 -->
-                        <Grid Margin="0,8,0,0">
-                            <Grid.Style>
-                                <Style TargetType="Grid">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding State.HasToolResult}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Grid.Style>
-                            <TextBlock Text="{Binding State.ToolResultContent}"
-                                       Foreground="{StaticResource ComputerUseToolBrightTextBrush}"
-                                       FontFamily="Consolas, Microsoft YaHei UI"
-                                       FontSize="12"
-                                       Effect="{StaticResource ComputerUseToolTextShadowEffect}"
-                                       TextWrapping="Wrap"
-                                       MaxHeight="60"/>
-                        </Grid>
-                    </StackPanel>
-                </Grid>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,30,0">
+                    <!-- 工具名称（只显示标题） -->
+                    <TextBlock Text="{Binding State.ToolDisplayName}"
+                               FontFamily="Microsoft YaHei UI, Segoe UI"
+                               FontSize="21"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource ComputerUseToolBrightTextBrush}"
+                               Effect="{StaticResource ComputerUseToolTextShadowEffect}"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
             </Grid>
-        </Border>
 
-        <!-- 2. 溢出装饰大图：放在 Border 外侧，不受背景层裁剪，完美溢出边界 -->
-        <Image Source="{Binding ComputerUseIconPath}"
-               Width="412"
-               Height="377"
-               HorizontalAlignment="Left"
-               VerticalAlignment="Top"
-               Stretch="Uniform"
-               Opacity="0.32"
-               RenderOptions.BitmapScalingMode="HighQuality"
-               IsHitTestVisible="False">
-            <Image.RenderTransform>
-                <TransformGroup>
-                    <MatrixTransform Matrix="0.643727,-0.0832679,0.0832679,0.643727,-0.000575359,34.3065"/>
-                </TransformGroup>
-            </Image.RenderTransform>
-        </Image>
-    </Grid>
+            <!-- 5. 溢出装饰大图：位于最上层，完全不透明且按 30% 等比缩小 -->
+            <Image Source="{Binding ComputerUseIconPath}"
+                   Width="412"
+                   Height="377"
+                   Canvas.Left="0"
+                   Canvas.Top="0"
+                   Stretch="Uniform"
+                   Opacity="1.0"
+                   RenderOptions.BitmapScalingMode="HighQuality"
+                   IsHitTestVisible="False">
+                <Image.RenderTransform>
+                    <TransformGroup>
+                        <MatrixTransform Matrix="0.643727,-0.0832679,0.0832679,0.643727,-0.000575359,34.3065"/>
+                        <ScaleTransform ScaleX="0.3" ScaleY="0.3"/>
+                    </TransformGroup>
+                </Image.RenderTransform>
+            </Image>
+        </Canvas>
+    </Viewbox>
 </UserControl>
