@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Globalization;
 using System.Windows;
@@ -1008,7 +1008,20 @@ namespace Ferrita.Controls.ChatSessionControl.ViewModels
             return dispatcher.InvokeAsync(action).Task;
         }
 
-        private void RefreshMessagesFromTranscript(bool refreshContextWindow = true)
+        private void RefreshMessagesFromTranscript(bool refreshContextWindow = true)
+        {
+            // 确保在 UI 线程上执行，防止 CollectionView 跨线程修改异常
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.BeginInvoke(new Action(() => RefreshMessagesFromTranscript(refreshContextWindow)), System.Windows.Threading.DispatcherPriority.Normal);
+                return;
+            }
+
+            _RefreshMessagesFromTranscript(refreshContextWindow);
+        }
+
+        private void _RefreshMessagesFromTranscript(bool refreshContextWindow = true)
         {
             if (_sessionModel == null)
             {
@@ -1427,7 +1440,20 @@ namespace Ferrita.Controls.ChatSessionControl.ViewModels
             QueueMemoryForClosedSession();
         }
 
-        private void AddSystemStatusMessage(string content, string title)
+        private void AddSystemStatusMessage(string content, string title)
+        {
+            // 确保在 UI 线程上执行，防止 CollectionView 跨线程修改异常
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.BeginInvoke(new Action(() => AddSystemStatusMessage(content, title)), System.Windows.Threading.DispatcherPriority.Normal);
+                return;
+            }
+
+            _AddSystemStatusMessage(content, title);
+        }
+
+        private void _AddSystemStatusMessage(string content, string title)
         {
             var message = CreateChatMessage(
                 ChatMessageRole.System,

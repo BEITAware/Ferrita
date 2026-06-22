@@ -1,13 +1,13 @@
-<Window x:Class="Ferrita.Windows.ShellChatWindow"
+<Window x:Class="Ferrita.Windows.ComputerUseWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:shell="clr-namespace:Ferrita.Controls.ShellChatSessionControl.Views"
         mc:Ignorable="d"
-        Title="{DynamicResource ShellChat.Window.Title}"
-        Height="560"
-        Width="800"
+        Title="Computer Use"
+        Height="360"
+        Width="500"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -15,7 +15,8 @@
         Topmost="True"
         ShowInTaskbar="False"
         Opacity="0"
-        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+        MouseLeftButtonDown="Window_MouseLeftButtonDown"
+        Closed="Window_Closed">
 
     <Window.Triggers>
         <EventTrigger RoutedEvent="Window.Loaded">
@@ -47,52 +48,20 @@
     </Window.Triggers>
 
     <Window.Resources>
-        <!-- 降低不透明度的深蓝紫渐变背景底色 -->
         <LinearGradientBrush x:Key="ShellWindowBackgroundBrush" StartPoint="0.2,0" EndPoint="0.8,1">
-            <GradientStop Color="#38080D1A" Offset="0"/>
-            <GradientStop Color="#22101530" Offset="0.5"/>
-            <GradientStop Color="#3204060F" Offset="1"/>
+            <GradientStop Color="#48080D1A" Offset="0"/>
+            <GradientStop Color="#32101530" Offset="0.5"/>
+            <GradientStop Color="#4204060F" Offset="1"/>
         </LinearGradientBrush>
-
-        <!-- 复用并增强已有设计资源的毛玻璃反射笔刷 -->
-        <DrawingBrush x:Key="WindowSoftGlassSliceBrush" Stretch="Fill">
-            <DrawingBrush.Drawing>
-                <DrawingGroup>
-                    <DrawingGroup.Children>
-                        <GeometryDrawing Geometry="F1 M 0.160156,0.159668L 1386.16,0.159668L 1386.16,223.646L 0.160156,223.646L 0.160156,0.159668 Z ">
-                            <GeometryDrawing.Brush>
-                                <LinearGradientBrush StartPoint="0.1,1.6" EndPoint="2.5,1.6">
-                                    <LinearGradientBrush.RelativeTransform>
-                                        <TransformGroup>
-                                            <SkewTransform AngleX="-60" CenterX="0.1" CenterY="1.6"/>
-                                            <RotateTransform Angle="-70" CenterX="0.1" CenterY="1.6"/>
-                                        </TransformGroup>
-                                    </LinearGradientBrush.RelativeTransform>
-                                    <LinearGradientBrush.GradientStops>
-                                        <GradientStop Color="#1AFFFFFF" Offset="0"/>
-                                        <GradientStop Color="#0DFFFFFF" Offset="0.1"/>
-                                        <GradientStop Color="#00FFFFFF" Offset="0.3"/>
-                                        <GradientStop Color="#1CFFFFFF" Offset="0.33"/>
-                                        <GradientStop Color="#08FFFFFF" Offset="0.6"/>
-                                        <GradientStop Color="#20FFFFFF" Offset="1"/>
-                                    </LinearGradientBrush.GradientStops>
-                                </LinearGradientBrush>
-                            </GeometryDrawing.Brush>
-                        </GeometryDrawing>
-                    </DrawingGroup.Children>
-                </DrawingGroup>
-            </DrawingBrush.Drawing>
-        </DrawingBrush>
     </Window.Resources>
 
-    <Grid x:Name="RootGrid" Margin="16" RenderTransformOrigin="0.9,0.9">
+    <Grid x:Name="RootGrid" Margin="12" RenderTransformOrigin="0.9,0.9">
         <Grid.RenderTransform>
             <TransformGroup>
                 <ScaleTransform x:Name="RootScale" ScaleX="0.75" ScaleY="0.75" />
                 <TranslateTransform x:Name="RootTranslate" Y="60" />
             </TransformGroup>
         </Grid.RenderTransform>
-
 
         <!-- 主玻璃体边界 -->
         <Border x:Name="MainBorder" 
@@ -103,10 +72,7 @@
             <Grid x:Name="BackgroundChrome"
                   ClipToBounds="True"
                   SizeChanged="BackgroundChrome_SizeChanged">
-                <!-- 6. 主内容区域：嵌入 Shell 聊天会话控件 -->
-                <Grid Margin="0,0,0,0">
-                    <shell:ShellChatSessionControl x:Name="ChatControl"/>
-                </Grid>
+                <shell:ShellChatSessionControl x:Name="ChatControl"/>
             </Grid>
         </Border>
     </Grid>
