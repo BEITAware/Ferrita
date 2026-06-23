@@ -1278,6 +1278,12 @@ To the greatest extent permitted by, but not in contravention of, applicable law
                         if (agent.IsEnabled)
                         {
                             bool isSelected = true;
+                            // 检查该智能体是否是仅作为子代理运行 (SubAgentOnly)
+                            bool isSubAgentOnly = string.Equals(agent.RawElement?.Element("RuntimeRole")?.Value, "SubAgentOnly", StringComparison.OrdinalIgnoreCase);
+                            if (isSubAgentOnly)
+                            {
+                                isSelected = false;
+                            }
                             if (existingSelections.TryGetValue(agent.AgentId, out var prevSelected))
                             {
                                 isSelected = prevSelected;
