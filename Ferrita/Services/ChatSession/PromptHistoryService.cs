@@ -35,15 +35,39 @@ namespace Ferrita.Services.ChatSession
         {
         }
 
-        private string GetXmlFilePath()
+        private static string HistoryPath =>
+            Path.Combine(FerritaDirectoryRuntime.Instance.ChatSessionsDirectoryPath, "PromptHistory.xml");
+
+        private static XDocument ReadHistory(string path)
         {
-            var sessionsDir = FerritaDirectoryRuntime.Instance.ChatSessionsDirectoryPath;
-            var promptHistoryDir = Path.Combine(sessionsDir, "PromptHistory");
-            if (!Directory.Exists(promptHistoryDir))
+            if (File.Exists(path))
             {
-                Directory.CreateDirectory(promptHistoryDir);
+                var history = XDocument.Load(path);
+                if (history.Root?.Name != "PromptHistory")
+                    throw new InvalidDataException($"Unexpected prompt history format: {path}");
+                return history;
             }
-            return Path.Combine(promptHistoryDir, "PromptHistory.xml");
+
+            // Older versions used the same directory/file convention as a chat named PromptHistory.
+            var legacyPath = Path.Combine(Path.GetDirectoryName(path)!, "PromptHistory", "PromptHistory.xml");
+            if (File.Exists(legacyPath))
+            {
+                try
+                {
+                    var legacy = XDocument.Load(legacyPath);
+                    if (legacy.Root?.Name == "PromptHistory")
+                        return legacy;
+                    if (legacy.Root?.Name == "ChatSession")
+                        return new XDocument(new XElement("PromptHistory", legacy.Root.Elements("PromptEntry")));
+                }
+                catch (System.Xml.XmlException ex)
+                {
+                    // Keep the damaged legacy file available for recovery and start a fresh history.
+                    System.Diagnostics.Trace.TraceWarning($"Cannot read legacy prompt history '{legacyPath}': {ex.Message}");
+                }
+            }
+
+            return new XDocument(new XElement("PromptHistory"));
         }
 
         public void AddHistoryEntry(string text, string sessionType, IEnumerable<PromptHistoryAttachmentInfo>? attachments = null)
@@ -52,30 +76,8 @@ namespace Ferrita.Services.ChatSession
             {
                 try
                 {
-                    var filePath = GetXmlFilePath();
-                    XDocument doc;
-                    if (File.Exists(filePath))
-                    {
-                        try
-                        {
-                            doc = XDocument.Load(filePath);
-                        }
-                        catch
-                        {
-                            doc = new XDocument(new XElement("PromptHistory"));
-                        }
-                    }
-                    else
-                    {
-                        doc = new XDocument(new XElement("PromptHistory"));
-                    }
-
-                    var root = doc.Root;
-                    if (root == null)
-                    {
-                        root = new XElement("PromptHistory");
-                        doc.Add(root);
-                    }
+                    var filePath = HistoryPath;
+                    var doc = ReadHistory(filePath);
 
                     var entry = new XElement("PromptEntry",
                         new XAttribute("Timestamp", DateTime.UtcNow.ToString("o")),
@@ -114,8 +116,18 @@ namespace Ferrita.Services.ChatSession
                         }
                     }
 
-                    root.Add(entry);
-                    doc.Save(filePath);
+                    doc.Root!.Add(entry);
+                    Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+                    var tempPath = filePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+                    try
+                    {
+                        doc.Save(tempPath);
+                        File.Move(tempPath, filePath, overwrite: true);
+                    }
+                    finally
+                    {
+                        File.Delete(tempPath);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -131,13 +143,7 @@ namespace Ferrita.Services.ChatSession
                 var list = new List<string>();
                 try
                 {
-                    var filePath = GetXmlFilePath();
-                    if (!File.Exists(filePath))
-                    {
-                        return list;
-                    }
-
-                    var doc = XDocument.Load(filePath);
+                    var doc = ReadHistory(HistoryPath);
                     var entries = doc.Root?.Elements("PromptEntry") ?? Enumerable.Empty<XElement>();
                     foreach (var entry in entries)
                     {
