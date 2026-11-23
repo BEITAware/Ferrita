@@ -52,7 +52,15 @@ namespace Ferrita.Services.ChatSession
                     continue;
                 }
 
-                sessions.Add(LoadFromFile(sessionFilePath));
+                try
+                {
+                    if (LoadFromFile(sessionFilePath) is { } session)
+                        sessions.Add(session);
+                }
+                catch (Exception ex) when (ex is System.Xml.XmlException or IOException or UnauthorizedAccessException)
+                {
+                    System.Diagnostics.Trace.TraceWarning($"Cannot read chat session '{sessionFilePath}': {ex.Message}");
+                }
             }
 
             return sessions;
@@ -145,10 +153,12 @@ namespace Ferrita.Services.ChatSession
             }
         }
 
-        private ChatSessionModel LoadFromFile(string sessionFilePath)
+        private ChatSessionModel? LoadFromFile(string sessionFilePath)
         {
             var document = XDocument.Load(sessionFilePath, LoadOptions.PreserveWhitespace);
-            var root = document.Root ?? throw new InvalidDataException("ChatSession XML is missing a root element.");
+            var root = document.Root;
+            if (root?.Name != "ChatSession")
+                return null;
             var metadataElement = root.Element("Metadata");
 
             var name = (string?)root.Attribute("Name") ?? Path.GetFileNameWithoutExtension(sessionFilePath);
